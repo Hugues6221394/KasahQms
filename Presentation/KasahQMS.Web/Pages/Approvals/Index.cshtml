@@ -1,0 +1,95 @@
+@page
+@model KasahQMS.Web.Pages.Approvals.IndexModel
+@{
+    ViewData["Title"] = "Pending Approvals";
+}
+
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Pending Approvals</h1>
+            <p class="text-slate-500">Review and action submissions from your subordinates and assigned documents.</p>
+        </div>
+    </div>
+
+    @if (!Model.PendingTasks.Any() && !Model.PendingDocuments.Any())
+    {
+        <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+            <div class="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">All caught up!</h3>
+            <p class="text-slate-500 max-w-sm mx-auto mt-1">There are no pending tasks or documents awaiting your approval at this time.</p>
+        </div>
+    }
+    else
+    {
+        @if (Model.PendingTasks.Any())
+        {
+            <div class="space-y-4">
+                <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Pending Tasks (@Model.PendingTasks.Count)
+                </h2>
+                <div class="grid gap-4">
+                    @foreach (var item in Model.PendingTasks)
+                    {
+                        <div class="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-soft transition-all flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                                    <span class="text-xs font-bold">TASK</span>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-900">@item.Title</div>
+                                    <div class="text-xs text-slate-500">
+                                        Submitted by <span class="font-medium text-slate-700">@item.SubmmitedBy</span> • @item.SubmittedAt.ToString("MMM dd, yyyy HH:mm")
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a href="/Tasks/Details/@item.Id" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors">Review</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (Model.PendingDocuments.Any())
+        {
+            <div class="space-y-4">
+                <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Pending Documents (@Model.PendingDocuments.Count)
+                </h2>
+                <div class="grid gap-4">
+                    @foreach (var item in Model.PendingDocuments)
+                    {
+                        <div class="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-soft transition-all flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600">
+                                    <span class="text-xs font-bold">DOC</span>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-900">@item.Title</div>
+                                    <div class="text-xs text-slate-500">
+                                        Submitted by <span class="font-medium text-slate-700">@item.SubmmitedBy</span> • @item.SubmittedAt.ToString("MMM dd, yyyy HH:mm")
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a href="/Documents/Details/@item.Id" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors">Review</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>

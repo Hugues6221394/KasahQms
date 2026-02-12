@@ -1,0 +1,206 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="py-8">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">Dashboard</h1>
+            <p class="mt-2 text-slate-600">Welcome back! Here's an overview of your quality management activities.</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            <!-- Pending Tasks -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-smooth">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-amber-100 rounded-lg">
+                        <svg class="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-slate-500">Pending Tasks</p>
+                        <p class="text-2xl font-bold text-slate-900">12</p>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="text-amber-600 font-medium">3 overdue</span>
+                    <span class="ml-2 text-slate-400">•</span>
+                    <span class="ml-2 text-slate-500">5 due today</span>
+                </div>
+            </div>
+
+            <!-- Documents Pending Approval -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-smooth">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-qms-100 rounded-lg">
+                        <svg class="h-6 w-6 text-qms-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-slate-500">Pending Approval</p>
+                        <p class="text-2xl font-bold text-slate-900">8</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a href="/documents/pending" class="text-sm text-qms-600 hover:text-qms-700 font-medium">View all →</a>
+                </div>
+            </div>
+
+            <!-- Open Audits -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-smooth">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-emerald-100 rounded-lg">
+                        <svg class="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-slate-500">Open Audits</p>
+                        <p class="text-2xl font-bold text-slate-900">3</p>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="text-emerald-600 font-medium">1 in progress</span>
+                    <span class="ml-2 text-slate-400">•</span>
+                    <span class="ml-2 text-slate-500">2 planned</span>
+                </div>
+            </div>
+
+            <!-- Active CAPAs -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-smooth">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-accent-100 rounded-lg">
+                        <svg class="h-6 w-6 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-slate-500">Active CAPAs</p>
+                        <p class="text-2xl font-bold text-slate-900">5</p>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="text-accent-600 font-medium">2 critical</span>
+                    <span class="ml-2 text-slate-400">•</span>
+                    <span class="ml-2 text-slate-500">1 overdue</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Recent Activity -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <h2 class="text-lg font-semibold text-slate-900">Recent Activity</h2>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    <div class="px-6 py-4 hover:bg-slate-50 transition-smooth">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-900">Document DOC-001234 approved</p>
+                                <p class="text-sm text-slate-500">Quality Manual v2.1 was approved by Sarah Johnson</p>
+                                <p class="text-xs text-slate-400 mt-1">2 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 hover:bg-slate-50 transition-smooth">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-qms-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-qms-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-900">New task assigned to you</p>
+                                <p class="text-sm text-slate-500">Review supplier qualification documents</p>
+                                <p class="text-xs text-slate-400 mt-1">4 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 hover:bg-slate-50 transition-smooth">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-900">CAPA-0045 requires action</p>
+                                <p class="text-sm text-slate-500">Root cause analysis deadline approaching</p>
+                                <p class="text-xs text-slate-400 mt-1">Yesterday</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-200">
+                    <a href="/activity" class="text-sm text-qms-600 hover:text-qms-700 font-medium">View all activity →</a>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <h2 class="text-lg font-semibold text-slate-900">Quick Actions</h2>
+                </div>
+                <div class="p-6 space-y-3">
+                    <a href="/documents/new" class="flex items-center w-full p-4 bg-slate-50 hover:bg-qms-50 rounded-lg transition-smooth group">
+                        <div class="flex-shrink-0 p-2 bg-qms-100 group-hover:bg-qms-200 rounded-lg transition-smooth">
+                            <svg class="w-5 h-5 text-qms-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-slate-700 group-hover:text-qms-700">Create Document</span>
+                    </a>
+                    <a href="/tasks/new" class="flex items-center w-full p-4 bg-slate-50 hover:bg-qms-50 rounded-lg transition-smooth group">
+                        <div class="flex-shrink-0 p-2 bg-qms-100 group-hover:bg-qms-200 rounded-lg transition-smooth">
+                            <svg class="w-5 h-5 text-qms-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-slate-700 group-hover:text-qms-700">Assign Task</span>
+                    </a>
+                    <a href="/audits/schedule" class="flex items-center w-full p-4 bg-slate-50 hover:bg-qms-50 rounded-lg transition-smooth group">
+                        <div class="flex-shrink-0 p-2 bg-qms-100 group-hover:bg-qms-200 rounded-lg transition-smooth">
+                            <svg class="w-5 h-5 text-qms-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-slate-700 group-hover:text-qms-700">Schedule Audit</span>
+                    </a>
+                    <a href="/capa/new" class="flex items-center w-full p-4 bg-slate-50 hover:bg-qms-50 rounded-lg transition-smooth group">
+                        <div class="flex-shrink-0 p-2 bg-qms-100 group-hover:bg-qms-200 rounded-lg transition-smooth">
+                            <svg class="w-5 h-5 text-qms-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-slate-700 group-hover:text-qms-700">Initiate CAPA</span>
+                    </a>
+                    <a href="/reports/generate" class="flex items-center w-full p-4 bg-slate-50 hover:bg-qms-50 rounded-lg transition-smooth group">
+                        <div class="flex-shrink-0 p-2 bg-qms-100 group-hover:bg-qms-200 rounded-lg transition-smooth">
+                            <svg class="w-5 h-5 text-qms-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-slate-700 group-hover:text-qms-700">Generate Report</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

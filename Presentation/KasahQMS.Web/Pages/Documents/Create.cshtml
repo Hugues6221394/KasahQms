@@ -1,0 +1,380 @@
+@page
+@model KasahQMS.Web.Pages.Documents.CreateModel
+@{
+    ViewData["Title"] = "Create Document";
+}
+
+<div class="py-8">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <!-- Breadcrumb -->
+        <nav class="mb-4">
+            <ol class="flex items-center space-x-2 text-sm">
+                <li><a href="/Documents" class="text-qms-600 hover:text-qms-700">Documents</a></li>
+                <li class="text-slate-400">/</li>
+                <li class="text-slate-600">Create New Document</li>
+            </ol>
+        </nav>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h1 class="text-2xl font-bold text-slate-900">Create New Document</h1>
+                <p class="mt-1 text-slate-500">Fill in the details below to create a new quality document</p>
+            </div>
+
+            <!-- Form -->
+            <form method="post" enctype="multipart/form-data" class="p-6 space-y-6">
+                @Html.AntiForgeryToken()
+
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p class="text-sm text-red-600">@Model.ErrorMessage</p>
+                    </div>
+                }
+
+                <!-- Template Selection -->
+                <div class="bg-brand-50 border border-brand-100 rounded-lg p-4 mb-6">
+                    <label for="template" class="block text-sm font-medium text-brand-900 mb-2">
+                        Start from Template (Optional)
+                    </label>
+                    <select id="template" onchange="if(this.value) window.location.href='?templateId=' + this.value"
+                        class="w-full px-4 py-2 border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm">
+                        <option value="">Select a template...</option>
+                        @foreach (var template in Model.Templates)
+                        {
+                            <option value="@template.Id" selected="@(Model.TemplateId == template.Id)">@template.Name</option>
+                        }
+                    </select>
+                    <p class="mt-1 text-xs text-brand-700">Selecting a template will populate the form with predefined content relative to your department.</p>
+                </div>
+
+                @if (Model.IsTmdOrDeputy)
+                {
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-bold text-amber-900 mb-3 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            TMD / Deputy Controls
+                        </h3>
+                        <div>
+                            <label for="targetDepartment" class="block text-sm font-medium text-amber-900 mb-1">
+                                Target Department (Who can access this template?) <span class="text-red-500">*</span>
+                            </label>
+                            <select id="targetDepartment" name="TargetDepartmentId" 
+                                class="w-full px-4 py-3 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                <option value="">Global / All Departments</option>
+                                @foreach (var dept in Model.Departments)
+                                {
+                                    <option value="@dept.Id" selected="@(Model.TargetDepartmentId == dept.Id)">@dept.Name</option>
+                                }
+                            </select>
+                            <p class="mt-1 text-xs text-amber-700">Specific department where this template will be visible.</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Document Title -->
+                <div>
+                    <label for="title" class="block text-sm font-medium text-slate-700 mb-1">
+                        Document Title <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="title" name="Title" value="@Model.Title" required
+                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-qms-500 focus:border-qms-500"
+                        placeholder="Enter document title">
+                    <span asp-validation-for="Title" class="text-sm text-red-500"></span>
+                </div>
+
+                <!-- Document Number -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="documentNumber" class="block text-sm font-medium text-slate-700 mb-1">
+                            Document Number
+                        </label>
+                        <input type="text" id="documentNumber" name="DocumentNumber" value="@Model.DocumentNumber"
+                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-qms-500 focus:border-qms-500 bg-slate-50"
+                            placeholder="Auto-generated" readonly>
+                        <p class="mt-1 text-xs text-slate-500">Will be auto-generated upon save</p>
+                    </div>
+                    <div>
+                        <label for="version" class="block text-sm font-medium text-slate-700 mb-1">
+                            Version
+                        </label>
+                        <input type="text" id="version" name="Version" value="1.0"
+                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-qms-500 focus:border-qms-500 bg-slate-50"
+                            readonly>
+                    </div>
+                </div>
+
+                <!-- Document Type & Category -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="documentType" class="block text-sm font-medium text-slate-700 mb-1">
+                            Document Type <span class="text-red-500">*</span>
+                        </label>
+                        <select id="documentType" name="DocumentTypeId" required
+                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-qms-500 focus:border-qms-500">
+                            <option value="">Select Type</option>
+                            @foreach (var type in Model.DocumentTypes)
+                            {
+                                <option value="@type.Id">@type.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-slate-700 mb-1">
+                            Category <span class="text-red-500">*</span>
+                        </label>
+                        <select id="category" name="CategoryId" required
+                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-qms-500 focus:border-qms-500">
+                            <option value="">Select Category</option>
+                            @foreach (var category in Model.Categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label for="description" class="block text-sm font-medium text-slate-700 mb-1">
+                        Description
+                    </label>
+                    <textarea id="description" name="Description" rows="4"
+                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-qms-500 focus:border-qms-500"
+                        placeholder="Provide a brief description of this document...">@Model.Description</textarea>
+                </div>
+
+                <!-- Content Editor -->
+                <div>
+                    <label for="content" class="block text-sm font-medium text-slate-700 mb-1">
+                        Document Content
+                    </label>
+                    <div class="border border-slate-300 rounded-lg overflow-hidden">
+                        <div class="bg-slate-50 border-b border-slate-300 px-4 py-2 flex items-center space-x-2">
+                            <button type="button" class="p-2 hover:bg-slate-200 rounded" title="Bold">
+                                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="p-2 hover:bg-slate-200 rounded" title="Italic">
+                                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4h4m-2 16h4m-4 0l4-16"/>
+                                </svg>
+                            </button>
+                            <div class="w-px h-6 bg-slate-300"></div>
+                            <button type="button" class="p-2 hover:bg-slate-200 rounded" title="Bullet List">
+                                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <textarea id="content" name="Content" rows="12"
+                            class="w-full px-4 py-3 focus:ring-0 border-0 focus:outline-none"
+                            placeholder="Enter document content here...">@Model.Content</textarea>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">
+                        <span class="text-amber-600">Draft auto-saved</span> • Last saved: Just now
+                    </p>
+                </div>
+
+                <!-- Attachments -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Attachments</label>
+                    <p class="text-xs text-slate-500 mb-2">Select from templates, existing documents, or upload local files. You can preview each before submitting.</p>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label for="attachFromTemplate" class="block text-xs font-medium text-slate-600 mb-1">From template</label>
+                                <select id="attachFromTemplate" name="AttachFromTemplateId" asp-for="AttachFromTemplateId" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-qms-500">
+                                    <option value="">— None —</option>
+                                    @foreach (var t in Model.Templates)
+                                    {
+                                        <option value="@t.Id" data-name="@t.Name">@t.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label for="attachFromDocument" class="block text-xs font-medium text-slate-600 mb-1">From existing document</label>
+                                <select id="attachFromDocument" name="AttachFromDocumentId" asp-for="AttachFromDocumentId" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-qms-500">
+                                    <option value="">— None —</option>
+                                    @foreach (var d in Model.ExistingDocuments)
+                                    {
+                                        <option value="@d.Id">@d.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-qms-400 transition-colors" id="dropzone-doc">
+                            <input type="file" id="attachments" name="Attachments" multiple
+                                class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.bmp,.txt,.csv,.rtf,.odt,.ods,.odp,.zip,.rar,.7z">
+                            <label for="attachments" class="cursor-pointer block">
+                                <svg class="mx-auto h-10 w-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <span class="font-medium text-qms-600">Click to upload</span> or drag and drop
+                                <span class="text-xs text-slate-500 block mt-1">PDF, DOC, XLS, PPT, images, TXT, CSV, ZIP — any local file</span>
+                            </label>
+                        </div>
+                        <div id="attachment-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- Send to for approval (when submitting) -->
+                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                    <h3 class="text-sm font-bold text-emerald-900 mb-3">Send to for approval</h3>
+                    <p class="text-xs text-emerald-700 mb-3">When you use &quot;Save &amp; Submit for Approval&quot;, choose who (or which department) should approve this document.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="approverId" class="block text-sm font-medium text-emerald-900 mb-1">Approve by (person)</label>
+                            <select id="approverId" name="ApproverId" asp-for="ApproverId" class="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <option value="">— Optional —</option>
+                                @foreach (var u in Model.ApproverUsers)
+                                {
+                                    <option value="@u.Id">@u.Name — @u.Department · @u.Roles</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label for="approverDepartmentId" class="block text-sm font-medium text-emerald-900 mb-1">Approve by (department)</label>
+                            <select id="approverDepartmentId" name="ApproverDepartmentId" asp-for="ApproverDepartmentId" class="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <option value="">— Optional —</option>
+                                @foreach (var d in Model.Departments)
+                                {
+                                    <option value="@d.Id">@d.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-xs text-emerald-600">If you select both, the person is used. Otherwise workflow may determine the approver.</p>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex items-center justify-between pt-6 border-t border-slate-200">
+                    <a href="/Documents" class="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium">
+                        Cancel
+                    </a>
+                    <div class="flex items-center space-x-3">
+                        <button type="submit" name="action" value="draft"
+                            class="px-6 py-2.5 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                            Save as Draft
+                        </button>
+                        <button type="submit" name="action" value="submit"
+                            class="px-6 py-2.5 bg-gradient-to-r from-qms-600 to-qms-700 text-white font-medium rounded-lg hover:from-qms-700 hover:to-qms-800 transition-all shadow-lg hover:shadow-xl">
+                            Save & Submit for Approval
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function() {
+            const contentField = document.getElementById('content');
+            if (contentField) {
+                let autoSaveTimer;
+                contentField.addEventListener('input', function() {
+                    clearTimeout(autoSaveTimer);
+                    autoSaveTimer = setTimeout(() => console.log('Auto-saving draft...'), 2000);
+                });
+            }
+
+            const listEl = document.getElementById('attachment-list');
+            const fileInput = document.getElementById('attachments');
+            const tplSelect = document.getElementById('attachFromTemplate');
+            const docSelect = document.getElementById('attachFromDocument');
+            const dropzone = document.getElementById('dropzone-doc');
+            const baseUrl = window.location.origin;
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function renderList() {
+                if (!listEl) return;
+                const items = [];
+                const seen = new Set();
+
+                if (tplSelect && tplSelect.value) {
+                    const opt = tplSelect.options[tplSelect.selectedIndex];
+                    const name = opt.getAttribute('data-name') || opt.text;
+                    items.push({ type: 'template', id: tplSelect.value, name: 'Template: ' + name, preview: baseUrl + '/Documents/Details/' + tplSelect.value });
+                }
+                if (docSelect && docSelect.value) {
+                    const name = docSelect.options[docSelect.selectedIndex].text;
+                    items.push({ type: 'doc', id: docSelect.value, name: 'Document: ' + name, preview: baseUrl + '/Documents/Details/' + docSelect.value });
+                }
+                if (fileInput && fileInput.files.length) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        const f = fileInput.files[i];
+                        const key = 'file-' + i + '-' + f.name;
+                        if (seen.has(key)) continue;
+                        seen.add(key);
+                        const url = URL.createObjectURL(f);
+                        const size = formatFileSize(f.size);
+                        items.push({ type: 'file', name: f.name, size: size, preview: url, objectUrl: url });
+                    }
+                }
+
+                listEl.innerHTML = items.map(function(item) {
+                    const preview = item.preview ? '<a href="' + item.preview + '" target="_blank" rel="noopener" class="text-qms-600 hover:underline text-sm">Preview</a>' : '';
+                    const sizeDisplay = item.size ? '<span class="text-xs text-slate-500 ml-2">(' + item.size + ')</span>' : '';
+                    return '<div class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-200">' +
+                        '<div class="flex items-center gap-2 flex-1 min-w-0">' +
+                        '<svg class="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+                        '<span class="text-sm text-slate-800 truncate">' + (item.name || 'File') + '</span>' + sizeDisplay +
+                        '</div>' +
+                        '<span class="ml-2 flex-shrink-0">' + preview + '</span>' +
+                        '</div>';
+                }).join('');
+            }
+
+            if (fileInput) fileInput.addEventListener('change', renderList);
+            if (tplSelect) tplSelect.addEventListener('change', renderList);
+            if (docSelect) docSelect.addEventListener('change', renderList);
+            renderList();
+
+            // Drag and drop support
+            if (dropzone) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                });
+                
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, function() {
+                        dropzone.classList.add('border-qms-500', 'bg-qms-50');
+                    }, false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, function() {
+                        dropzone.classList.remove('border-qms-500', 'bg-qms-50');
+                    }, false);
+                });
+                
+                dropzone.addEventListener('drop', function(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    if (fileInput && files.length) {
+                        fileInput.files = files;
+                        renderList();
+                    }
+                }, false);
+            }
+        })();
+    </script>
+}
+

@@ -1,0 +1,97 @@
+@page
+@model KasahQMS.Web.Pages.AuditLogs.IndexModel
+@{
+    ViewData["Title"] = "Audit Logs";
+}
+
+<div class="space-y-8">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">Audit logs</h1>
+            <p class="text-sm text-slate-500">Immutable record of critical system activity.</p>
+        </div>
+        <div class="flex gap-3">
+            <form method="post" asp-page-handler="Export" class="inline">
+                <input type="hidden" name="format" value="PDF" />
+                <input type="hidden" name="StartDate" value="@Model.StartDate" />
+                <input type="hidden" name="EndDate" value="@Model.EndDate" />
+                <input type="hidden" name="DepartmentId" value="@Model.DepartmentId" />
+                <input type="hidden" name="DocumentType" value="@Model.DocumentType" />
+                <button type="submit" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Export PDF</button>
+            </form>
+            <form method="post" asp-page-handler="Export" class="inline">
+                <input type="hidden" name="format" value="ZIP" />
+                <input type="hidden" name="StartDate" value="@Model.StartDate" />
+                <input type="hidden" name="EndDate" value="@Model.EndDate" />
+                <input type="hidden" name="DepartmentId" value="@Model.DepartmentId" />
+                <input type="hidden" name="DocumentType" value="@Model.DocumentType" />
+                <button type="submit" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Export ZIP</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card p-6">
+        <form method="get" class="mb-6 space-y-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div>
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-input" asp-for="StartDate" />
+                </div>
+                <div>
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-input" asp-for="EndDate" />
+                </div>
+                <div>
+                    <label class="form-label">Department</label>
+                    <select class="form-input" asp-for="DepartmentId">
+                        <option value="">All Departments</option>
+                        @foreach (var dept in Model.Departments)
+                        {
+                            <option value="@dept.Id">@dept.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Document Type</label>
+                    <input type="text" class="form-input" asp-for="DocumentType" placeholder="e.g., Document" />
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="/AuditLogs" class="btn btn-secondary">Clear</a>
+            </div>
+        </form>
+
+        <div class="overflow-hidden rounded-lg border border-slate-200">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold">Timestamp</th>
+                        <th class="px-4 py-3 text-left font-semibold">Actor</th>
+                        <th class="px-4 py-3 text-left font-semibold">Action</th>
+                        <th class="px-4 py-3 text-left font-semibold">Entity</th>
+                        <th class="px-4 py-3 text-left font-semibold">Description</th>
+                        <th class="px-4 py-3 text-left font-semibold">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @foreach (var entry in Model.Logs)
+                    {
+                        <tr>
+                            <td class="px-4 py-3 text-slate-600">@entry.Timestamp</td>
+                            <td class="px-4 py-3 text-slate-600">@entry.Actor</td>
+                            <td class="px-4 py-3 text-slate-600">@entry.Action</td>
+                            <td class="px-4 py-3 text-slate-600">@entry.Entity</td>
+                            <td class="px-4 py-3 text-slate-600">@(entry.Description ?? "-")</td>
+                            <td class="px-4 py-3">
+                                <span class="badge @(entry.Status == "Success" ? "badge-success" : "badge-error")">@entry.Status</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+

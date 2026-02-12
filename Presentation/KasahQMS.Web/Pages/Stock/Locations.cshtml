@@ -1,0 +1,210 @@
+@page
+@model KasahQMS.Web.Pages.Stock.LocationsModel
+@{
+    ViewData["Title"] = "Stock Locations";
+}
+
+<div class="space-y-6 animate-fade-in">
+    <!-- Page Header -->
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-start gap-4">
+            <a href="/Stock" class="mt-1 p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-brand-600 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Stock Locations</h1>
+                <p class="mt-1 text-slate-500">Manage warehouses and inventory storage locations</p>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm text-emerald-700">@Model.SuccessMessage</p>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="p-4 rounded-xl bg-red-50 border border-red-200">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <p class="text-sm text-red-700">@Model.ErrorMessage</p>
+            </div>
+        </div>
+    }
+
+    <div class="grid gap-6 xl:grid-cols-3">
+        <!-- Add Location Form -->
+        @if (Model.CanManageStock)
+        {
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Add New Location</h2>
+                <form method="post" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Code <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" asp-for="Code"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                               placeholder="e.g., WH-001">
+                        <span asp-validation-for="Code" class="text-xs text-red-600"></span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" asp-for="Name"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                               placeholder="e.g., Main Warehouse">
+                        <span asp-validation-for="Name" class="text-xs text-red-600"></span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <textarea asp-for="Description" rows="2"
+                                  class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                                  placeholder="Optional description..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                        <input type="text" asp-for="Address"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                               placeholder="Physical address (optional)">
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" asp-for="IsVirtual" id="IsVirtual"
+                               class="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500">
+                        <label for="IsVirtual" class="text-sm text-slate-700">
+                            Virtual location (for services)
+                        </label>
+                    </div>
+                    
+                    <button type="submit"
+                            class="w-full px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all">
+                        Add Location
+                    </button>
+                </form>
+            </div>
+        }
+
+        <!-- Locations List -->
+        <div class="@(Model.CanManageStock ? "xl:col-span-2" : "xl:col-span-3")">
+            <div class="card overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                    <h2 class="font-semibold text-slate-900">All Locations</h2>
+                </div>
+                
+                @if (Model.Locations.Any())
+                {
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Address</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            @foreach (var location in Model.Locations)
+                            {
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-lg @(location.IsVirtual ? "bg-purple-100 text-purple-600" : "bg-blue-100 text-blue-600") flex items-center justify-center">
+                                                @if (location.IsVirtual)
+                                                {
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                                                    </svg>
+                                                }
+                                                else
+                                                {
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                                    </svg>
+                                                }
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-medium text-slate-900">@location.Name</div>
+                                                <div class="text-xs text-slate-500">@location.Code</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        @if (!string.IsNullOrEmpty(location.Address))
+                                        {
+                                            <span class="text-sm text-slate-600">@location.Address</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-sm text-slate-400">-</span>
+                                        }
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(location.IsVirtual ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700")">
+                                            @(location.IsVirtual ? "Virtual" : "Physical")
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(location.IsActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600")">
+                                            @(location.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-slate-900 mb-1">No locations yet</h3>
+                        <p class="text-sm text-slate-500">Add your first stock location to start tracking inventory.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="p-4 rounded-xl bg-blue-50 border border-blue-200">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <h4 class="text-sm font-medium text-blue-800">About Stock Locations</h4>
+                <p class="text-xs text-blue-700 mt-1">
+                    <strong>Physical locations</strong> represent warehouses, offices, or storage areas where physical products are kept.
+                    <strong>Virtual locations</strong> are used for services or digital products that don't have a physical presence.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

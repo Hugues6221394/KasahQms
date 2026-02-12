@@ -1,0 +1,22 @@
+@page
+@model KasahQMS.Web.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@* This page redirects to role-specific dashboard via OnGetAsync() *@
+@* If you see this content, the redirect did not happen - check DashboardRoutingService *@
+
+<div class="flex items-center justify-center min-h-[60vh]">
+    <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto mb-4"></div>
+        <p class="text-slate-600">Redirecting to your dashboard...</p>
+    </div>
+</div>
+
+<script>
+    // Fallback redirect if server-side redirect fails
+    setTimeout(function() {
+        window.location.href = '/Dashboard/Staff';
+    }, 2000);
+</script>

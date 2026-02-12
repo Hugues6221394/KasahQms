@@ -1,0 +1,53 @@
+@page
+@model KasahQMS.Web.Pages.Profile.IndexModel
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900">My profile</h1>
+        <p class="text-sm text-slate-500">Manage your personal information and preferences.</p>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900">Personal info</h2>
+            <div class="mt-4 space-y-4 text-sm text-slate-600">
+                <label class="block">
+                    Full name
+                    <input class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" value="@Model.DisplayName" />
+                </label>
+                <label class="block">
+                    Email
+                    <input class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" value="@Model.Email" />
+                </label>
+                <label class="block">
+                    Role
+                    <input class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" value="@Model.Role" />
+                </label>
+            </div>
+        </div>
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900">Preferences</h2>
+            <div class="mt-4 space-y-4 text-sm text-slate-600">
+                <label class="block">
+                    Time zone
+                    <select class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option>Africa/Kigali</option>
+                        <option>UTC</option>
+                    </select>
+                </label>
+                <label class="block">
+                    Notification preference
+                    <select class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option>Email & In-app</option>
+                        <option>In-app only</option>
+                        <option>Email only</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+

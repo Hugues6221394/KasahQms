@@ -1,0 +1,230 @@
+@page
+@model KasahQMS.Web.Pages.Stock.MovementsModel
+@{
+    ViewData["Title"] = "Stock Movements";
+}
+
+<div class="space-y-6 animate-fade-in">
+    <!-- Page Header -->
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-start gap-4">
+            <a href="/Stock" class="mt-1 p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-brand-600 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Stock Movements</h1>
+                <p class="mt-1 text-slate-500">Complete history of all stock transactions</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="card p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Movements</p>
+                    <p class="mt-3 text-3xl font-bold text-slate-900">@Model.Stats.TotalMovements</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-100 to-brand-50 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Stock In</p>
+                    <p class="mt-3 text-3xl font-bold text-emerald-600">+@Model.Stats.TotalIn.ToString("N0")</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 16V4m0 0L3 8m4-4l4 4"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Stock Out</p>
+                    <p class="mt-3 text-3xl font-bold text-red-600">-@Model.Stats.TotalOut.ToString("N0")</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pending Approval</p>
+                    <p class="mt-3 text-3xl font-bold @(Model.Stats.PendingCount > 0 ? "text-amber-600" : "text-slate-900")">@Model.Stats.PendingCount</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br @(Model.Stats.PendingCount > 0 ? "from-amber-100 to-amber-50" : "from-slate-100 to-slate-50") flex items-center justify-center">
+                    <svg class="w-6 h-6 @(Model.Stats.PendingCount > 0 ? "text-amber-600" : "text-slate-400")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card p-4">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="w-40">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Movement Type</label>
+                <select name="Type" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    <option value="">All Types</option>
+                    <option value="In" selected="@(Model.Type == KasahQMS.Domain.Enums.StockMovementType.In)">Stock In</option>
+                    <option value="Out" selected="@(Model.Type == KasahQMS.Domain.Enums.StockMovementType.Out)">Stock Out</option>
+                    <option value="Transfer" selected="@(Model.Type == KasahQMS.Domain.Enums.StockMovementType.Transfer)">Transfer</option>
+                    <option value="Adjustment" selected="@(Model.Type == KasahQMS.Domain.Enums.StockMovementType.Adjustment)">Adjustment</option>
+                </select>
+            </div>
+            <div class="w-40">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <select name="Status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    <option value="">All Statuses</option>
+                    <option value="Approved" selected="@(Model.Status == KasahQMS.Domain.Enums.StockMovementStatus.Approved)">Approved</option>
+                    <option value="Pending" selected="@(Model.Status == KasahQMS.Domain.Enums.StockMovementStatus.Pending)">Pending</option>
+                    <option value="Rejected" selected="@(Model.Status == KasahQMS.Domain.Enums.StockMovementStatus.Rejected)">Rejected</option>
+                </select>
+            </div>
+            <div class="w-40">
+                <label class="block text-sm font-medium text-slate-700 mb-1">From Date</label>
+                <input type="date" name="FromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            </div>
+            <div class="w-40">
+                <label class="block text-sm font-medium text-slate-700 mb-1">To Date</label>
+                <input type="date" name="ToDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            </div>
+            <button type="submit"
+                    class="px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors">
+                Filter
+            </button>
+            <a href="/Stock/Movements" class="px-4 py-2 text-slate-600 font-medium hover:text-slate-800">
+                Clear
+            </a>
+        </form>
+    </div>
+
+    <!-- Movements Table -->
+    <div class="card overflow-hidden">
+        @if (Model.Movements.Any())
+        {
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Movement</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Item</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Quantity</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">By</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-100">
+                    @foreach (var movement in Model.Movements)
+                    {
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-slate-900">@movement.MovementNumber</div>
+                                <div class="text-xs text-slate-500 max-w-[200px] truncate">@movement.Reason</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-slate-900">@movement.ItemSKU</div>
+                                <div class="text-xs text-slate-500">@movement.ItemName</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @movement.TypeClass">
+                                    @movement.Type
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="text-sm font-medium @(movement.Type == "In" ? "text-emerald-600" : movement.Type == "Out" ? "text-red-600" : "text-slate-900")">
+                                    @(movement.Type == "In" ? "+" : movement.Type == "Out" ? "-" : "")@movement.Quantity.ToString("N2")
+                                </span>
+                                <span class="text-xs text-slate-500">@movement.Unit</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if (!string.IsNullOrEmpty(movement.FromLocation) && !string.IsNullOrEmpty(movement.ToLocation))
+                                {
+                                    <div class="text-xs text-slate-600">
+                                        @movement.FromLocation <span class="text-slate-400">→</span> @movement.ToLocation
+                                    </div>
+                                }
+                                else if (!string.IsNullOrEmpty(movement.ToLocation))
+                                {
+                                    <div class="text-xs text-slate-600">→ @movement.ToLocation</div>
+                                }
+                                else if (!string.IsNullOrEmpty(movement.FromLocation))
+                                {
+                                    <div class="text-xs text-slate-600">@movement.FromLocation →</div>
+                                }
+                                else
+                                {
+                                    <span class="text-xs text-slate-400">-</span>
+                                }
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @movement.StatusClass">
+                                    @movement.Status
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-slate-900">@movement.InitiatedBy</div>
+                                @if (!string.IsNullOrEmpty(movement.ApprovedBy) && movement.ApprovedBy != movement.InitiatedBy)
+                                {
+                                    <div class="text-xs text-slate-500">Approved: @movement.ApprovedBy</div>
+                                }
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-500">
+                                @movement.CreatedAt.ToString("MMM dd, HH:mm")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="text-center py-12">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-slate-900 mb-1">No movements found</h3>
+                <p class="text-sm text-slate-500">Stock movements will appear here once recorded.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Audit Trail Notice -->
+    <div class="p-4 rounded-xl bg-blue-50 border border-blue-200">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <div>
+                <h4 class="text-sm font-medium text-blue-800">Immutable Audit Trail</h4>
+                <p class="text-xs text-blue-700 mt-1">Stock movement history cannot be modified or deleted. All changes are permanently recorded for compliance and audit purposes.</p>
+            </div>
+        </div>
+    </div>
+</div>

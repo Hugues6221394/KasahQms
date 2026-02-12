@@ -1,0 +1,131 @@
+@page
+@model KasahQMS.Web.Pages.Capa.CreateModel
+@{
+    ViewData["Title"] = "Initiate CAPA";
+}
+
+<div class="mx-auto max-w-2xl space-y-6">
+    <nav class="flex items-center gap-2 text-sm text-slate-500">
+        <a href="/Capa" class="hover:text-slate-900">CAPA</a>
+        <span>/</span>
+        <span class="text-slate-700">Initiate</span>
+    </nav>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h1 class="text-xl font-bold text-slate-900 mb-2">Initiate CAPA</h1>
+        <p class="text-sm text-slate-500 mb-6">Create a new Corrective or Preventive Action to address quality issues.</p>
+
+        @if (!Model.CanCreate)
+        {
+            <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
+                @(Model.ErrorMessage ?? "You do not have permission to create CAPAs.")
+            </div>
+            <a href="/Capa" class="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50">
+                Back to CAPA List
+            </a>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    @Model.ErrorMessage
+                </div>
+            }
+
+            <form method="post" class="space-y-4">
+                @Html.AntiForgeryToken()
+
+                <div>
+                    <label for="title" class="block text-sm font-medium text-slate-700 mb-1">Title <span class="text-red-500">*</span></label>
+                    <input type="text" id="title" name="Title" asp-for="Title" required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                        placeholder="Brief description of the issue">
+                    <span asp-validation-for="Title" class="text-sm text-red-500"></span>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <textarea id="description" name="Description" asp-for="Description" rows="4"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                        placeholder="Detailed description of the problem and its impact..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="capaType" class="block text-sm font-medium text-slate-700 mb-1">CAPA Type <span class="text-red-500">*</span></label>
+                        <select id="capaType" name="CapaType" asp-for="CapaType"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="Corrective">Corrective Action</option>
+                            <option value="Preventive">Preventive Action</option>
+                            <option value="Both">Both (Corrective & Preventive)</option>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">Corrective: Fix existing problem. Preventive: Prevent potential problem.</p>
+                    </div>
+                    <div>
+                        <label for="priority" class="block text-sm font-medium text-slate-700 mb-1">Priority <span class="text-red-500">*</span></label>
+                        <select id="priority" name="Priority" asp-for="Priority"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="ownerId" class="block text-sm font-medium text-slate-700 mb-1">Assign Owner</label>
+                        <select id="ownerId" name="OwnerId" asp-for="OwnerId"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">— Select Owner —</option>
+                            @foreach (var u in Model.Users)
+                            {
+                                <option value="@u.Id">@u.Name — @u.Department</option>
+                            }
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">Person responsible for resolving this CAPA</p>
+                    </div>
+                    <div>
+                        <label for="targetDate" class="block text-sm font-medium text-slate-700 mb-1">Target Completion Date</label>
+                        <input type="date" id="targetDate" name="TargetCompletionDate" asp-for="TargetCompletionDate"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    </div>
+                </div>
+
+                @if (Model.Audits.Any())
+                {
+                    <div>
+                        <label for="linkedAudit" class="block text-sm font-medium text-slate-700 mb-1">Link to Audit (Optional)</label>
+                        <select id="linkedAudit" name="LinkedAuditId" asp-for="LinkedAuditId"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">— None —</option>
+                            @foreach (var a in Model.Audits)
+                            {
+                                <option value="@a.Id">@a.Number — @a.Title</option>
+                            }
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">If this CAPA originated from an audit finding</p>
+                    </div>
+                }
+
+                <div>
+                    <label for="immediateActions" class="block text-sm font-medium text-slate-700 mb-1">Immediate Actions Taken</label>
+                    <textarea id="immediateActions" name="ImmediateActions" asp-for="ImmediateActions" rows="3"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                        placeholder="Document any immediate containment actions already taken..."></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                        Initiate CAPA
+                    </button>
+                    <a href="/Capa" class="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        }
+    </div>
+</div>

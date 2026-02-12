@@ -1,0 +1,156 @@
+@page
+@model KasahQMS.Web.Pages.Templates.CreateModel
+@{
+    ViewData["Title"] = "Create Template";
+}
+
+<div class="mx-auto max-w-3xl space-y-6">
+    <nav class="flex items-center gap-2 text-sm text-slate-500">
+        <a href="/Templates" class="hover:text-slate-900">Templates</a>
+        <span>/</span>
+        <span class="text-slate-700">Create</span>
+    </nav>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h1 class="text-xl font-bold text-slate-900 mb-2">Create Document Template</h1>
+        <p class="text-sm text-slate-500 mb-6">Create a template document that authorized departments can use to create new documents.</p>
+
+        @if (!Model.CanCreate)
+        {
+            <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
+                @(Model.ErrorMessage ?? "You do not have permission to create templates.")
+            </div>
+            <a href="/Templates" class="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50">
+                Back to Templates
+            </a>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    @Model.ErrorMessage
+                </div>
+            }
+
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                @Html.AntiForgeryToken()
+
+                <div>
+                    <label for="title" class="block text-sm font-medium text-slate-700 mb-1">Template Title <span class="text-red-500">*</span></label>
+                    <input type="text" id="title" asp-for="Title" required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                        placeholder="e.g., Tender Requisition Form">
+                    <span asp-validation-for="Title" class="text-sm text-red-500"></span>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <textarea id="description" asp-for="Description" rows="3"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                        placeholder="Describe what this template is used for..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="documentType" class="block text-sm font-medium text-slate-700 mb-1">Document Type</label>
+                        <select id="documentType" asp-for="DocumentTypeId"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">— Select Type —</option>
+                            @foreach (var type in Model.DocumentTypes)
+                            {
+                                <option value="@type.Id">@type.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                        <select id="category" asp-for="CategoryId"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">— Select Category —</option>
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Authorized Departments <span class="text-red-500">*</span></label>
+                    <p class="text-xs text-slate-500 mb-3">Select which departments can access and use this template. Leave empty to allow all departments.</p>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        @foreach (var dept in Model.Departments)
+                        {
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="AuthorizedDepartments" value="@dept.Id" 
+                                    class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                <span class="text-sm text-slate-700">@dept.Name</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <div>
+                    <label for="content" class="block text-sm font-medium text-slate-700 mb-1">Template Content (Editable by users)</label>
+                    <textarea id="content" asp-for="Content" rows="10"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 font-mono text-sm"
+                        placeholder="Enter the template content here. Users will be able to edit this when creating documents from this template..."></textarea>
+                    <p class="mt-1 text-xs text-slate-500">This content will be copied when users create documents from this template.</p>
+                </div>
+
+                <div>
+                    <label for="templateFile" class="block text-sm font-medium text-slate-700 mb-1">Upload Template File (Optional)</label>
+                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-lg hover:border-brand-400 transition-colors">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <div class="flex text-sm text-slate-600">
+                                <label for="templateFile" class="relative cursor-pointer rounded-md font-medium text-brand-600 hover:text-brand-500">
+                                    <span>Upload a file</span>
+                                    <input id="templateFile" name="TemplateFile" type="file" class="sr-only"
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf">
+                                </label>
+                                <p class="pl-1">or drag and drop</p>
+                            </div>
+                            <p class="text-xs text-slate-500">PDF, Word, Excel, PowerPoint up to 10MB</p>
+                        </div>
+                    </div>
+                    <div id="file-preview" class="mt-2 hidden p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <span id="file-name" class="text-sm text-slate-700"></span>
+                            <button type="button" onclick="clearFile()" class="text-red-500 hover:text-red-700 text-sm">Remove</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-slate-200">
+                    <button type="submit" class="px-6 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                        Create Template
+                    </button>
+                    <a href="/Templates" class="px-6 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('templateFile').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (file) {
+                document.getElementById('file-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                document.getElementById('file-preview').classList.remove('hidden');
+            }
+        });
+        
+        function clearFile() {
+            document.getElementById('templateFile').value = '';
+            document.getElementById('file-preview').classList.add('hidden');
+        }
+    </script>
+}

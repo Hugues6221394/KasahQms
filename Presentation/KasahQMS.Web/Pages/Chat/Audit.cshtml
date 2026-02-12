@@ -1,0 +1,235 @@
+@page
+@model KasahQMS.Web.Pages.Chat.AuditModel
+@{
+    ViewData["Title"] = "Chat Audit";
+}
+
+@functions {
+    string FormatDateTime(DateTime? dt)
+    {
+        if (!dt.HasValue) return "—";
+        return dt.Value.ToString("MMM dd, yyyy HH:mm");
+    }
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Chat Audit</h1>
+            <p class="text-sm text-slate-500">Read-only access to all chat conversations for compliance review</p>
+        </div>
+        @if (Model.IsAuditor)
+        {
+            <div class="px-3 py-1.5 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                Read-Only Mode
+            </div>
+        }
+    </div>
+
+    @if (!Model.HasAccess)
+    {
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+            <svg class="w-16 h-16 text-red-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-slate-700 mb-2">Access Restricted</h2>
+            <p class="text-slate-500">@Model.ErrorMessage</p>
+        </div>
+    }
+    else
+    {
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-brand-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500">Total Threads</p>
+                        <p class="text-2xl font-bold text-slate-900">@Model.TotalThreads</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500">Total Messages</p>
+                        <p class="text-2xl font-bold text-slate-900">@Model.TotalMessages</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500">Active Users</p>
+                        <p class="text-2xl font-bold text-slate-900">@Model.TotalUsers</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <form method="get" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+            <div class="flex flex-wrap items-end gap-4">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
+                    <input type="text" name="SearchTerm" value="@Model.SearchTerm" placeholder="Search by name..." 
+                           class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Date From</label>
+                    <input type="date" name="DateFrom" value="@Model.DateFrom" 
+                           class="rounded-lg border border-slate-300 px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Date To</label>
+                    <input type="date" name="DateTo" value="@Model.DateTo" 
+                           class="rounded-lg border border-slate-300 px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">
+                    Filter
+                </button>
+                <a href="/Chat/Audit" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                    Clear
+                </a>
+            </div>
+        </form>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[500px]">
+            <!-- Thread List -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="px-4 py-3 border-b border-slate-200">
+                    <h2 class="font-semibold text-slate-800">Conversations (@Model.Threads.Count)</h2>
+                </div>
+                <div class="flex-1 overflow-y-auto">
+                    @if (Model.Threads.Any())
+                    {
+                        @foreach (var thread in Model.Threads)
+                        {
+                            var isSelected = Model.SelectedThreadId == thread.Id;
+                            <a href="?SelectedThreadId=@thread.Id@(!string.IsNullOrEmpty(Model.SearchTerm) ? "&SearchTerm=" + Model.SearchTerm : "")@(!string.IsNullOrEmpty(Model.DateFrom) ? "&DateFrom=" + Model.DateFrom : "")@(!string.IsNullOrEmpty(Model.DateTo) ? "&DateTo=" + Model.DateTo : "")" 
+                               class="block px-4 py-3 border-b border-slate-100 hover:bg-slate-50 @(isSelected ? "bg-brand-50 border-l-4 border-l-brand-500" : "")">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="font-medium text-slate-900 truncate">@thread.Name</span>
+                                    <span class="text-xs text-slate-400">@(thread.LastMessageTime.HasValue ? FormatDateTime(thread.LastMessageTime) : "—")</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-500 truncate">@thread.LastMessagePreview</span>
+                                    <span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">@thread.MessageCount msgs</span>
+                                </div>
+                                <div class="text-xs text-slate-400 mt-1">@thread.Type • @thread.Participants</div>
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <div class="p-8 text-center text-slate-500">
+                            <p>No conversations found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Message View -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                @if (Model.SelectedThread != null)
+                {
+                    <!-- Thread Header -->
+                    <div class="px-6 py-4 border-b border-slate-200">
+                        <h3 class="font-semibold text-slate-900">@Model.SelectedThread.Name</h3>
+                        <p class="text-sm text-slate-500">@Model.SelectedThread.Type • @string.Join(", ", Model.SelectedThread.Participants.Take(5))@(Model.SelectedThread.Participants.Count > 5 ? $" +{Model.SelectedThread.Participants.Count - 5} more" : "")</p>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 max-h-[600px]">
+                        @if (Model.SelectedThread.Messages.Any())
+                        {
+                            @foreach (var msg in Model.SelectedThread.Messages)
+                            {
+                                <div class="p-3 bg-slate-50 rounded-lg @(msg.IsDeleted ? "opacity-50" : "")">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-medium text-sm text-slate-900">@msg.SenderName</span>
+                                        <span class="text-xs text-slate-400">
+                                            @FormatDateTime(msg.CreatedAt)
+                                            @if (msg.EditedAt.HasValue)
+                                            {
+                                                <span class="italic">(edited)</span>
+                                            }
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-slate-700 whitespace-pre-wrap">@(msg.IsDeleted ? "[Message deleted]" : msg.Content)</p>
+                                    @if (!string.IsNullOrEmpty(msg.AttachmentName))
+                                    {
+                                        <div class="mt-2 flex items-center gap-2 text-xs text-brand-600">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                            @msg.AttachmentName
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center text-slate-500 py-8">
+                                <p>No messages in selected date range.</p>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Export -->
+                    <div class="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                        <span class="text-sm text-slate-500">@Model.SelectedThread.Messages.Count messages</span>
+                        <button type="button" onclick="exportMessages()" class="px-3 py-1.5 text-sm text-brand-600 hover:bg-brand-50 rounded-lg flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Export
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="flex-1 flex items-center justify-center">
+                        <div class="text-center text-slate-400">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                            <p class="text-lg font-medium">Select a conversation</p>
+                            <p class="text-sm">Choose a conversation from the list to view messages</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+<script>
+function exportMessages() {
+    var messages = document.querySelector('.overflow-y-auto.p-4');
+    if (!messages) return;
+    
+    var text = '';
+    messages.querySelectorAll('.p-3.bg-slate-50').forEach(function(msg) {
+        var sender = msg.querySelector('.font-medium')?.textContent || 'Unknown';
+        var time = msg.querySelector('.text-xs.text-slate-400')?.textContent || '';
+        var content = msg.querySelector('.whitespace-pre-wrap')?.textContent || '';
+        text += sender + ' (' + time.trim() + ')\n' + content + '\n\n';
+    });
+    
+    var blob = new Blob([text], { type: 'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'chat_audit_' + new Date().toISOString().slice(0, 10) + '.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+}

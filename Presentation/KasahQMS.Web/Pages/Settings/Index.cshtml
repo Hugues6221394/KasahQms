@@ -1,0 +1,74 @@
+@page
+@model KasahQMS.Web.Pages.Settings.IndexModel
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900">System settings</h1>
+        <p class="text-sm text-slate-500">Configure global policies, retention, and notification rules.</p>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900">Security policies</h2>
+            <div class="mt-4 space-y-4 text-sm text-slate-600">
+                <label class="flex items-center justify-between">
+                    <span>Require MFA for privileged users</span>
+                    <input type="checkbox" @(Model.RequireMfa ? "checked" : "") class="h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-300" />
+                </label>
+                <label class="flex items-center justify-between">
+                    <span>Enforce strong password policies</span>
+                    <input type="checkbox" @(Model.StrongPasswords ? "checked" : "") class="h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-300" />
+                </label>
+                <label class="flex items-center justify-between">
+                    <span>Lock account after @Model.LockoutThreshold failed logins</span>
+                    <input type="checkbox" @(Model.LockoutThreshold > 0 ? "checked" : "") class="h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-300" />
+                </label>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900">Notification routing</h2>
+            <div class="mt-4 space-y-4 text-sm text-slate-600">
+                <label class="block">
+                    CAPA escalation threshold (days)
+                    <input class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" value="@Model.CapaEscalationDays" />
+                </label>
+                <label class="block">
+                    Audit reminder cadence
+                    <select class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option value="Weekly">Weekly</option>
+                        <option value="Bi-weekly">Bi-weekly</option>
+                        <option value="Monthly">Monthly</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="card p-6 lg:col-span-2">
+            <h2 class="text-lg font-semibold text-slate-900">Retention & archival</h2>
+            <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm text-slate-600">
+                <label class="block">
+                    Audit log retention (years)
+                    <input class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" value="@Model.AuditLogRetentionYears" />
+                </label>
+                <label class="block">
+                    Document archive threshold (months)
+                    <input class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" value="@Model.DocumentArchiveMonths" />
+                </label>
+                <label class="block">
+                    Backup frequency
+                    <select class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option value="Daily">Daily</option>
+                        <option value="Weekly">Weekly</option>
+                        <option value="Monthly">Monthly</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+

@@ -1,0 +1,44 @@
+@page
+@model KasahQMS.Web.Pages.Departments.CreateModel
+@{
+    ViewData["Title"] = "Create Department";
+}
+
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900">Create department</h1>
+        <p class="text-sm text-slate-500">Create organizational units and define hierarchy.</p>
+    </div>
+
+    <form method="post" class="card p-6 space-y-6">
+        <div class="grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="form-label">Department name</label>
+                <input class="form-input" asp-for="Name" />
+            </div>
+            <div>
+                <label class="form-label">Code</label>
+                <input class="form-input" asp-for="Code" />
+            </div>
+            <div class="md:col-span-2">
+                <label class="form-label">Description</label>
+                <input class="form-input" asp-for="Description" />
+            </div>
+            <div>
+                <label class="form-label">Parent unit</label>
+                <select class="form-input form-select" asp-for="ParentId">
+                    <option value="">No parent</option>
+                    @foreach (var unit in Model.ParentUnits)
+                    {
+                        <option value="@unit.Id">@unit.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit" class="btn btn-primary">Create department</button>
+            <a href="/Departments" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

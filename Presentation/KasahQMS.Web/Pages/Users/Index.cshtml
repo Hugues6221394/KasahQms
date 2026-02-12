@@ -1,0 +1,64 @@
+@page
+@model KasahQMS.Web.Pages.Users.IndexModel
+@{
+    ViewData["Title"] = "Users";
+}
+
+<div class="space-y-8">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">User management</h1>
+            <p class="text-sm text-slate-500">Administer access, roles, and reporting lines.</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Import users</button>
+            <a href="/Users/Create" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Add user</a>
+        </div>
+    </div>
+
+    <div class="card p-6">
+        <div class="overflow-hidden rounded-lg border border-slate-200">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold">Name</th>
+                        <th class="px-4 py-3 text-left font-semibold">Role</th>
+                        <th class="px-4 py-3 text-left font-semibold">Department</th>
+                        <th class="px-4 py-3 text-left font-semibold">Status</th>
+                        <th class="px-4 py-3 text-right font-semibold">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="font-semibold text-slate-800">@user.Name</div>
+                                <div class="text-xs text-slate-500">@user.Email</div>
+                            </td>
+                            <td class="px-4 py-3 text-slate-600">@user.Role</td>
+                            <td class="px-4 py-3 text-slate-600">@user.Department</td>
+                            <td class="px-4 py-3">
+                                <span class="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">@user.Status</span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="/Users/Edit?id=@user.Id" class="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-brand-300">Edit</a>
+                                    
+                                    @if(Model.IsSystemAdmin) 
+                                    {
+                                        <form method="post" asp-page-handler="Delete" asp-route-id="@user.Id" onsubmit="return confirm('Are you sure you want to deactivate this user? This action cannot be undone immediately.');" class="inline-block">
+                                            <button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 hover:border-red-300">Delete</button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+

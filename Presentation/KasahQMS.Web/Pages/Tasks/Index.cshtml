@@ -1,0 +1,166 @@
+@page
+@model KasahQMS.Web.Pages.Tasks.IndexModel
+@{
+    ViewData["Title"] = "Tasks";
+}
+
+<div class="space-y-6">
+    @if (Model.UserRoleContext == "Auditor")
+    {
+        <!-- Read-Only Banner -->
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-amber-900">Auditor Read-Only Mode</h3>
+                    <p class="text-sm text-amber-700">You have view-only access to all tasks. You cannot create, modify, or delete any records.</p>
+                </div>
+            </div>
+        </div>
+    }
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">Tasks</h1>
+            <p class="text-sm text-slate-500">
+                @if (Model.UserRoleContext == "Staff")
+                {
+                    <text>Your assigned tasks and deadlines.</text>
+                }
+                else if (Model.UserRoleContext == "Manager")
+                {
+                    <text>Tasks for you and your team members.</text>
+                }
+                else if (Model.UserRoleContext == "Auditor")
+                {
+                    <text>Task overview for audit purposes (read-only).</text>
+                }
+                else
+                {
+                    <text>Track assignments and deadlines across teams.</text>
+                }
+            </p>
+        </div>
+        @if (Model.CanCreateTask)
+        {
+            <a href="/Tasks/Create" class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                New Task
+            </a>
+        }
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">Open</div>
+                <div class="text-2xl font-semibold text-slate-900">@Model.OpenCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">O</div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">In Progress</div>
+                <div class="text-2xl font-semibold text-slate-900">@Model.InProgressCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center">P</div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">Completed</div>
+                <div class="text-2xl font-semibold text-slate-900">@Model.CompletedCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">C</div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">Overdue</div>
+                <div class="text-2xl font-semibold text-slate-900">@Model.OverdueCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">!</div>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
+                <input type="search" name="SearchTerm" value="@Model.SearchTerm"
+                       placeholder="Search tasks..."
+                       class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200 focus:border-brand-400">
+            </div>
+            <div class="w-40">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <select name="Status" asp-for="Status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200 focus:border-brand-400">
+                    <option value="">All</option>
+                    <option value="Open">Open</option>
+                    <option value="InProgress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Overdue">Overdue</option>
+                </select>
+            </div>
+            <div class="w-40">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Priority</label>
+                <select name="Priority" asp-for="Priority" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200 focus:border-brand-400">
+                    <option value="">All</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                Filter
+            </button>
+        </form>
+    </div>
+
+    <div class="card overflow-hidden">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                <tr>
+                    <th class="px-6 py-4 text-left font-semibold">Task</th>
+                    <th class="px-6 py-4 text-left font-semibold">Priority</th>
+                    <th class="px-6 py-4 text-left font-semibold">Status</th>
+                    <th class="px-6 py-4 text-left font-semibold">Due</th>
+                    <th class="px-6 py-4 text-left font-semibold">Assignee</th>
+                    <th class="px-6 py-4 text-right font-semibold">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+                @if (!Model.Tasks.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-slate-500">No tasks found.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var task in Model.Tasks)
+                    {
+                        <tr>
+                            <td class="px-6 py-4">
+                                <div class="font-semibold text-slate-800">@task.Title</div>
+                                <div class="text-xs text-slate-500">@task.Number</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @task.PriorityClass">@task.Priority</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @task.StatusClass">@task.Status</span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">@task.DueDate</td>
+                            <td class="px-6 py-4 text-slate-600">@task.Assignee</td>
+                            <td class="px-6 py-4 text-right">
+                                <a asp-page="/Tasks/Details" asp-route-id="@task.Id" class="text-brand-600 hover:text-brand-700 text-sm font-medium">View</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+

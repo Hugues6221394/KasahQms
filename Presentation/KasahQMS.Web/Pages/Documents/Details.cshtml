@@ -1,0 +1,221 @@
+@page "{id:Guid}"
+@model KasahQMS.Web.Pages.Documents.DetailsModel
+@{
+    ViewData["Title"] = Model.Document?.Title ?? "Document Details";
+}
+
+@if (Model.Document == null)
+{
+    <div class="text-center py-12">
+        <h2 class="text-xl font-semibold text-slate-900">Document not found</h2>
+        <a href="/Documents" class="text-brand-600 hover:text-brand-700 mt-2 inline-block">Back to Documents</a>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(Model.ActionMessage))
+    {
+        <div class="mb-4 p-4 rounded-lg @(Model.ActionSuccess == true ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-red-50 border border-red-200 text-red-700")">
+            @Model.ActionMessage
+        </div>
+    }
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Header Actions -->
+        <div class="flex items-center justify-between no-print flex-wrap gap-3">
+            <div class="flex items-center gap-2 text-sm text-slate-500">
+                <a href="/Documents" class="hover:text-slate-900">Documents</a>
+                <span>/</span>
+                <span>@Model.Document.Number</span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    Print
+                </button>
+                @if (Model.CanEdit)
+                {
+                    <a asp-page="/Documents/Create" asp-route-templateId="@Model.Document.Id" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors">Edit (copy)</a>
+                }
+                @if (Model.CanSubmit)
+                {
+                    <form method="post" asp-page-handler="Submit" asp-route-id="@Model.Document.Id" class="inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 transition-colors">Submit for approval</button>
+                    </form>
+                }
+                @if (Model.CanApproveOrReject)
+                {
+                    <button type="button" onclick="document.getElementById('approve-modal').classList.remove('hidden')" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700">Approve</button>
+                    <button type="button" onclick="document.getElementById('reject-modal').classList.remove('hidden')" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700">Reject</button>
+                }
+                @if (Model.CanArchive)
+                {
+                    <button type="button" onclick="document.getElementById('archive-modal').classList.remove('hidden')" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-600 text-white font-medium rounded-lg hover:bg-slate-700">Archive</button>
+                }
+            </div>
+        </div>
+
+        <!-- Document View -->
+        <div class="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden print:shadow-none print:border-0">
+            <!-- Doc Header -->
+            <div class="px-8 py-6 border-b border-slate-200 bg-slate-50/50 print:bg-white print:border-b-2 print:px-0">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">@Model.Document.Title</h1>
+                        <p class="mt-1 text-sm text-slate-500">@Model.Document.Number • Version @Model.Document.Version.0</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 print:border print:border-green-800">
+                            @Model.Document.Status
+                        </span>
+                    </div>
+                </div>
+                <!-- Meta -->
+                <div class="mt-6 flex items-center gap-6 text-sm text-slate-500">
+                    <div>
+                        <span class="block text-xs uppercase tracking-wider font-semibold text-slate-400">Author</span>
+                        <span class="font-medium text-slate-900">@Model.Document.Author</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs uppercase tracking-wider font-semibold text-slate-400">Created</span>
+                        <span class="font-medium text-slate-900">@Model.Document.CreatedDate</span>
+                    </div>
+                    @if (Model.Document.Approver != null)
+                    {
+                        <div>
+                            <span class="block text-xs uppercase tracking-wider font-semibold text-slate-400">Approved By</span>
+                            <span class="font-medium text-slate-900">@Model.Document.Approver</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Doc Content -->
+            <div class="px-8 py-8 prose prose-slate max-w-none print:px-0">
+                @if (!string.IsNullOrEmpty(Model.Document.Content))
+                {
+                    @Html.Raw(Model.Document.Content)
+                }
+                else
+                {
+                    <p class="text-slate-400 italic">No content available.</p>
+                }
+            </div>
+        </div>
+        
+        <!-- Attachments -->
+        <div class="bg-slate-50 rounded-xl border border-slate-200 p-6 print:hidden">
+            <h3 class="text-sm font-semibold text-slate-900 mb-4">Attachments</h3>
+            <div class="space-y-3">
+                @if (!string.IsNullOrEmpty(Model.Document.FilePath))
+                {
+                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-brand-50 text-brand-600 rounded">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-900">@Model.Document.OriginalFileName</p>
+                                <p class="text-xs text-slate-500">Primary file</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="@Model.Document.FilePath" target="_blank" rel="noopener" class="px-3 py-1.5 text-brand-600 hover:bg-brand-50 rounded-lg text-sm font-medium">Preview</a>
+                            <a href="@Model.Document.FilePath" download="@Model.Document.OriginalFileName" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">Download</a>
+                        </div>
+                    </div>
+                }
+                @foreach (var a in Model.Attachments)
+                {
+                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-slate-100 text-slate-600 rounded">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                </svg>
+                            </div>
+                            <p class="text-sm font-medium text-slate-900">@a.FileName</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="@a.FilePath" target="_blank" rel="noopener" class="px-3 py-1.5 text-brand-600 hover:bg-brand-50 rounded-lg text-sm font-medium">Preview</a>
+                            <a href="@a.FilePath" download="@a.FileName" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">Download</a>
+                        </div>
+                    </div>
+                }
+            </div>
+            @if (string.IsNullOrEmpty(Model.Document.FilePath) && Model.Attachments.Count == 0)
+            {
+                <p class="text-sm text-slate-500 italic">No attachments.</p>
+            }
+        </div>
+    </div>
+
+    @if (Model.CanApproveOrReject)
+    {
+        <div id="approve-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('approve-modal').classList.add('hidden')"></div>
+                <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-3">Approve document</h3>
+                    <form method="post" asp-page-handler="Approve" asp-route-id="@Model.Document!.Id">
+                        @Html.AntiForgeryToken()
+                        <textarea asp-for="ApproveComments" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg mb-4" placeholder="Comments (optional)"></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50" onclick="document.getElementById('approve-modal').classList.add('hidden')">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Approve</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="reject-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('reject-modal').classList.add('hidden')"></div>
+                <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-3">Reject document</h3>
+                    <p class="text-sm text-slate-600 mb-3">Rejection reason is required.</p>
+                    <form method="post" asp-page-handler="Reject" asp-route-id="@Model.Document!.Id">
+                        @Html.AntiForgeryToken()
+                        <textarea asp-for="RejectReason" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg mb-4" placeholder="Reason for rejection" required></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50" onclick="document.getElementById('reject-modal').classList.add('hidden')">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Reject</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+    @if (Model.CanArchive)
+    {
+        <div id="archive-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('archive-modal').classList.add('hidden')"></div>
+                <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-3">Archive document</h3>
+                    <p class="text-sm text-slate-600 mb-3">Archived documents become read-only and are moved out of active workflows.</p>
+                    <form method="post" asp-page-handler="Archive" asp-route-id="@Model.Document!.Id">
+                        @Html.AntiForgeryToken()
+                        <textarea asp-for="ArchiveReason" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg mb-4" placeholder="Archive reason (optional)"></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50" onclick="document.getElementById('archive-modal').classList.add('hidden')">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">Archive</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <style>
+        @@media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .card, .shadow-sm { box-shadow: none !important; }
+        }
+    </style>
+}

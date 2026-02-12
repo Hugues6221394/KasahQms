@@ -1,0 +1,353 @@
+@page
+@model KasahQMS.Web.Pages.Dashboard.ManagerModel
+@{
+    ViewData["Title"] = "Manager Dashboard";
+}
+
+<div class="space-y-8 animate-fade-in">
+    <!-- Page Header -->
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Manager Dashboard</h1>
+            <p class="mt-1 text-slate-500">Welcome back, @Model.DisplayName. Overview of @Model.DepartmentName operations.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="/Documents/Create"
+               class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:shadow-xl">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                New Document
+            </a>
+            <a href="/Tasks?action=create"
+               class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 hover:border-brand-300 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Task
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        @foreach (var stat in Model.Stats)
+        {
+            <a href="@stat.Link" class="card p-6 card-hover cursor-pointer group block transition-all hover:shadow-lg hover:border-brand-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@stat.Title</p>
+                        <p class="mt-3 text-3xl font-bold text-slate-900 group-hover:text-brand-600 transition-colors">@stat.Value</p>
+                        <p class="mt-1 text-sm text-slate-500">@stat.Subtitle</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-100 to-brand-50 flex items-center justify-center group-hover:from-brand-600 group-hover:to-brand-700 transition-all">
+                        <svg class="w-6 h-6 text-brand-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+        }
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid gap-6 xl:grid-cols-2">
+        <!-- Document Trend Chart -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Department Documents</h2>
+                    <p class="text-sm text-slate-500">Monthly processing volume</p>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-lg bg-brand-50 text-brand-700 text-xs font-medium">
+                    Last 6 months
+                </span>
+            </div>
+            <div class="h-[280px]">
+                <canvas id="documentsTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Task Status Chart -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Team Task Status</h2>
+                    <p class="text-sm text-slate-500">Distribution by status</p>
+                </div>
+            </div>
+            <div class="h-[280px] flex items-center justify-center">
+                <canvas id="taskStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks and Approvals -->
+    <div class="grid gap-6 xl:grid-cols-3">
+        <!-- Team Tasks -->
+        <div class="card p-6 xl:col-span-2">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Team Tasks</h2>
+                    <p class="text-sm text-slate-500">Tasks assigned to you and your team</p>
+                </div>
+                <a href="/Tasks" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1">
+                    View all
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="space-y-3">
+                @if (Model.Tasks.Any())
+                {
+                    @foreach (var task in Model.Tasks)
+                    {
+                        <div class="flex items-center justify-between rounded-xl border border-slate-200 px-5 py-4 hover:bg-slate-50 hover:border-brand-200 transition-all group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-brand-100 flex items-center justify-center text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-800">@task.Title</div>
+                                    <div class="text-sm text-slate-500">Due @task.DueDate</div>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                @task.Status
+                            </span>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-8">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm font-medium text-slate-600">No pending tasks</p>
+                        <p class="text-xs text-slate-400 mt-1">You're all caught up!</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Approvals Queue -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Approvals Queue</h2>
+                    <p class="text-sm text-slate-500">Awaiting your review</p>
+                </div>
+                <a href="/Documents?status=pending" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">
+                    View
+                </a>
+            </div>
+            <div class="space-y-3">
+                @if (Model.PendingApprovals.Any())
+                {
+                    @foreach (var approval in Model.PendingApprovals)
+                    {
+                        <div class="rounded-xl border border-slate-200 px-4 py-4 hover:bg-slate-50 hover:border-brand-200 transition-all cursor-pointer">
+                            <div class="font-semibold text-slate-800 text-sm">@approval.Title</div>
+                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                <span>@approval.Owner</span>
+                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span class="text-amber-600 font-medium">@approval.Stage</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-8">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-brand-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm font-medium text-slate-600">No pending approvals</p>
+                        <p class="text-xs text-slate-400 mt-1">Everything is reviewed</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Subordinate Work and Activity -->
+    <div class="grid gap-6 xl:grid-cols-2">
+        <!-- Subordinate Work -->
+        @if (Model.SubordinateWork.Any())
+        {
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Subordinate Work</h2>
+                        <p class="text-sm text-slate-500">Recent work from your team</p>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    @foreach (var work in Model.SubordinateWork)
+                    {
+                        <div class="rounded-xl border border-slate-200 px-4 py-4 hover:bg-slate-50 hover:border-brand-200 transition-all">
+                            <div class="font-semibold text-slate-800 text-sm">@work.Title</div>
+                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                <span>@work.Owner</span>
+                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span class="text-blue-600 font-medium">@work.Status</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Recent Activity -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Recent Activity</h2>
+                    <p class="text-sm text-slate-500">Latest actions in your department</p>
+                </div>
+            </div>
+            <div class="space-y-1">
+                @if (Model.Activity.Any())
+                {
+                    @foreach (var activity in Model.Activity)
+                    {
+                        <div class="flex items-start justify-between py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 flex-shrink-0 mt-0.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-slate-800 text-sm">@activity.Title</div>
+                                    <div class="text-xs text-slate-500">@activity.Description</div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-slate-400 whitespace-nowrap ml-4">@activity.When</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-8">
+                        <p class="text-sm text-slate-500">No recent activity</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const docsTrend = @Html.Raw(Model.DocumentsTrendJson);
+        const taskStatus = @Html.Raw(Model.TaskStatusJson);
+
+        // Chart.js global configuration
+        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+        Chart.defaults.color = '#64748b';
+
+        // Documents Trend Chart
+        const docsCtx = document.getElementById('documentsTrendChart');
+        if (docsCtx) {
+            new Chart(docsCtx, {
+                type: 'line',
+                data: {
+                    labels: docsTrend.labels,
+                    datasets: [{
+                        label: 'Documents',
+                        data: docsTrend.values,
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2.5,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#059669',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e2e8f0',
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9', drawBorder: false },
+                            ticks: { padding: 10 }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { padding: 10 }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Task Status Chart
+        const taskCtx = document.getElementById('taskStatusChart');
+        if (taskCtx) {
+            new Chart(taskCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: taskStatus.labels,
+                    datasets: [{
+                        data: taskStatus.values,
+                        backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 16,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e2e8f0',
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}
+

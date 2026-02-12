@@ -1,0 +1,15 @@
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\KasahQMS.Application.csproj.AssemblyReference.cache
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\KasahQMS.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\KasahQMS.Application.AssemblyInfoInputs.cache
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\KasahQMS.Application.AssemblyInfo.cs
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\KasahQMS.Application.csproj.CoreCompileInputs.cache
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\bin\Debug\net8.0\KasahQMS.Application.deps.json
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\bin\Debug\net8.0\KasahQMS.Application.dll
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\bin\Debug\net8.0\KasahQMS.Application.pdb
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\bin\Debug\net8.0\KasahQMS.Domain.dll
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\bin\Debug\net8.0\KasahQMS.Domain.pdb
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\KasahQMS.E454FB26.Up2Date
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\KasahQMS.Application.dll
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\refint\KasahQMS.Application.dll
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\KasahQMS.Application.pdb
+D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\obj\Debug\net8.0\ref\KasahQMS.Application.dll

@@ -1,0 +1,77 @@
+@page
+@model KasahQMS.Web.Pages.Notifications.IndexModel
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="space-y-6" x-data="{ 
+    notifications: @Json.Serialize(Model.Notifications),
+    markAsRead(id) {
+        if (window.notificationsHub) {
+            window.notificationsHub.invoke('MarkAsRead', id);
+            this.notifications = this.notifications.map(n => n.id === id ? { ...n, isRead: true } : n);
+            if (window.qmsBadges) window.qmsBadges.decrementBadge('notifications');
+        }
+    }
+}">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Notifications</h1>
+            <p class="text-sm text-slate-500">Stay updated with latest activities.</p>
+        </div>
+        @if (Model.Notifications.Any(n => !n.IsRead))
+        {
+            <form method="post" asp-page-handler="MarkAllAsRead">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="text-sm font-medium text-brand-600 hover:text-brand-700 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Mark all as read
+                </button>
+            </form>
+        }
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <template x-if="notifications.length > 0">
+            <div class="divide-y divide-slate-100">
+                <template x-for="n in notifications" :key="n.id">
+                    <div class="p-4 hover:bg-slate-50 transition-colors flex items-start gap-4" 
+                         :class="n.isRead ? 'opacity-75' : 'bg-slate-50/50'"
+                         @@click="markAsRead(n.id)">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                             :class="n.type === 'Task' ? 'bg-indigo-100 text-indigo-600' : 
+                                    n.type === 'Document' ? 'bg-emerald-100 text-emerald-600' : 'bg-brand-100 text-brand-600'">
+                            <svg x-show="n.type === 'Task'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            <svg x-show="n.type === 'Document'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <svg x-show="n.type !== 'Task' && n.type !== 'Document'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <h3 class="text-sm font-semibold text-slate-900 truncate" x-text="n.title"></h3>
+                                <span class="text-xs text-slate-400 whitespace-nowrap" x-text="n.time"></span>
+                            </div>
+                            <p class="text-sm text-slate-600 mt-1" x-text="n.message"></p>
+                            <div class="mt-2 flex items-center gap-2" x-if="n.relatedEntityId">
+                                <a :href="n.relatedEntityType === 'Task' ? '/Tasks/Details/' + n.relatedEntityId : '/Documents/Details/' + n.relatedEntityId" 
+                                   class="text-xs font-medium text-brand-600 hover:text-brand-700 underline"
+                                   @@click.stop>
+                                    View Related <span x-text="n.relatedEntityType"></span>
+                                </a>
+                            </div>
+                        </div>
+                        <div x-show="!n.isRead" class="w-2 h-2 rounded-full bg-brand-500 mt-2"></div>
+                    </div>
+                </template>
+            </div>
+        </template>
+        <div x-show="notifications.length === 0" class="text-center py-20">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-slate-900">All caught up</h3>
+            <p class="text-slate-500 mt-1">You have no new notifications at the moment.</p>
+        </div>
+    </div>
+</div>

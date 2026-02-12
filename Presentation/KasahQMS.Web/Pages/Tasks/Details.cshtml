@@ -1,0 +1,353 @@
+@page "{id:Guid}"
+@model KasahQMS.Web.Pages.Tasks.DetailsModel
+@{
+    ViewData["Title"] = Model.TaskItem?.Title ?? "Task Details";
+}
+
+@if (Model.TaskItem == null)
+{
+    <div class="text-center py-12">
+        <h2 class="text-xl font-semibold text-slate-900">Task not found</h2>
+        <a href="/Tasks" class="text-brand-600 hover:text-brand-700 mt-2 inline-block">Back to Tasks</a>
+    </div>
+}
+else
+{
+    @if (Model.IsReadOnly)
+    {
+        <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            <span><strong>Read-Only Mode:</strong> You are viewing this task as an auditor. Modification is not permitted.</span>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ActionMessage))
+    {
+        <div class="mb-4 p-4 rounded-lg @(Model.ActionSuccess == true ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-red-50 border border-red-200 text-red-700")">
+            @Model.ActionMessage
+        </div>
+    }
+
+    <div class="max-w-5xl mx-auto space-y-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-2 text-sm text-slate-500">
+                <a href="/Tasks" class="hover:text-slate-900">Tasks</a>
+                <span>/</span>
+                <span class="text-slate-700 font-medium">@Model.TaskItem.Number</span>
+            </div>
+            <div class="flex items-center gap-2">
+                @if (Model.CanComplete)
+                {
+                    <button type="button" onclick="document.getElementById('complete-modal').classList.remove('hidden')" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Mark Complete
+                    </button>
+                }
+                @if (Model.CanMessage && Model.MessageOtherUserId.HasValue)
+                {
+                    <a href="/Chat/Direct?otherUserId=@Model.MessageOtherUserId&amp;taskId=@Model.TaskItem!.Id" class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white font-medium rounded-lg hover:bg-violet-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        Message
+                    </a>
+                }
+                @if (Model.CanApproveCompletion)
+                {
+                    <form method="post" asp-page-handler="Approve" asp-route-id="@Model.TaskItem!.Id" class="inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Approve
+                        </button>
+                    </form>
+                    <button type="button" onclick="document.getElementById('reject-modal').classList.remove('hidden')" class="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        Reject
+                    </button>
+                }
+                @if (Model.CanEditOrDelete)
+                {
+                    <a asp-page="./Edit" asp-route-id="@Model.TaskItem!.Id" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-600 text-white font-medium rounded-lg hover:bg-slate-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Edit
+                    </a>
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@Model.TaskItem!.Id" class="inline" onsubmit="return confirm('Are you sure you want to delete this task? This action cannot be undone.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Delete
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Task Details -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-900">@Model.TaskItem.Title</h1>
+                            <div class="mt-2 flex items-center gap-3 flex-wrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(Model.TaskItem.Priority == "High" || Model.TaskItem.Priority == "Critical" ? "bg-red-100 text-red-700" : Model.TaskItem.Priority == "Medium" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-700")">
+                                    @Model.TaskItem.Priority Priority
+                                </span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(Model.TaskItem.Status == "Completed" ? "bg-emerald-100 text-emerald-700" : Model.TaskItem.Status == "Overdue" ? "bg-red-100 text-red-700" : Model.TaskItem.Status == "InProgress" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-700")">
+                                    @Model.TaskItem.Status
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 border-t border-b border-slate-100 py-4">
+                        <div>
+                            <div class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Assigned To</div>
+                            <div class="mt-1 text-sm font-medium text-slate-900">@Model.TaskItem.Assignee</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Due Date</div>
+                            <div class="mt-1 text-sm font-medium text-slate-900">@(Model.TaskItem.DueDate ?? "No deadline")</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Created By</div>
+                            <div class="mt-1 text-sm font-medium text-slate-900">@Model.TaskItem.CreatorName</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Created At</div>
+                            <div class="mt-1 text-sm font-medium text-slate-900">@Model.TaskItem.CreatedAt</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-widest mb-2">Description</h3>
+                        <p class="text-slate-600">@(Model.TaskItem.Description ?? "No description provided.")</p>
+                    </div>
+
+                    @if (Model.TaskItem.Status == "AwaitingApproval" && !string.IsNullOrEmpty(Model.TaskItem.CompletionNotes))
+                    {
+                        <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            <h3 class="text-sm font-semibold text-indigo-800 mb-1">Items Submitted for Approval</h3>
+                            <p class="text-indigo-700 text-sm">@Model.TaskItem.CompletionNotes</p>
+                            @if (!string.IsNullOrEmpty(Model.TaskItem.CompletedAt))
+                            {
+                                <p class="text-xs text-indigo-600 mt-2">Submitted: @Model.TaskItem.CompletedAt</p>
+                            }
+                        </div>
+                    }
+
+                    @if (Model.TaskItem.Status == "Rejected" && !string.IsNullOrEmpty(Model.TaskItem.ReviewerRemarks))
+                    {
+                        <div class="p-4 bg-rose-50 border border-rose-200 rounded-lg">
+                            <h3 class="text-sm font-semibold text-rose-800 mb-1">Rejection Remarks</h3>
+                            <p class="text-rose-700 text-sm">@Model.TaskItem.ReviewerRemarks</p>
+                        </div>
+                    }
+
+                    @if (Model.TaskItem.Status == "Completed" && !string.IsNullOrEmpty(Model.TaskItem.CompletionNotes))
+                    {
+                        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                            <h3 class="text-sm font-semibold text-emerald-800 mb-1">Completion Notes</h3>
+                            <p class="text-emerald-700 text-sm">@Model.TaskItem.CompletionNotes</p>
+                            @if (!string.IsNullOrEmpty(Model.TaskItem.CompletedAt))
+                            {
+                                <p class="text-xs text-emerald-600 mt-2">Completed: @Model.TaskItem.CompletedAt</p>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Linked Document Preview -->
+                @if (Model.LinkedDocument != null)
+                {
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h2 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Linked Document
+                        </h2>
+                        <div class="border border-slate-200 rounded-lg p-4">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="text-xs text-slate-500">@Model.LinkedDocument.DocumentNumber</div>
+                                    <h3 class="font-medium text-slate-900">@Model.LinkedDocument.Title</h3>
+                                    <p class="text-sm text-slate-600 mt-1">@(Model.LinkedDocument.Description ?? "No description")</p>
+                                    <div class="flex items-center gap-3 mt-2">
+                                        <span class="text-xs text-slate-500">Type: @Model.LinkedDocument.DocumentType</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">@Model.LinkedDocument.Status</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <a href="/Documents/Details/@Model.LinkedDocument.Id" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        View
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(Model.LinkedDocument.FilePath))
+                                    {
+                                        <a href="@Model.LinkedDocument.FilePath" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                            Download
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Task Attachments -->
+                @if (Model.Attachments.Any())
+                {
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h2 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                            Attachments (@Model.Attachments.Count)
+                        </h2>
+                        <ul class="divide-y divide-slate-100">
+                            @foreach (var a in Model.Attachments)
+                            {
+                                <li class="py-3 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-slate-900">@a.FileName</div>
+                                            <div class="text-xs text-slate-500">@(a.FileType ?? "Unknown") • @((a.FileSizeBytes / 1024.0).ToString("F1")) KB</div>
+                                        </div>
+                                    </div>
+                                    <a href="@a.FilePath" target="_blank" class="text-brand-600 hover:text-brand-700 text-sm font-medium">Download</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar: Activity & Progress -->
+            <div class="space-y-6">
+                <!-- Add Activity (only for assignee) -->
+                @if (Model.CanAddActivity)
+                {
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h2 class="text-lg font-semibold text-slate-900 mb-4">Update Progress</h2>
+                        <form method="post" asp-page-handler="AddActivity" asp-route-id="@Model.TaskItem.Id">
+                            @Html.AntiForgeryToken()
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="activityNote" class="block text-sm font-medium text-slate-700 mb-1">What have you done?</label>
+                                    <textarea asp-for="ActivityNote" id="activityNote" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Describe your progress..."></textarea>
+                                </div>
+                                <div>
+                                    <label for="progressPercentage" class="block text-sm font-medium text-slate-700 mb-1">Progress % (optional)</label>
+                                    <input type="number" asp-for="ProgressPercentage" id="progressPercentage" min="0" max="100" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="e.g. 50">
+                                </div>
+                                <button type="submit" class="w-full px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                                    Add Update
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                }
+                @if (Model.IsAssignee && !Model.CanAddActivity && Model.TaskItem.Status == "Completed")
+                {
+                    <div class="bg-emerald-50 rounded-xl border border-emerald-200 p-4">
+                        <p class="text-sm text-emerald-700">This task has been completed. No further updates can be added.</p>
+                    </div>
+                }
+
+                <!-- Supervisor View -->
+                @if (Model.IsSupervisor)
+                {
+                    <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-4">
+                        <div class="flex items-center gap-2 text-indigo-800 font-semibold text-sm mb-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            Supervisor View
+                        </div>
+                        <p class="text-xs text-indigo-700">You created this task. You can track the assignee's progress below.</p>
+                    </div>
+                }
+
+                <!-- Activity History -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Activity History</h2>
+                    @if (Model.Activities.Any())
+                    {
+                        <div class="space-y-4 max-h-96 overflow-y-auto">
+                            @foreach (var activity in Model.Activities)
+                            {
+                                <div class="border-l-2 border-brand-200 pl-4 py-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-slate-900">@activity.UserName</span>
+                                        <span class="text-xs text-slate-500">@activity.CreatedAt</span>
+                                    </div>
+                                    <div class="text-sm text-slate-600 mt-1">@activity.Description</div>
+                                    @if (activity.ProgressPercentage.HasValue)
+                                    {
+                                        <div class="mt-2">
+                                            <div class="flex items-center gap-2">
+                                                <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                                    <div class="h-full bg-brand-500 rounded-full" style="width: @(activity.ProgressPercentage)%"></div>
+                                                </div>
+                                                <span class="text-xs font-medium text-slate-700">@(activity.ProgressPercentage)%</span>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(activity.AttachmentName))
+                                    {
+                                        <div class="mt-1 text-xs text-brand-600">📎 @activity.AttachmentName</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-sm text-slate-500">No activity recorded yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.CanComplete)
+    {
+        <div id="complete-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('complete-modal').classList.add('hidden')"></div>
+                <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-3">Mark Task Complete</h3>
+                    <form method="post" asp-page-handler="Complete" asp-route-id="@Model.TaskItem!.Id">
+                        @Html.AntiForgeryToken()
+                        <textarea asp-for="CompletionNotes" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg mb-4" placeholder="Describe what was accomplished..."></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50" onclick="document.getElementById('complete-modal').classList.add('hidden')">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Complete Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.CanApproveCompletion)
+    {
+        <div id="reject-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('reject-modal').classList.add('hidden')"></div>
+                <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Reject Submission</h3>
+                    <p class="text-sm text-slate-500 mb-4">Please provide a reason for rejection. This will be sent back to the assignee.</p>
+                    <form method="post" asp-page-handler="Reject" asp-route-id="@Model.TaskItem!.Id">
+                        @Html.AntiForgeryToken()
+                        <textarea name="remarks" rows="3" required class="w-full px-3 py-2 border border-slate-300 rounded-lg mb-4" placeholder="Missing features, requires clarification, etc..."></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50" onclick="document.getElementById('reject-modal').classList.add('hidden')">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700">Reject Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+

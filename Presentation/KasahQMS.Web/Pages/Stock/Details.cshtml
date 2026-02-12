@@ -1,0 +1,283 @@
+@page "{id:guid}"
+@model KasahQMS.Web.Pages.Stock.DetailsModel
+@{
+    ViewData["Title"] = Model.StockItem != null ? $"Stock: {Model.StockItem.SKU}" : "Stock Details";
+}
+
+<div class="space-y-6 animate-fade-in">
+    @if (!string.IsNullOrEmpty(Model.Message))
+    {
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm text-emerald-700">@Model.Message</p>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="card p-6 border-red-200 bg-red-50">
+            <p class="text-sm text-red-700">@Model.ErrorMessage</p>
+            <a href="/Stock" class="mt-4 inline-flex items-center text-sm font-medium text-red-700 hover:text-red-800">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Stock
+            </a>
+        </div>
+    }
+    else if (Model.StockItem != null)
+    {
+        <!-- Page Header -->
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex items-start gap-4">
+                <a href="/Stock" class="mt-1 p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-brand-600 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </a>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium text-slate-500">@Model.StockItem.SKU</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium @Model.StockItem.StatusClass">
+                            @Model.StockItem.Status
+                        </span>
+                        @if (Model.StockItem.IsBelowMinimum)
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                Below Minimum
+                            </span>
+                        }
+                        else if (Model.StockItem.IsAtReorderPoint)
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                Reorder Alert
+                            </span>
+                        }
+                    </div>
+                    <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight mt-1">@Model.StockItem.Name</h1>
+                    <p class="mt-1 text-slate-500">@Model.StockItem.Category @(Model.StockItem.IsService ? "(Service)" : "")</p>
+                </div>
+            </div>
+            @if (Model.CanManageStock)
+            {
+                <div class="flex flex-wrap gap-3">
+                    <a href="/Stock/Movement/@Model.StockItem.Id"
+                       class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                        </svg>
+                        Record Movement
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-3">
+            <!-- Main Content -->
+            <div class="xl:col-span-2 space-y-6">
+                <!-- Stock Levels -->
+                <div class="card p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Stock Levels</h2>
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        <div class="p-4 rounded-xl bg-slate-50">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Balance</p>
+                            <p class="mt-2 text-2xl font-bold @(Model.StockItem.IsBelowMinimum ? "text-red-600" : "text-slate-900")">
+                                @Model.StockItem.Balance.ToString("N2")
+                            </p>
+                            <p class="text-sm text-slate-500">@Model.StockItem.UnitOfMeasure</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-amber-50">
+                            <p class="text-xs font-medium text-amber-600 uppercase tracking-wider">Reserved</p>
+                            <p class="mt-2 text-2xl font-bold text-amber-700">
+                                @Model.StockItem.Reserved.ToString("N2")
+                            </p>
+                            <p class="text-sm text-amber-600">For tenders/orders</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-emerald-50">
+                            <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider">Available</p>
+                            <p class="mt-2 text-2xl font-bold text-emerald-700">
+                                @Model.StockItem.Available.ToString("N2")
+                            </p>
+                            <p class="text-sm text-emerald-600">Ready to use</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Movements -->
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-slate-900">Recent Movements</h2>
+                        <a href="/Stock/Movements?itemId=@Model.StockItem.Id" class="text-sm font-medium text-brand-600 hover:text-brand-700">
+                            View all
+                        </a>
+                    </div>
+
+                    @if (Model.RecentMovements.Any())
+                    {
+                        <div class="space-y-3">
+                            @foreach (var movement in Model.RecentMovements)
+                            {
+                                <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-brand-200 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg @movement.TypeClass flex items-center justify-center">
+                                            @if (movement.Type == "In")
+                                            {
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4"/>
+                                                </svg>
+                                            }
+                                            else if (movement.Type == "Out")
+                                            {
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                                                </svg>
+                                            }
+                                            else
+                                            {
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                                </svg>
+                                            }
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-slate-900">
+                                                @movement.Type: @movement.Quantity.ToString("N2") @Model.StockItem.UnitOfMeasure
+                                            </p>
+                                            <p class="text-xs text-slate-500">@movement.Reason</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-medium @movement.StatusClass">
+                                            @movement.Status
+                                        </span>
+                                        <p class="text-xs text-slate-400 mt-1">@movement.CreatedAt.ToString("MMM dd, HH:mm")</p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-sm text-slate-500 text-center py-8">No movements recorded yet.</p>
+                    }
+                </div>
+
+                <!-- Active Reservations -->
+                @if (Model.ActiveReservations.Any())
+                {
+                    <div class="card p-6">
+                        <h2 class="text-lg font-semibold text-slate-900 mb-4">Active Reservations</h2>
+                        <div class="space-y-3">
+                            @foreach (var reservation in Model.ActiveReservations)
+                            {
+                                <div class="p-4 rounded-xl border border-amber-200 bg-amber-50">
+                                    <div class="flex items-start justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-amber-800">@reservation.ReservationNumber</p>
+                                            <p class="text-sm text-amber-700 mt-1">@reservation.Purpose</p>
+                                            @if (!string.IsNullOrEmpty(reservation.ExternalReference))
+                                            {
+                                                <p class="text-xs text-amber-600 mt-1">Ref: @reservation.ExternalReference</p>
+                                            }
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm font-bold text-amber-800">@reservation.Remaining.ToString("N2") remaining</p>
+                                            <p class="text-xs text-amber-600">of @reservation.Quantity.ToString("N2") reserved</p>
+                                            @if (reservation.ExpiresAt.HasValue)
+                                            {
+                                                <p class="text-xs text-amber-600 mt-1">Expires: @reservation.ExpiresAt.Value.ToString("MMM dd, yyyy")</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Item Details -->
+                <div class="card p-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-4">Item Details</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">SKU</span>
+                            <span class="text-slate-900 font-medium">@Model.StockItem.SKU</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Category</span>
+                            <span class="text-slate-900">@Model.StockItem.Category</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Unit</span>
+                            <span class="text-slate-900">@Model.StockItem.UnitOfMeasure</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Type</span>
+                            <span class="text-slate-900">@(Model.StockItem.IsService ? "Service" : "Physical")</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Track Inventory</span>
+                            <span class="text-slate-900">@(Model.StockItem.TrackInventory ? "Yes" : "No")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing -->
+                <div class="card p-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-4">Pricing</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Unit Cost</span>
+                            <span class="text-slate-900 font-medium">@Model.StockItem.UnitCost.ToString("N0") RWF</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Unit Price</span>
+                            <span class="text-slate-900 font-medium">@Model.StockItem.UnitPrice.ToString("N0") RWF</span>
+                        </div>
+                        <div class="pt-3 border-t border-slate-100">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Inventory Value</span>
+                                <span class="text-emerald-600 font-bold">@((Model.StockItem.Balance * Model.StockItem.UnitCost).ToString("N0")) RWF</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Levels -->
+                <div class="card p-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-4">Stock Thresholds</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Minimum Level</span>
+                            <span class="text-slate-900">@Model.StockItem.MinimumLevel.ToString("N2")</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Reorder Point</span>
+                            <span class="text-slate-900">@Model.StockItem.ReorderPoint.ToString("N2")</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.StockItem.Description))
+                {
+                    <div class="card p-6">
+                        <h3 class="text-sm font-semibold text-slate-900 mb-2">Description</h3>
+                        <p class="text-sm text-slate-600 whitespace-pre-line">@Model.StockItem.Description</p>
+                    </div>
+                }
+
+                <div class="card p-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Created</h3>
+                    <p class="text-sm text-slate-600">@Model.StockItem.CreatedAt.ToString("MMMM dd, yyyy")</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>

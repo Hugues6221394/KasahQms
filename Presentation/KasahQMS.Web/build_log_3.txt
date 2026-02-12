@@ -1,0 +1,23 @@
+﻿  Determining projects to restore...
+D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure\KasahQMS.Infrastructure.csproj : warning NU1903: Package 'Microsoft.Extensions.Caching.Memory' 8.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-qj66-m88j-hmgj [D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\KasahQMS.Web.csproj]
+  All projects are up-to-date for restore.
+D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure\KasahQMS.Infrastructure.csproj : warning NU1903: Package 'Microsoft.Extensions.Caching.Memory' 8.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-qj66-m88j-hmgj
+  KasahQMS.Domain -> D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\bin\Debug\net8.0\KasahQMS.Domain.dll
+  KasahQMS.Application -> D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Application\bin\Debug\net8.0\KasahQMS.Application.dll
+  KasahQMS.Infrastructure.Persistence -> D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\bin\Debug\net8.0\KasahQMS.Infrastructure.Persistence.dll
+  KasahQMS.Infrastructure -> D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure\bin\Debug\net8.0\KasahQMS.Infrastructure.dll
+D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\Pages\Documents\Details.cshtml.cs(24,29): error CS1061: 'Document' does not contain a definition for 'CreatedBy' and no accessible extension method 'CreatedBy' accepting a first argument of type 'Document' could be found (are you missing a using directive or an assembly reference?) [D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\KasahQMS.Web.csproj]
+D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\Pages\Reports\PrintView.cshtml.cs(31,80): error CS1061: 'Audit' does not contain a definition for 'StartDate' and no accessible extension method 'StartDate' accepting a first argument of type 'Audit' could be found (are you missing a using directive or an assembly reference?) [D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\KasahQMS.Web.csproj]
+D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\Pages\Reports\PrintView.cshtml.cs(31,113): error CS1061: 'Audit' does not contain a definition for 'EndDate' and no accessible extension method 'EndDate' accepting a first argument of type 'Audit' could be found (are you missing a using directive or an assembly reference?) [D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\KasahQMS.Web.csproj]
+
+Build FAILED.
+
+D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure\KasahQMS.Infrastructure.csproj : warning NU1903: Package 'Microsoft.Extensions.Caching.Memory' 8.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-qj66-m88j-hmgj [D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\KasahQMS.Web.csproj]
+D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure\KasahQMS.Infrastructure.csproj : warning NU1903: Package 'Microsoft.Extensions.Caching.Memory' 8.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-qj66-m88j-hmgj
+D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\Pages\Documents\Details.cshtml.cs(24,29): error CS1061: 'Document' does not contain a definition for 'CreatedBy' and no accessible extension method 'CreatedBy' accepting a first argument of type 'Document' could be found (are you missing a using directive or an assembly reference?) [D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\KasahQMS.Web.csproj]
+D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\Pages\Reports\PrintView.cshtml.cs(31,80): error CS1061: 'Audit' does not contain a definition for 'StartDate' and no accessible extension method 'StartDate' accepting a first argument of type 'Audit' could be found (are you missing a using directive or an assembly reference?) [D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\KasahQMS.Web.csproj]
+D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\Pages\Reports\PrintView.cshtml.cs(31,113): error CS1061: 'Audit' does not contain a definition for 'EndDate' and no accessible extension method 'EndDate' accepting a first argument of type 'Audit' could be found (are you missing a using directive or an assembly reference?) [D:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\KasahQMS.Web.csproj]
+    2 Warning(s)
+    3 Error(s)
+
+Time Elapsed 00:00:03.85

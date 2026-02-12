@@ -1,0 +1,75 @@
+@page
+@model KasahQMS.Web.Pages.Users.CreateModel
+@{
+    ViewData["Title"] = "Create User";
+}
+
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900">Create user</h1>
+        <p class="text-sm text-slate-500">Assign roles, department, and reporting line.</p>
+    </div>
+
+    <form method="post" class="card p-6 space-y-6">
+        <div class="grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="form-label" for="firstName">First name</label>
+                <input id="firstName" class="form-input" asp-for="FirstName" />
+            </div>
+            <div>
+                <label class="form-label" for="lastName">Last name</label>
+                <input id="lastName" class="form-input" asp-for="LastName" />
+            </div>
+            <div>
+                <label class="form-label" for="email">Email</label>
+                <input id="email" class="form-input" asp-for="Email" />
+            </div>
+            <div>
+                <label class="form-label" for="jobTitle">Job title</label>
+                <input id="jobTitle" class="form-input" asp-for="JobTitle" />
+            </div>
+            <div>
+                <label class="form-label" for="password">Temporary password</label>
+                <input id="password" class="form-input" asp-for="Password" />
+            </div>
+            <div>
+                <label class="form-label" for="orgUnit">Organization unit</label>
+                <select id="orgUnit" class="form-input form-select" asp-for="OrganizationUnitId">
+                    <option value="">Select department</option>
+                    @foreach (var unit in Model.OrganizationUnits)
+                    {
+                        <option value="@unit.Id">@unit.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="form-label" for="manager">Direct manager</label>
+                <select id="manager" class="form-input form-select" asp-for="ManagerId">
+                    <option value="">No manager</option>
+                    @foreach (var manager in Model.Managers)
+                    {
+                        <option value="@manager.Id">@manager.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <div class="text-sm font-semibold text-slate-700">Assign roles</div>
+            <div class="mt-3 grid gap-2 md:grid-cols-2">
+                @foreach (var role in Model.Roles)
+                {
+                    <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
+                        <input type="checkbox" name="SelectedRoleIds" value="@role.Id" class="h-4 w-4 rounded border-slate-300 text-brand-600" />
+                        <span>@role.Name</span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit" class="btn btn-primary">Create user</button>
+            <a href="/Users" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

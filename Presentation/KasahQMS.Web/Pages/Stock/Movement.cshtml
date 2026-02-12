@@ -1,0 +1,284 @@
+@page "{id:guid?}"
+@model KasahQMS.Web.Pages.Stock.MovementModel
+@{
+    ViewData["Title"] = "Record Stock Movement";
+}
+
+<div class="space-y-6 animate-fade-in max-w-4xl mx-auto">
+    <!-- Page Header -->
+    <div class="flex items-start gap-4">
+        <a href="@(Model.Id.HasValue ? $"/Stock/Details/{Model.Id}" : "/Stock")" class="mt-1 p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-brand-600 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+        </a>
+        <div>
+            <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Record Stock Movement</h1>
+            <p class="mt-1 text-slate-500">
+                @if (!string.IsNullOrEmpty(Model.SelectedItemName))
+                {
+                    <span>@Model.SelectedItemName</span>
+                    <span class="text-slate-400">•</span>
+                    <span>Available: @Model.AvailableStock.ToString("N2")</span>
+                }
+                else
+                {
+                    <span>Create a stock in, out, transfer, or adjustment</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="p-4 rounded-xl bg-red-50 border border-red-200">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <p class="text-sm text-red-700">@Model.ErrorMessage</p>
+            </div>
+        </div>
+    }
+
+    @if (!Model.CanManageStock)
+    {
+        <div class="card p-6 border-amber-200 bg-amber-50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-amber-800">Access Restricted</h3>
+                    <p class="text-sm text-amber-700">Only TMD, Deputy, and Tender roles can record stock movements.</p>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <form method="post" class="space-y-6">
+            @Html.AntiForgeryToken()
+
+            <!-- Movement Type Selection -->
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Movement Type</h2>
+                <div class="grid gap-4 sm:grid-cols-4">
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="MovementType" value="In" class="peer sr-only" checked="@(Model.MovementType == KasahQMS.Domain.Enums.StockMovementType.In)">
+                        <div class="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 transition-all">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4"/>
+                                </svg>
+                            </div>
+                            <p class="font-semibold text-slate-900">Stock In</p>
+                            <p class="text-xs text-slate-500 mt-1">Receive inventory</p>
+                        </div>
+                    </label>
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="MovementType" value="Out" class="peer sr-only" checked="@(Model.MovementType == KasahQMS.Domain.Enums.StockMovementType.Out)">
+                        <div class="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-red-500 peer-checked:bg-red-50 transition-all">
+                            <div class="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center mb-3">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                                </svg>
+                            </div>
+                            <p class="font-semibold text-slate-900">Stock Out</p>
+                            <p class="text-xs text-slate-500 mt-1">Issue inventory</p>
+                        </div>
+                    </label>
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="MovementType" value="Transfer" class="peer sr-only" checked="@(Model.MovementType == KasahQMS.Domain.Enums.StockMovementType.Transfer)">
+                        <div class="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all">
+                            <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                </svg>
+                            </div>
+                            <p class="font-semibold text-slate-900">Transfer</p>
+                            <p class="text-xs text-slate-500 mt-1">Move between locations</p>
+                        </div>
+                    </label>
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="MovementType" value="Adjustment" class="peer sr-only" checked="@(Model.MovementType == KasahQMS.Domain.Enums.StockMovementType.Adjustment)">
+                        <div class="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 transition-all">
+                            <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-3">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                                </svg>
+                            </div>
+                            <p class="font-semibold text-slate-900">Adjustment</p>
+                            <p class="text-xs text-slate-500 mt-1">Correct inventory</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Movement Details -->
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Movement Details</h2>
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Stock Item <span class="text-red-500">*</span>
+                        </label>
+                        <select asp-for="StockItemId" asp-items="Model.StockItems"
+                                class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Select an item...</option>
+                        </select>
+                        <span asp-validation-for="StockItemId" class="text-sm text-red-600"></span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Quantity <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" asp-for="Quantity" step="0.01" min="0.01"
+                               class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                               placeholder="0.00">
+                        <span asp-validation-for="Quantity" class="text-sm text-red-600"></span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">External Reference</label>
+                        <input type="text" asp-for="ExternalReference"
+                               class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                               placeholder="PO number, invoice, etc.">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Selection -->
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Locations</h2>
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div id="fromLocationField">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            From Location <span class="text-red-500" id="fromRequired">*</span>
+                        </label>
+                        <select asp-for="FromLocationId" asp-items="Model.Locations"
+                                class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Select source location...</option>
+                        </select>
+                        <span asp-validation-for="FromLocationId" class="text-sm text-red-600"></span>
+                    </div>
+                    <div id="toLocationField">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            To Location <span class="text-red-500" id="toRequired">*</span>
+                        </label>
+                        <select asp-for="ToLocationId" asp-items="Model.Locations"
+                                class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Select destination location...</option>
+                        </select>
+                        <span asp-validation-for="ToLocationId" class="text-sm text-red-600"></span>
+                    </div>
+                </div>
+
+                <!-- Adjustment Type (only for adjustments) -->
+                <div id="adjustmentTypeField" class="mt-6 hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Adjustment Type</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2">
+                            <input type="radio" name="IsPositiveAdjustment" value="true" checked="@Model.IsPositiveAdjustment"
+                                   class="w-4 h-4 text-emerald-600 border-slate-300 focus:ring-emerald-500">
+                            <span class="text-sm text-slate-700">Positive (add to stock)</span>
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="radio" name="IsPositiveAdjustment" value="false" checked="@(!Model.IsPositiveAdjustment)"
+                                   class="w-4 h-4 text-red-600 border-slate-300 focus:ring-red-500">
+                            <span class="text-sm text-slate-700">Negative (remove from stock)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason and Notes -->
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Reason & Notes</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Reason <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" asp-for="Reason"
+                               class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                               placeholder="e.g., Purchase order received, Tender execution, Inventory correction">
+                        <span asp-validation-for="Reason" class="text-sm text-red-600"></span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Additional Notes</label>
+                        <textarea asp-for="Notes" rows="3"
+                                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                                  placeholder="Optional additional details..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3">
+                <a href="@(Model.Id.HasValue ? $"/Stock/Details/{Model.Id}" : "/Stock")" 
+                   class="px-4 py-2 text-slate-700 font-medium hover:text-slate-900 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25">
+                    Record Movement
+                </button>
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const typeRadios = document.querySelectorAll('input[name="MovementType"]');
+            const fromField = document.getElementById('fromLocationField');
+            const toField = document.getElementById('toLocationField');
+            const fromRequired = document.getElementById('fromRequired');
+            const toRequired = document.getElementById('toRequired');
+            const adjustmentField = document.getElementById('adjustmentTypeField');
+
+            function updateFields() {
+                const selected = document.querySelector('input[name="MovementType"]:checked').value;
+                
+                fromField.classList.remove('hidden');
+                toField.classList.remove('hidden');
+                adjustmentField.classList.add('hidden');
+                
+                switch(selected) {
+                    case 'In':
+                        fromField.classList.add('opacity-50');
+                        toField.classList.remove('opacity-50');
+                        fromRequired.classList.add('hidden');
+                        toRequired.classList.remove('hidden');
+                        break;
+                    case 'Out':
+                        fromField.classList.remove('opacity-50');
+                        toField.classList.add('opacity-50');
+                        fromRequired.classList.remove('hidden');
+                        toRequired.classList.add('hidden');
+                        break;
+                    case 'Transfer':
+                        fromField.classList.remove('opacity-50');
+                        toField.classList.remove('opacity-50');
+                        fromRequired.classList.remove('hidden');
+                        toRequired.classList.remove('hidden');
+                        break;
+                    case 'Adjustment':
+                        adjustmentField.classList.remove('hidden');
+                        fromField.classList.remove('opacity-50');
+                        toField.classList.add('opacity-50');
+                        fromRequired.classList.remove('hidden');
+                        toRequired.classList.add('hidden');
+                        break;
+                }
+            }
+
+            typeRadios.forEach(radio => radio.addEventListener('change', updateFields));
+            updateFields();
+        });
+    </script>
+}

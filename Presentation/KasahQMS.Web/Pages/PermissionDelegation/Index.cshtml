@@ -1,0 +1,240 @@
+@page
+@model KasahQMS.Web.Pages.PermissionDelegation.IndexModel
+@{
+    ViewData["Title"] = "Permission Delegation";
+}
+
+<div class="space-y-8 animate-fade-in">
+    <!-- Page Header -->
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Permission Delegation</h1>
+            <p class="mt-1 text-slate-500">Delegate permissions to your subordinates or view received delegations.</p>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="card p-4 bg-red-50 border-red-200">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm font-medium text-red-800">@Model.ErrorMessage</p>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="card p-4 bg-green-50 border-green-200">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm font-medium text-green-800">@Model.SuccessMessage</p>
+            </div>
+        </div>
+    }
+
+    <!-- Delegate Permission Form -->
+    @if (Model.Subordinates.Any() && Model.AvailablePermissions.Any())
+    {
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900 mb-6">Delegate Permission</h2>
+            <form method="post" asp-page-handler="Delegate">
+                <div class="grid gap-6 md:grid-cols-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Subordinate</label>
+                        <select asp-for="SelectedSubordinateId" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Select a subordinate...</option>
+                            @foreach (var subordinate in Model.Subordinates)
+                            {
+                                <option value="@subordinate.Id">@subordinate.Name (@subordinate.Email)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="SelectedSubordinateId" class="text-red-600 text-xs"></span>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Permission</label>
+                        <select asp-for="SelectedPermission" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Select a permission...</option>
+                            @foreach (var permission in Model.AvailablePermissions)
+                            {
+                                <option value="@permission.Value">@permission.Label</option>
+                            }
+                        </select>
+                        <span asp-validation-for="SelectedPermission" class="text-red-600 text-xs"></span>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Expires After (Days)</label>
+                        <input asp-for="ExpiresAfterDays" type="number" min="1" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500" placeholder="Optional" />
+                        <p class="text-xs text-slate-500 mt-1">Leave empty for no expiration</p>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Delegate Permission
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+    else if (!Model.Subordinates.Any())
+    {
+        <div class="card p-6">
+            <div class="text-center py-8">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-slate-600">No subordinates found</p>
+                <p class="text-xs text-slate-400 mt-1">You need to have subordinates to delegate permissions</p>
+            </div>
+        </div>
+    }
+
+    <!-- My Delegations -->
+    @if (Model.MyDelegations.Any())
+    {
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900 mb-6">My Delegations</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-200">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Subordinate</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Permission</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Delegated At</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Expires At</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Status</th>
+                            <th class="text-right py-3 px-4 text-sm font-semibold text-slate-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var delegation in Model.MyDelegations)
+                        {
+                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                <td class="py-3 px-4 text-sm text-slate-800">@delegation.SubordinateName</td>
+                                <td class="py-3 px-4 text-sm text-slate-600">@delegation.Permission</td>
+                                <td class="py-3 px-4 text-sm text-slate-600">@delegation.DelegatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="py-3 px-4 text-sm text-slate-600">
+                                    @if (delegation.ExpiresAt.HasValue)
+                                    {
+                                        @delegation.ExpiresAt.Value.ToString("MMM dd, yyyy")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-slate-400">No expiration</span>
+                                    }
+                                </td>
+                                <td class="py-3 px-4">
+                                    @if (delegation.IsExpired)
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">Expired</span>
+                                    }
+                                    else if (delegation.IsActive)
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">Inactive</span>
+                                    }
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    @if (delegation.IsActive && !delegation.IsExpired)
+                                    {
+                                        <form method="post" asp-page-handler="Revoke" asp-route-delegationId="@delegation.Id" class="inline">
+                                            <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-medium transition-colors" onclick="return confirm('Are you sure you want to revoke this delegation?');">
+                                                Revoke
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- Received Delegations -->
+    @if (Model.ReceivedDelegations.Any())
+    {
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900 mb-6">Received Delegations</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-200">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Delegated By</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Permission</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Delegated At</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Expires At</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var delegation in Model.ReceivedDelegations)
+                        {
+                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                <td class="py-3 px-4 text-sm text-slate-800">@delegation.SubordinateName</td>
+                                <td class="py-3 px-4 text-sm text-slate-600">@delegation.Permission</td>
+                                <td class="py-3 px-4 text-sm text-slate-600">@delegation.DelegatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="py-3 px-4 text-sm text-slate-600">
+                                    @if (delegation.ExpiresAt.HasValue)
+                                    {
+                                        @delegation.ExpiresAt.Value.ToString("MMM dd, yyyy")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-slate-400">No expiration</span>
+                                    }
+                                </td>
+                                <td class="py-3 px-4">
+                                    @if (delegation.IsExpired)
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">Expired</span>
+                                    }
+                                    else if (delegation.IsActive)
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (!Model.ReceivedDelegations.Any() && !Model.MyDelegations.Any())
+    {
+        <div class="card p-6">
+            <div class="text-center py-8">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-slate-600">No delegations</p>
+                <p class="text-xs text-slate-400 mt-1">You haven't delegated or received any permissions yet</p>
+            </div>
+        </div>
+    }
+</div>
+

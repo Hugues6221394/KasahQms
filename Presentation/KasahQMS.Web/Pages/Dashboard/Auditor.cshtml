@@ -1,0 +1,326 @@
+@page
+@model KasahQMS.Web.Pages.Dashboard.AuditorModel
+@{
+    ViewData["Title"] = "Auditor Dashboard";
+}
+
+<div class="space-y-8 animate-fade-in">
+    <!-- Read-Only Banner -->
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="font-semibold text-amber-900">Auditor Read-Only Mode</h3>
+                <p class="text-sm text-amber-700">You have view-only access to all system data. You cannot create, modify, or delete any records. Use the export feature to download audit reports.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Auditor Dashboard</h1>
+            <p class="mt-1 text-slate-500">Welcome back, @Model.DisplayName. Full visibility with export capabilities.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="/AuditLogs"
+               class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:shadow-xl">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Export Audit Logs
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        @foreach (var stat in Model.Stats)
+        {
+            <div class="card p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@stat.Title</p>
+                        <p class="mt-3 text-3xl font-bold text-slate-900">@stat.Value</p>
+                        <p class="mt-1 text-sm text-slate-500">@stat.Subtitle</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-100 to-brand-50 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid gap-6 xl:grid-cols-2">
+        <!-- Document Trend Chart -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Document Trend</h2>
+                    <p class="text-sm text-slate-500">Monthly processing volume</p>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-lg bg-brand-50 text-brand-700 text-xs font-medium">
+                    Last 6 months
+                </span>
+            </div>
+            <div class="h-[280px]">
+                <canvas id="documentsTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Compliance Status Chart -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Compliance Status</h2>
+                    <p class="text-sm text-slate-500">Document status distribution</p>
+                </div>
+            </div>
+            <div class="h-[280px] flex items-center justify-center">
+                <canvas id="complianceStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents and CAPAs -->
+    <div class="grid gap-6 xl:grid-cols-2">
+        <!-- Recent Documents -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Recent Documents</h2>
+                    <p class="text-sm text-slate-500">Latest system documents</p>
+                </div>
+                <a href="/Documents" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1">
+                    View all
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="space-y-3">
+                @if (Model.RecentDocuments.Any())
+                {
+                    @foreach (var doc in Model.RecentDocuments)
+                    {
+                        <div class="rounded-xl border border-slate-200 px-4 py-4 hover:bg-slate-50 hover:border-brand-200 transition-all">
+                            <div class="font-semibold text-slate-800 text-sm">@doc.Title</div>
+                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                <span>@doc.Number</span>
+                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span class="text-blue-600 font-medium">@doc.Status</span>
+                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span>@doc.Created</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-8">
+                        <p class="text-sm text-slate-500">No documents found</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Recent CAPAs -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Recent CAPAs</h2>
+                    <p class="text-sm text-slate-500">Latest corrective actions</p>
+                </div>
+                <a href="/Capa" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1">
+                    View all
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="space-y-3">
+                @if (Model.RecentCapas.Any())
+                {
+                    @foreach (var capa in Model.RecentCapas)
+                    {
+                        <div class="rounded-xl border border-slate-200 px-4 py-4 hover:bg-slate-50 hover:border-brand-200 transition-all">
+                            <div class="font-semibold text-slate-800 text-sm">@capa.Title</div>
+                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                <span>@capa.Number</span>
+                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span class="text-blue-600 font-medium">@capa.Status</span>
+                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span>@capa.Created</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-8">
+                        <p class="text-sm text-slate-500">No CAPAs found</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card p-6">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Recent Activity</h2>
+                <p class="text-sm text-slate-500">Latest system actions</p>
+            </div>
+            <a href="/AuditLogs" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1">
+                Audit logs
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+        <div class="space-y-1">
+            @if (Model.Activity.Any())
+            {
+                @foreach (var activity in Model.Activity)
+                {
+                    <div class="flex items-start justify-between py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 flex-shrink-0 mt-0.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="font-medium text-slate-800 text-sm">@activity.Title</div>
+                                <div class="text-xs text-slate-500">@activity.Description</div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-400 whitespace-nowrap ml-4">@activity.When</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-8">
+                    <p class="text-sm text-slate-500">No recent activity</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const docsTrend = @Html.Raw(Model.DocumentsTrendJson);
+        const complianceStatus = @Html.Raw(Model.ComplianceStatusJson);
+
+        // Chart.js global configuration
+        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+        Chart.defaults.color = '#64748b';
+
+        // Documents Trend Chart
+        const docsCtx = document.getElementById('documentsTrendChart');
+        if (docsCtx) {
+            new Chart(docsCtx, {
+                type: 'line',
+                data: {
+                    labels: docsTrend.labels,
+                    datasets: [{
+                        label: 'Documents',
+                        data: docsTrend.values,
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2.5,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#059669',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e2e8f0',
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9', drawBorder: false },
+                            ticks: { padding: 10 }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { padding: 10 }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Compliance Status Chart
+        const complianceCtx = document.getElementById('complianceStatusChart');
+        if (complianceCtx) {
+            new Chart(complianceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: complianceStatus.labels,
+                    datasets: [{
+                        data: complianceStatus.values,
+                        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#94a3b8'],
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 16,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e2e8f0',
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}
+

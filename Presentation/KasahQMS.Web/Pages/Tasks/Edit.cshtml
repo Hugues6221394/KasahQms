@@ -1,0 +1,89 @@
+@page "{id:Guid}"
+@model KasahQMS.Web.Pages.Tasks.EditModel
+@{
+    ViewData["Title"] = "Edit Task";
+}
+
+<div class="mx-auto max-w-2xl space-y-6">
+    <nav class="flex items-center gap-2 text-sm text-slate-500">
+        <a href="/Tasks" class="hover:text-slate-900">Tasks</a>
+        <span>/</span>
+        <a href="/Tasks/Details/@Model.TaskItem?.Id" class="hover:text-slate-900">@Model.TaskItem?.Number</a>
+        <span>/</span>
+        <span class="text-slate-700">Edit</span>
+    </nav>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h1 class="text-xl font-bold text-slate-900 mb-6">Edit Task</h1>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">@Model.ErrorMessage</div>
+        }
+
+        <form method="post" enctype="multipart/form-data" class="space-y-4">
+            @Html.AntiForgeryToken()
+
+            <div>
+                <label for="title" class="block text-sm font-medium text-slate-700 mb-1">Title <span class="text-red-500">*</span></label>
+                <input type="text" id="title" name="Title" asp-for="Title" required
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+            <div>
+                <label for="description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea id="description" name="Description" asp-for="Description" rows="3"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"></textarea>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="assignedTo" class="block text-sm font-medium text-slate-700 mb-1">Assign to</label>
+                    <select id="assignedTo" name="AssignedToId" asp-for="AssignedToId"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="">— Unassigned —</option>
+                        @foreach (var u in Model.Users)
+                        {
+                            <option value="@u.Id">@u.Name — @u.Department · @u.Roles</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="dueDate" class="block text-sm font-medium text-slate-700 mb-1">Due date</label>
+                    <input type="date" id="dueDate" name="DueDate" asp-for="DueDate"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+                </div>
+            </div>
+            <div>
+                <label for="priority" class="block text-sm font-medium text-slate-700 mb-1">Priority</label>
+                <select id="priority" name="Priority" asp-for="Priority"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                </select>
+            </div>
+            @if (Model.ExistingAttachments.Count > 0)
+            {
+                <div>
+                    <span class="block text-sm font-medium text-slate-700 mb-1">Current attachments</span>
+                    <ul class="text-sm text-slate-600 space-y-1">
+                        @foreach (var a in Model.ExistingAttachments)
+                        {
+                            <li><a href="@a.StoragePath" target="_blank" rel="noopener" class="text-brand-600 hover:underline">@a.FileName</a></li>
+                        }
+                    </ul>
+                </div>
+            }
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Add attachments (optional)</label>
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
+                    <input type="file" id="attachments" name="Attachments" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" class="hidden" />
+                    <label for="attachments" class="cursor-pointer"><span class="text-brand-600 font-medium">Click to upload</span> — PDF, DOC, XLS, images</label>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="submit" class="px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">Save</button>
+                <a asp-page="./Details" asp-route-id="@Model.TaskItem!.Id" class="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
