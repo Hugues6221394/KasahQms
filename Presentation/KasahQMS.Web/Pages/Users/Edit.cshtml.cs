@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using IHierarchyService = KasahQMS.Web.Services.IHierarchyService;
 
 namespace KasahQMS.Web.Pages.Users;
 

@@ -32,7 +32,7 @@ public class EditModel : PageModel
     [BindProperty] public Guid DocumentId { get; set; }
     [BindProperty] public string Title { get; set; } = string.Empty;
     [BindProperty] public string? Description { get; set; }
-    [BindProperty] public string? Content { get; set; }
+    [BindProperty] public new string? Content { get; set; }
     [BindProperty] public Guid? DocumentTypeId { get; set; }
     [BindProperty] public Guid? CategoryId { get; set; }
     [BindProperty] public Guid? TargetDepartmentId { get; set; }

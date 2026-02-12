@@ -138,7 +138,7 @@ public class ManagerModel : PageModel
             .ToListAsync();
 
         // Subordinate work summary
-        var subordinates = await _hierarchyService.GetSubordinateIdsAsync(currentUser.Id, recursive: true);
+        var subordinates = await _hierarchyService.GetSubordinateUserIdsAsync(currentUser.Id, recursive: true);
         var subordinateList = subordinates.ToList();
         
         if (subordinateList.Any())

@@ -1,3 +1,4 @@
+using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Domain.Entities.Documents;
 using KasahQMS.Domain.Entities.Identity;
 using KasahQMS.Domain.Entities.Tasks;

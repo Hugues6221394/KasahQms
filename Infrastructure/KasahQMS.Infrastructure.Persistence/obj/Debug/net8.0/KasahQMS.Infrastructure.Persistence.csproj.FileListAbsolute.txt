@@ -1,17 +1,35 @@
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\KasahQMS.Infrastructure.Persistence.csproj.AssemblyReference.cache
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\KasahQMS.Infrastructure.Persistence.GeneratedMSBuildEditorConfig.editorconfig
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\KasahQMS.Infrastructure.Persistence.AssemblyInfoInputs.cache
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\KasahQMS.Infrastructure.Persistence.AssemblyInfo.cs
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\KasahQMS.Infrastructure.Persistence.csproj.CoreCompileInputs.cache
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\bin\Debug\net8.0\KasahQMS.Infrastructure.Persistence.deps.json
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\bin\Debug\net8.0\KasahQMS.Infrastructure.Persistence.dll
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\bin\Debug\net8.0\KasahQMS.Infrastructure.Persistence.pdb
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\bin\Debug\net8.0\KasahQMS.Application.dll
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\bin\Debug\net8.0\KasahQMS.Domain.dll
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\bin\Debug\net8.0\KasahQMS.Application.pdb
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\bin\Debug\net8.0\KasahQMS.Domain.pdb
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\KasahQMS.34001DF1.Up2Date
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\KasahQMS.Infrastructure.Persistence.dll
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\refint\KasahQMS.Infrastructure.Persistence.dll
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\KasahQMS.Infrastructure.Persistence.pdb
-D:\KASAH TECHNOLOGIES\src\Infrastructure\KasahQMS.Infrastructure.Persistence\obj\Debug\net8.0\ref\KasahQMS.Infrastructure.Persistence.dll
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.csproj.AssemblyReference.cache
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.GeneratedMSBuildEditorConfig.editorconfig
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.AssemblyInfoInputs.cache
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.AssemblyInfo.cs
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.csproj.CoreCompileInputs.cache
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Infrastructure.Persistence.deps.json
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Infrastructure.Persistence.dll
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Infrastructure.Persistence.pdb
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Application.dll
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Domain.dll
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Application.pdb
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Domain.pdb
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.34001DF1.Up2Date
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.dll
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/refint/KasahQMS.Infrastructure.Persistence.dll
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.pdb
+D:/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/ref/KasahQMS.Infrastructure.Persistence.dll
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Infrastructure.Persistence.deps.json
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Infrastructure.Persistence.dll
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Infrastructure.Persistence.pdb
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Application.dll
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Domain.dll
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Application.pdb
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Domain.pdb
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.csproj.AssemblyReference.cache
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.GeneratedMSBuildEditorConfig.editorconfig
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.AssemblyInfoInputs.cache
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.AssemblyInfo.cs
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.csproj.CoreCompileInputs.cache
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.sourcelink.json
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.34001DF1.Up2Date
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.dll
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/refint/KasahQMS.Infrastructure.Persistence.dll
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/KasahQMS.Infrastructure.Persistence.pdb
+/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/Debug/net8.0/ref/KasahQMS.Infrastructure.Persistence.dll

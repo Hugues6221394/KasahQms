@@ -1,25 +1,26 @@
 {
   "format": 1,
   "restore": {
-    "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Domain\\KasahQMS.Domain.csproj": {}
+    "/app/Core/KasahQMS.Domain/KasahQMS.Domain.csproj": {}
   },
   "projects": {
-    "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Domain\\KasahQMS.Domain.csproj": {
+    "/app/Core/KasahQMS.Domain/KasahQMS.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Domain\\KasahQMS.Domain.csproj",
+        "projectUniqueName": "/app/Core/KasahQMS.Domain/KasahQMS.Domain.csproj",
         "projectName": "KasahQMS.Domain",
-        "projectPath": "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Domain\\KasahQMS.Domain.csproj",
-        "packagesPath": "C:\\Users\\TRIGGA\\.nuget\\packages\\",
-        "outputPath": "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Domain\\obj\\",
+        "projectPath": "/app/Core/KasahQMS.Domain/KasahQMS.Domain.csproj",
+        "packagesPath": "/home/jules/.nuget/packages/",
+        "outputPath": "/app/Core/KasahQMS.Domain/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\TRIGGA\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/home/jules/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "/usr/lib/dotnet/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -69,7 +70,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -887,32 +887,33 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\TRIGGA\\.nuget\\packages\\": {}
+    "/home/jules/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\KASAH TECHNOLOGIES\\src\\Infrastructure\\KasahQMS.Infrastructure.Persistence\\KasahQMS.Infrastructure.Persistence.csproj",
+      "projectUniqueName": "/app/Infrastructure/KasahQMS.Infrastructure.Persistence/KasahQMS.Infrastructure.Persistence.csproj",
       "projectName": "KasahQMS.Infrastructure.Persistence",
-      "projectPath": "d:\\KASAH TECHNOLOGIES\\src\\Infrastructure\\KasahQMS.Infrastructure.Persistence\\KasahQMS.Infrastructure.Persistence.csproj",
-      "packagesPath": "C:\\Users\\TRIGGA\\.nuget\\packages\\",
-      "outputPath": "d:\\KASAH TECHNOLOGIES\\src\\Infrastructure\\KasahQMS.Infrastructure.Persistence\\obj\\",
+      "projectPath": "/app/Infrastructure/KasahQMS.Infrastructure.Persistence/KasahQMS.Infrastructure.Persistence.csproj",
+      "packagesPath": "/home/jules/.nuget/packages/",
+      "outputPath": "/app/Infrastructure/KasahQMS.Infrastructure.Persistence/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\TRIGGA\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/home/jules/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "/usr/lib/dotnet/library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Application\\KasahQMS.Application.csproj": {
-              "projectPath": "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Application\\KasahQMS.Application.csproj"
+            "/app/Core/KasahQMS.Application/KasahQMS.Application.csproj": {
+              "projectPath": "/app/Core/KasahQMS.Application/KasahQMS.Application.csproj"
             }
           }
         }
@@ -958,7 +959,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

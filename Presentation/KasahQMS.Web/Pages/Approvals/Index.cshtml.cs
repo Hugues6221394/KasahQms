@@ -34,7 +34,7 @@ public class IndexModel : PageModel
         if (userId == null || tenantId == null) return;
 
         // 1. Get Tasks awaiting approval from subordinates
-        var subordinateIds = await _hierarchyService.GetSubordinateIdsAsync(userId.Value, recursive: true);
+        var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(userId.Value, recursive: true);
         var subordinateIdsList = subordinateIds.ToList();
 
         PendingTasks = await _dbContext.QmsTasks

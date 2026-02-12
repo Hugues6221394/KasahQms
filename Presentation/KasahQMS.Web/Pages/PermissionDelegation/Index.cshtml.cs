@@ -80,7 +80,7 @@ public class IndexModel : PageModel
             }
 
             // Get subordinates
-            var subordinateIds = await _hierarchyService.GetSubordinateIdsAsync(userId.Value, recursive: true);
+            var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(userId.Value, recursive: true);
             var subordinates = await _dbContext.Users
                 .Where(u => subordinateIds.Contains(u.Id))
                 .Select(u => new SubordinateItem(u.Id, u.FullName, u.Email ?? "N/A"))

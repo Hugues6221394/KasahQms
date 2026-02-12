@@ -60,7 +60,7 @@ public class BadgesApiController : ControllerBase
             .CountAsync(n => n.UserId == userId.Value && !n.IsRead);
 
         // Pending Approvals (Tasks from subordinates)
-        var subordinateIds = await _hierarchyService.GetSubordinateIdsAsync(userId.Value, recursive: true);
+        var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(userId.Value, recursive: true);
         var subordinateIdsList = subordinateIds.ToList();
         var pendingApprovals = await _dbContext.QmsTasks
             .CountAsync(t => t.TenantId == tenantId && 
