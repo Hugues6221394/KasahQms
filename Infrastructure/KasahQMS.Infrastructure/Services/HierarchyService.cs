@@ -24,7 +24,7 @@ public class HierarchyService : IHierarchyService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<Guid>> GetSubordinateIdsAsync(
+    public async Task<IEnumerable<Guid>> GetSubordinateUserIdsAsync(
         Guid managerId, 
         bool recursive = true, 
         CancellationToken cancellationToken = default)
@@ -53,7 +53,7 @@ public class HierarchyService : IHierarchyService
             // Check if user is a manager - if so, include all subordinates
             if (await IsManagerAsync(userId, cancellationToken))
             {
-                var subordinateIds = await GetSubordinateIdsAsync(userId, recursive: true, cancellationToken);
+                var subordinateIds = await GetSubordinateUserIdsAsync(userId, recursive: true, cancellationToken);
                 foreach (var id in subordinateIds)
                 {
                     visibleIds.Add(id);

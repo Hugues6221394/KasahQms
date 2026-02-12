@@ -1,4 +1,5 @@
 ﻿using KasahQMS.Application.Common.Interfaces;
+using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Domain.Entities.Identity;
 using KasahQMS.Infrastructure.Persistence.Data;
 using KasahQMS.Web.Services;

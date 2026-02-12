@@ -1,12 +1,25 @@
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\bin\Debug\net8.0\KasahQMS.Domain.deps.json
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\bin\Debug\net8.0\KasahQMS.Domain.dll
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\bin\Debug\net8.0\KasahQMS.Domain.pdb
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\KasahQMS.Domain.csproj.AssemblyReference.cache
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\KasahQMS.Domain.GeneratedMSBuildEditorConfig.editorconfig
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\KasahQMS.Domain.AssemblyInfoInputs.cache
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\KasahQMS.Domain.AssemblyInfo.cs
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\KasahQMS.Domain.csproj.CoreCompileInputs.cache
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\KasahQMS.Domain.dll
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\refint\KasahQMS.Domain.dll
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\KasahQMS.Domain.pdb
-D:\KASAH TECHNOLOGIES\src\Core\KasahQMS.Domain\obj\Debug\net8.0\ref\KasahQMS.Domain.dll
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/bin/Debug/net8.0/KasahQMS.Domain.deps.json
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/bin/Debug/net8.0/KasahQMS.Domain.dll
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/bin/Debug/net8.0/KasahQMS.Domain.pdb
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.csproj.AssemblyReference.cache
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.AssemblyInfoInputs.cache
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.AssemblyInfo.cs
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.csproj.CoreCompileInputs.cache
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.dll
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/refint/KasahQMS.Domain.dll
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.pdb
+D:/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/obj/Debug/net8.0/ref/KasahQMS.Domain.dll
+/app/Core/KasahQMS.Domain/bin/Debug/net8.0/KasahQMS.Domain.deps.json
+/app/Core/KasahQMS.Domain/bin/Debug/net8.0/KasahQMS.Domain.dll
+/app/Core/KasahQMS.Domain/bin/Debug/net8.0/KasahQMS.Domain.pdb
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.csproj.AssemblyReference.cache
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.AssemblyInfoInputs.cache
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.AssemblyInfo.cs
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.csproj.CoreCompileInputs.cache
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.sourcelink.json
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.dll
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/refint/KasahQMS.Domain.dll
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/KasahQMS.Domain.pdb
+/app/Core/KasahQMS.Domain/obj/Debug/net8.0/ref/KasahQMS.Domain.dll

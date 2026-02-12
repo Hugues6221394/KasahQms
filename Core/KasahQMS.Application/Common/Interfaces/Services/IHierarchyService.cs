@@ -8,7 +8,7 @@ public interface IHierarchyService
     /// <summary>
     /// Gets all subordinate user IDs (recursive) for a manager.
     /// </summary>
-    Task<IEnumerable<Guid>> GetSubordinateIdsAsync(Guid managerId, bool recursive = true, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Guid>> GetSubordinateUserIdsAsync(Guid managerId, bool recursive = true, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets all user IDs visible to the current user based on role and hierarchy.

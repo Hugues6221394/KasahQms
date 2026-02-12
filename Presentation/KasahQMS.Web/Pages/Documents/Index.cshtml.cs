@@ -1,4 +1,5 @@
 using KasahQMS.Domain.Enums;
+using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Infrastructure.Persistence.Data;
 using KasahQMS.Web.Services;
 using Microsoft.AspNetCore.Authorization;

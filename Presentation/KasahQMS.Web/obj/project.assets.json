@@ -3025,38 +3025,39 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\TRIGGA\\.nuget\\packages\\": {}
+    "/home/jules/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\KASAH TECHNOLOGIES\\src\\Presentation\\KasahQMS.Web\\KasahQMS.Web.csproj",
+      "projectUniqueName": "/app/Presentation/KasahQMS.Web/KasahQMS.Web.csproj",
       "projectName": "KasahQMS.Web",
-      "projectPath": "d:\\KASAH TECHNOLOGIES\\src\\Presentation\\KasahQMS.Web\\KasahQMS.Web.csproj",
-      "packagesPath": "C:\\Users\\TRIGGA\\.nuget\\packages\\",
-      "outputPath": "d:\\KASAH TECHNOLOGIES\\src\\Presentation\\KasahQMS.Web\\obj\\",
+      "projectPath": "/app/Presentation/KasahQMS.Web/KasahQMS.Web.csproj",
+      "packagesPath": "/home/jules/.nuget/packages/",
+      "outputPath": "/app/Presentation/KasahQMS.Web/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\TRIGGA\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/home/jules/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "/usr/lib/dotnet/library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Application\\KasahQMS.Application.csproj": {
-              "projectPath": "d:\\KASAH TECHNOLOGIES\\src\\Core\\KasahQMS.Application\\KasahQMS.Application.csproj"
+            "/app/Core/KasahQMS.Application/KasahQMS.Application.csproj": {
+              "projectPath": "/app/Core/KasahQMS.Application/KasahQMS.Application.csproj"
             },
-            "d:\\KASAH TECHNOLOGIES\\src\\Infrastructure\\KasahQMS.Infrastructure.Persistence\\KasahQMS.Infrastructure.Persistence.csproj": {
-              "projectPath": "d:\\KASAH TECHNOLOGIES\\src\\Infrastructure\\KasahQMS.Infrastructure.Persistence\\KasahQMS.Infrastructure.Persistence.csproj"
+            "/app/Infrastructure/KasahQMS.Infrastructure.Persistence/KasahQMS.Infrastructure.Persistence.csproj": {
+              "projectPath": "/app/Infrastructure/KasahQMS.Infrastructure.Persistence/KasahQMS.Infrastructure.Persistence.csproj"
             },
-            "d:\\KASAH TECHNOLOGIES\\src\\Infrastructure\\KasahQMS.Infrastructure\\KasahQMS.Infrastructure.csproj": {
-              "projectPath": "d:\\KASAH TECHNOLOGIES\\src\\Infrastructure\\KasahQMS.Infrastructure\\KasahQMS.Infrastructure.csproj"
+            "/app/Infrastructure/KasahQMS.Infrastructure/KasahQMS.Infrastructure.csproj": {
+              "projectPath": "/app/Infrastructure/KasahQMS.Infrastructure/KasahQMS.Infrastructure.csproj"
             }
           }
         }
@@ -3097,6 +3098,12 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.NETCore.App.Host.linux-x64",
+            "version": "[8.0.22, 8.0.22]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.AspNetCore.App": {
             "privateAssets": "none"
@@ -3105,7 +3112,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

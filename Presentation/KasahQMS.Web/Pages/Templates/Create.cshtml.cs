@@ -35,7 +35,7 @@ public class CreateModel : PageModel
 
     [BindProperty] public string Title { get; set; } = string.Empty;
     [BindProperty] public string? Description { get; set; }
-    [BindProperty] public string? Content { get; set; }
+    [BindProperty] public new string? Content { get; set; }
     [BindProperty] public Guid? DocumentTypeId { get; set; }
     [BindProperty] public Guid? CategoryId { get; set; }
     [BindProperty] public List<Guid> AuthorizedDepartments { get; set; } = new();

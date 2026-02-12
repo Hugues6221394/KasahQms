@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Notification = KasahQMS.Domain.Entities.Notifications.Notification;
-using IHierarchyService = KasahQMS.Web.Services.IHierarchyService;
 
 namespace KasahQMS.Web.Pages.Tasks;
 

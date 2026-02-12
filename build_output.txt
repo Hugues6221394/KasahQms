@@ -1,0 +1,19 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  KasahQMS.Domain -> /app/Core/KasahQMS.Domain/bin/Debug/net8.0/KasahQMS.Domain.dll
+  KasahQMS.Application -> /app/Core/KasahQMS.Application/bin/Debug/net8.0/KasahQMS.Application.dll
+  KasahQMS.Infrastructure.Persistence -> /app/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Infrastructure.Persistence.dll
+  KasahQMS.Infrastructure -> /app/Infrastructure/KasahQMS.Infrastructure/bin/Debug/net8.0/KasahQMS.Infrastructure.dll
+/app/Presentation/KasahQMS.Web/Filters/AuthorizationFilters.cs(206,79): error CS0246: The type or namespace name 'IHierarchyService' could not be found (are you missing a using directive or an assembly reference?) [/app/Presentation/KasahQMS.Web/KasahQMS.Web.csproj]
+/app/Presentation/KasahQMS.Web/Views/Shared/_Layout.cshtml(139,6): warning CS8602: Dereference of a possibly null reference. [/app/Presentation/KasahQMS.Web/KasahQMS.Web.csproj]
+/app/Presentation/KasahQMS.Web/Hubs/ChatHub.cs(126,30): warning CS8603: Possible null reference return. [/app/Presentation/KasahQMS.Web/KasahQMS.Web.csproj]
+
+Build FAILED.
+
+/app/Presentation/KasahQMS.Web/Views/Shared/_Layout.cshtml(139,6): warning CS8602: Dereference of a possibly null reference. [/app/Presentation/KasahQMS.Web/KasahQMS.Web.csproj]
+/app/Presentation/KasahQMS.Web/Hubs/ChatHub.cs(126,30): warning CS8603: Possible null reference return. [/app/Presentation/KasahQMS.Web/KasahQMS.Web.csproj]
+/app/Presentation/KasahQMS.Web/Filters/AuthorizationFilters.cs(206,79): error CS0246: The type or namespace name 'IHierarchyService' could not be found (are you missing a using directive or an assembly reference?) [/app/Presentation/KasahQMS.Web/KasahQMS.Web.csproj]
+    2 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:12.28

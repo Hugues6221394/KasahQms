@@ -11,273 +11,273 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = KasahQMS.Web
 build_property.RootNamespace = KasahQMS.Web
-build_property.ProjectDir = d:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web\
+build_property.ProjectDir = /app/Presentation/KasahQMS.Web/
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = d:\KASAH TECHNOLOGIES\src\Presentation\KasahQMS.Web
+build_property.MSBuildProjectDirectory = /app/Presentation/KasahQMS.Web
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 8.0
 build_property.EnableCodeStyleSeverity = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Account/ChangePassword.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWNjb3VudFxDaGFuZ2VQYXNzd29yZC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Account/ChangePassword.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQWNjb3VudC9DaGFuZ2VQYXNzd29yZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Account/Login.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWNjb3VudFxMb2dpbi5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Account/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQWNjb3VudC9Mb2dpbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Account/Logout.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWNjb3VudFxMb2dvdXQuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Account/Logout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQWNjb3VudC9Mb2dvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Analytics/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQW5hbHl0aWNzXEluZGV4LmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Analytics/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQW5hbHl0aWNzL0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Approvals/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQXBwcm92YWxzXEluZGV4LmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Approvals/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXBwcm92YWxzL0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/AuditLogs/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQXVkaXRMb2dzXEluZGV4LmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/AuditLogs/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXVkaXRMb2dzL0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Audits/Details.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQXVkaXRzXERldGFpbHMuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Audits/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXVkaXRzL0RldGFpbHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Audits/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQXVkaXRzXEluZGV4LmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Audits/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXVkaXRzL0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Capa/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2FwYVxDcmVhdGUuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Capa/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ2FwYS9DcmVhdGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Capa/Details.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2FwYVxEZXRhaWxzLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Capa/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ2FwYS9EZXRhaWxzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Capa/Edit.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2FwYVxFZGl0LmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Capa/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ2FwYS9FZGl0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Capa/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2FwYVxJbmRleC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Capa/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ2FwYS9JbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Chat/Audit.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2hhdFxBdWRpdC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Chat/Audit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ2hhdC9BdWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Chat/Direct.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2hhdFxEaXJlY3QuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Chat/Direct.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ2hhdC9EaXJlY3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Chat/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2hhdFxJbmRleC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Chat/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ2hhdC9JbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Chat/Thread.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2hhdFxUaHJlYWQuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Chat/Thread.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ2hhdC9UaHJlYWQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Dashboard/Admin.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGFzaGJvYXJkXEFkbWluLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Dashboard/Admin.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGFzaGJvYXJkL0FkbWluLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Dashboard/Auditor.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGFzaGJvYXJkXEF1ZGl0b3IuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Dashboard/Auditor.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGFzaGJvYXJkL0F1ZGl0b3IuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Dashboard/Executive.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGFzaGJvYXJkXEV4ZWN1dGl2ZS5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Dashboard/Executive.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGFzaGJvYXJkL0V4ZWN1dGl2ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Dashboard/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGFzaGJvYXJkXEluZGV4LmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Dashboard/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGFzaGJvYXJkL0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Dashboard/Manager.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGFzaGJvYXJkXE1hbmFnZXIuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Dashboard/Manager.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGFzaGJvYXJkL01hbmFnZXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Dashboard/Staff.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGFzaGJvYXJkXFN0YWZmLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Dashboard/Staff.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGFzaGJvYXJkL1N0YWZmLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Departments/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGVwYXJ0bWVudHNcQ3JlYXRlLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Departments/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGVwYXJ0bWVudHMvQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Departments/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGVwYXJ0bWVudHNcSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Departments/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGVwYXJ0bWVudHMvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Documents/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXENyZWF0ZS5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Documents/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRG9jdW1lbnRzL0NyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Documents/CreateFromTemplate.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXENyZWF0ZUZyb21UZW1wbGF0ZS5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Documents/CreateFromTemplate.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRG9jdW1lbnRzL0NyZWF0ZUZyb21UZW1wbGF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Documents/Details.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXERldGFpbHMuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Documents/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRG9jdW1lbnRzL0RldGFpbHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Documents/Edit.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXEVkaXQuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Documents/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRG9jdW1lbnRzL0VkaXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Documents/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXEluZGV4LmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Documents/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRG9jdW1lbnRzL0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Notifications/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTm90aWZpY2F0aW9uc1xJbmRleC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Notifications/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTm90aWZpY2F0aW9ucy9JbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/PermissionDelegation/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUGVybWlzc2lvbkRlbGVnYXRpb25cSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/PermissionDelegation/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUGVybWlzc2lvbkRlbGVnYXRpb24vSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Policies/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUG9saWNpZXNcQ3JlYXRlLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Policies/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUG9saWNpZXMvQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Policies/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUG9saWNpZXNcSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Policies/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUG9saWNpZXMvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Privacy/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJpdmFjeVxJbmRleC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Privacy/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJpdmFjeS9JbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Profile/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJvZmlsZVxJbmRleC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Profile/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJvZmlsZS9JbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Reports/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVwb3J0c1xJbmRleC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Reports/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUmVwb3J0cy9JbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Reports/PrintView.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVwb3J0c1xQcmludFZpZXcuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Reports/PrintView.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUmVwb3J0cy9QcmludFZpZXcuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Roles/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUm9sZXNcQ3JlYXRlLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Roles/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUm9sZXMvQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Roles/Edit.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUm9sZXNcRWRpdC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Roles/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUm9sZXMvRWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Roles/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUm9sZXNcSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Roles/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUm9sZXMvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Settings/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU2V0dGluZ3NcSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Settings/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU2V0dGluZ3MvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Stock/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU3RvY2tcQ3JlYXRlLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Stock/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3RvY2svQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Stock/Details.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU3RvY2tcRGV0YWlscy5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Stock/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3RvY2svRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Stock/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU3RvY2tcSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Stock/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3RvY2svSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Stock/Locations.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU3RvY2tcTG9jYXRpb25zLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Stock/Locations.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3RvY2svTG9jYXRpb25zLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Stock/Movement.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU3RvY2tcTW92ZW1lbnQuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Stock/Movement.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3RvY2svTW92ZW1lbnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Stock/Movements.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU3RvY2tcTW92ZW1lbnRzLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Stock/Movements.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3RvY2svTW92ZW1lbnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Supervision/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU3VwZXJ2aXNpb25cSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Supervision/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3VwZXJ2aXNpb24vSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Support/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU3VwcG9ydFxJbmRleC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Support/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3VwcG9ydC9JbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Tasks/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGFza3NcQ3JlYXRlLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Tasks/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVGFza3MvQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Tasks/Details.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGFza3NcRGV0YWlscy5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Tasks/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVGFza3MvRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Tasks/Edit.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGFza3NcRWRpdC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Tasks/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVGFza3MvRWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Tasks/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGFza3NcSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Tasks/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVGFza3MvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Templates/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGVtcGxhdGVzXENyZWF0ZS5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Templates/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVGVtcGxhdGVzL0NyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Templates/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGVtcGxhdGVzXEluZGV4LmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Templates/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVGVtcGxhdGVzL0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Terms/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGVybXNcSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Terms/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVGVybXMvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Users/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVXNlcnNcQ3JlYXRlLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/Users/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVXNlcnMvQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Users/Edit.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVXNlcnNcRWRpdC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/Users/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVXNlcnMvRWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Users/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVXNlcnNcSW5kZXguY3NodG1s
+[/app/Presentation/KasahQMS.Web/Pages/Users/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVXNlcnMvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/_ViewImports.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Pages/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/_ViewStart.cshtml]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcX1ZpZXdTdGFydC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Pages/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Views/Home/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Views/Home/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSG9tZS9JbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Views/Shared/_Layout.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
+[/app/Presentation/KasahQMS.Web/Views/Shared/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Views/_ViewImports.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+[/app/Presentation/KasahQMS.Web/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[d:/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Views/_ViewStart.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
+[/app/Presentation/KasahQMS.Web/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

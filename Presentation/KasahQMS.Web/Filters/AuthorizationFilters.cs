@@ -1,4 +1,5 @@
 ﻿using KasahQMS.Application.Common.Interfaces;
+using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Domain.Enums;
 using KasahQMS.Web.Services;
 using Microsoft.AspNetCore.Mvc;

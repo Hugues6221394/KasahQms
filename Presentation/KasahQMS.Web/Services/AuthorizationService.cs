@@ -1,3 +1,4 @@
+using KasahQMS.Application.Common.Interfaces.Services;
 ﻿using KasahQMS.Domain.Enums;
 using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
@@ -365,7 +366,8 @@ public class AuthorizationService : IAuthorizationService
 
     public async Task<List<Guid>> GetSubordinateUserIdsAsync(Guid userId)
     {
-        return await _hierarchyService.GetSubordinateUserIdsAsync(userId);
+        var result = await _hierarchyService.GetSubordinateUserIdsAsync(userId);
+        return result.ToList();
     }
 
     public async Task<Guid?> GetUserDepartmentAsync(Guid userId)
