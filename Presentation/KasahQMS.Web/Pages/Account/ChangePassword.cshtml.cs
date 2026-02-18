@@ -73,6 +73,7 @@ public class ChangePasswordModel : PageModel
         var command = new ChangePasswordCommand(
             CurrentPassword,
             NewPassword,
+            ConfirmPassword,
             IsFirstLogin);
 
         var result = await _mediator.Send(command);

@@ -93,6 +93,18 @@ public static class PermissionMapper
             list.Add(Permissions.Roles.ManagePermissions);
         }
 
+        if ((permission & Permission.StockRead) != 0)
+            list.Add(Permissions.Stock.View);
+
+        if ((permission & Permission.StockManage) != 0)
+        {
+            list.Add(Permissions.Stock.View);
+            list.Add(Permissions.Stock.Manage);
+        }
+
+        if ((permission & Permission.AnalyticsRead) != 0)
+            list.Add(Permissions.Analytics.View);
+
         return list;
     }
 

@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddScoped<ITaskAssignmentRepository, TaskAssignmentRepository>();
         services.AddScoped<IUserPermissionDelegationRepository, UserPermissionDelegationRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         
         // Register Unit of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();
