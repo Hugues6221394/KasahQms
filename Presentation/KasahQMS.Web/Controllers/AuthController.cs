@@ -1,3 +1,5 @@
+using KasahQMS.Application.Common.Interfaces;
+using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Application.Features.Identity.Commands;
 using KasahQMS.Application.Features.Identity.Dtos;
 using MediatR;
@@ -14,11 +16,19 @@ namespace KasahQMS.Web.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly IAuditLogService _auditLogService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IMediator mediator, ILogger<AuthController> logger)
+    public AuthController(
+        IMediator mediator,
+        ICurrentUserService currentUserService,
+        IAuditLogService auditLogService,
+        ILogger<AuthController> logger)
     {
         _mediator = mediator;
+        _currentUserService = currentUserService;
+        _auditLogService = auditLogService;
         _logger = logger;
     }
 
@@ -74,8 +84,23 @@ public class AuthController : ControllerBase
             return Unauthorized(new { error = "Refresh token is required." });
         }
 
-        // TODO: Implement refresh token command
-        return Unauthorized(new { error = "Token refresh not implemented." });
+        var command = new RefreshTokenCommand(refreshToken);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            // Clear cookie if refresh failed
+            Response.Cookies.Delete("refreshToken");
+            return Unauthorized(new { error = result.ErrorMessage });
+        }
+
+        // Set refresh token as HTTP-only cookie
+        if (!string.IsNullOrEmpty(result.Value.RefreshToken))
+        {
+            SetRefreshTokenCookie(result.Value.RefreshToken, result.Value.ExpiresAt.AddDays(7));
+        }
+
+        return Ok(result.Value);
     }
 
     /// <summary>
@@ -86,6 +111,19 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
+        // Log the logout event
+        if (_currentUserService.UserId.HasValue)
+        {
+            await _auditLogService.LogAuthenticationAsync(
+                _currentUserService.UserId.Value,
+                "LOGOUT",
+                "User logged out",
+                _currentUserService.IpAddress,
+                _currentUserService.UserAgent,
+                true,
+                cancellationToken);
+        }
+
         // Delete refresh token cookie
         Response.Cookies.Delete("refreshToken", new CookieOptions
         {
@@ -94,7 +132,6 @@ public class AuthController : ControllerBase
             SameSite = SameSiteMode.Strict
         });
 
-        await Task.CompletedTask;
         return Ok(new { message = "Logged out successfully." });
     }
 
@@ -114,8 +151,14 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "Passwords do not match." });
         }
 
-        // TODO: Implement change password command
-        await Task.CompletedTask;
+        var command = new ChangePasswordCommand(request.CurrentPassword, request.NewPassword, request.ConfirmPassword);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { error = result.ErrorMessage });
+        }
+
         return Ok(new { message = "Password changed successfully." });
     }
 

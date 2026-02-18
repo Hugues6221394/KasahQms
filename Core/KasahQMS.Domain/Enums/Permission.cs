@@ -45,6 +45,13 @@ public enum Permission
     // Admin permissions
     SystemSettings = 16777216,
     ViewAuditLogs = 33554432,
-    ManageRoles = 67108864
+    ManageRoles = 67108864,
+
+    // Stock permissions
+    StockRead = 134217728,
+    StockManage = 268435456,
+
+    // Analytics
+    AnalyticsRead = 536870912
 }
 

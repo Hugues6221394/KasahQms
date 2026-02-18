@@ -3,6 +3,7 @@ using KasahQMS.Application.Common.Interfaces.Repositories;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Application.Features.Identity.Dtos;
 using KasahQMS.Domain.Common;
+using KasahQMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
     private readonly ITokenService _tokenService;
     private readonly IAuditLogService _auditLogService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ILogger<LoginCommandHandler> _logger;
 
     public LoginCommandHandler(
@@ -25,6 +27,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
         ITokenService tokenService,
         IAuditLogService auditLogService,
         ICurrentUserService currentUserService,
+        IRefreshTokenRepository refreshTokenRepository,
         ILogger<LoginCommandHandler> logger)
     {
         _userRepository = userRepository;
@@ -32,6 +35,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
         _tokenService = tokenService;
         _auditLogService = auditLogService;
         _currentUserService = currentUserService;
+        _refreshTokenRepository = refreshTokenRepository;
         _logger = logger;
     }
 
@@ -97,7 +101,19 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
 
             // Generate tokens
             var accessToken = await _tokenService.GenerateAccessToken(user, cancellationToken);
-            var refreshToken = await _tokenService.GenerateRefreshToken(user.Id, cancellationToken);
+            var refreshTokenString = await _tokenService.GenerateRefreshToken(user.Id, cancellationToken);
+
+            // Save refresh token
+            var refreshToken = new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                Token = refreshTokenString,
+                UserId = user.Id,
+                ExpiresAt = DateTimeOffset.UtcNow.AddDays(7),
+                CreatedAt = DateTimeOffset.UtcNow,
+                CreatedByIp = _currentUserService.IpAddress
+            };
+            await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
 
             // Record successful login
             user.RecordSuccessfulLogin();
@@ -115,7 +131,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
             var response = new AuthResponseDto
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken,
+                RefreshToken = refreshTokenString,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(60),
                 UserId = user.Id,
                 Email = user.Email,

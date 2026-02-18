@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Mail;
 using KasahQMS.Application.Common.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -6,7 +8,7 @@ namespace KasahQMS.Infrastructure.Services;
 
 /// <summary>
 /// Email service implementation.
-/// In production, integrate with SMTP or email provider (SendGrid, AWS SES, etc.)
+/// Integrates with SMTP provider.
 /// </summary>
 public class EmailService : IEmailService
 {
@@ -28,23 +30,46 @@ public class EmailService : IEmailService
     {
         try
         {
-            // TODO: Implement actual email sending via SMTP or email provider
-            // For now, log the email attempt
-            _logger.LogInformation(
-                "Email would be sent - To: {To}, Subject: {Subject}",
-                to, subject);
+            var smtpSettings = _configuration.GetSection("Smtp");
+            var host = smtpSettings["Host"];
 
-            // In production:
-            // var smtpSettings = _configuration.GetSection("Smtp");
-            // using var client = new SmtpClient(smtpSettings["Host"], int.Parse(smtpSettings["Port"]));
-            // ...
+            // If SMTP is not configured, fallback to logging
+            if (string.IsNullOrEmpty(host))
+            {
+                _logger.LogWarning("SMTP Host is not configured. Email will not be sent. To: {To}, Subject: {Subject}", to, subject);
+                return;
+            }
 
-            await Task.CompletedTask;
+            var port = int.TryParse(smtpSettings["Port"], out var p) ? p : 587;
+            var username = smtpSettings["Username"];
+            var password = smtpSettings["Password"];
+            var from = smtpSettings["From"] ?? "noreply@kasahqms.com";
+            var enableSsl = bool.TryParse(smtpSettings["EnableSsl"], out var ssl) ? ssl : true;
+
+            using var client = new SmtpClient(host, port)
+            {
+                EnableSsl = enableSsl,
+                Credentials = new NetworkCredential(username, password)
+            };
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(from),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = isHtml
+            };
+            mailMessage.To.Add(to);
+
+            await client.SendMailAsync(mailMessage, cancellationToken);
+
+            _logger.LogInformation("Email sent successfully to {To}", to);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send email to {To}", to);
-            throw;
+            // We don't throw here to avoid breaking the user flow, but strictly log the error.
+            // In a strict environment, we might want to throw or queue for retry.
         }
     }
 
@@ -183,4 +208,3 @@ public class EmailService : IEmailService
         await SendEmailAsync(email, subject, body, true, cancellationToken);
     }
 }
-

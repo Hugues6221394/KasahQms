@@ -1,31 +1,62 @@
 @using System.Security.Claims
+@using KasahQMS.Application.Common.Security
 @inject KasahQMS.Application.Common.Interfaces.ICurrentUserService CurrentUserService
+@inject KasahQMS.Application.Common.Security.IAuthorizationService AuthorizationService
+@inject KasahQMS.Application.Common.Interfaces.Services.IHierarchyService HierarchyService
 @{
     var displayName = User?.Identity?.Name ?? "User";
     var roles = CurrentUserService.Roles.ToList();
     var roleLabel = roles.FirstOrDefault() ?? "Member";
     var initials = displayName.Length >= 2 ? displayName.Substring(0, 2).ToUpper() : displayName.ToUpper();
     
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    Guid? userGuid = userId != null ? Guid.Parse(userId) : null;
+
     // Permission checks for navigation
-    var isSystemAdmin = roles.Any(r => r.Equals("SystemAdmin", StringComparison.OrdinalIgnoreCase) || 
-                                       r.Equals("System Admin", StringComparison.OrdinalIgnoreCase) ||
-                                       r.Equals("TenantAdmin", StringComparison.OrdinalIgnoreCase));
-    var isManager = roles.Any(r => r.Contains("Manager", StringComparison.OrdinalIgnoreCase) && 
-                                  !r.Contains("System", StringComparison.OrdinalIgnoreCase));
-    var isExecutive = roles.Any(r => r.Equals("TopManagingDirector", StringComparison.OrdinalIgnoreCase) ||
-                                    r.Equals("TMD", StringComparison.OrdinalIgnoreCase) ||
-                                    r.Contains("TMD", StringComparison.OrdinalIgnoreCase) ||
-                                    r.Equals("Deputy", StringComparison.OrdinalIgnoreCase));
-    var isAuditor = roles.Any(r => r.Equals("Auditor", StringComparison.OrdinalIgnoreCase));
-    var isStaff = !isSystemAdmin && !isManager && !isExecutive && !isAuditor;
+    var canViewAnalytics = await AuthorizationService.HasPermissionAsync(Permissions.Analytics.View);
+    var canViewReports = await AuthorizationService.HasPermissionAsync(Permissions.Reports.View);
+
+    var canViewApprovals = await AuthorizationService.HasAnyPermissionAsync(new[] {
+        Permissions.Documents.Approve,
+        Permissions.Tasks.Assign,
+        Permissions.Capa.Assign
+    });
+
+    // Supervision usually for TMD/Executives
+    var canViewSupervision = await AuthorizationService.HasAnyPermissionAsync(new[] {
+        Permissions.Users.ViewAll,
+        Permissions.System.ViewSystemHealth
+    });
+
+    var canViewDocuments = await AuthorizationService.HasPermissionAsync(Permissions.Documents.View);
+    var canCreateDocuments = await AuthorizationService.HasPermissionAsync(Permissions.Documents.Create);
+
+    var canViewTasks = await AuthorizationService.HasPermissionAsync(Permissions.Tasks.View);
+    var canCreateTasks = await AuthorizationService.HasPermissionAsync(Permissions.Tasks.Create);
+
+    var canViewCapa = await AuthorizationService.HasPermissionAsync(Permissions.Capa.View);
+    var canCreateCapa = await AuthorizationService.HasPermissionAsync(Permissions.Capa.Create);
+
+    var canViewAudits = await AuthorizationService.HasPermissionAsync(Permissions.Audits.View);
+    var canViewStock = await AuthorizationService.HasPermissionAsync(Permissions.Stock.View);
     
-    // Show Analytics/Reports only to Managers, Executives, Auditors, and Admins
-    var canViewAnalytics = isSystemAdmin || isExecutive || isManager || isAuditor;
-    var canViewReports = isSystemAdmin || isExecutive || isManager || isAuditor;
-    // Show Audits only to Auditors, Managers, Executives, and Admins
-    var canViewAudits = isSystemAdmin || isExecutive || isManager || isAuditor;
-    // Show CAPA only to Managers, Executives, and Admins (staff can view but not create)
-    var canViewCapa = isSystemAdmin || isExecutive || isManager || !isStaff;
+    // Permission Delegation: User must be a manager (have subordinates) to delegate
+    var canDelegatePermissions = userGuid.HasValue && await HierarchyService.IsManagerAsync(userGuid.Value);
+
+    // Administration Section
+    var canManageUsers = await AuthorizationService.HasPermissionAsync(Permissions.Users.View);
+    var canManageRoles = await AuthorizationService.HasPermissionAsync(Permissions.Roles.View);
+    var canManagePolicies = await AuthorizationService.HasPermissionAsync(Permissions.Documents.ViewAll); // Using Doc ViewAll as proxy for now
+    var canManageDepartments = await AuthorizationService.HasPermissionAsync(Permissions.Organization.View);
+    var canViewAuditLogs = await AuthorizationService.HasPermissionAsync(Permissions.AuditLogs.View);
+    var canManageSettings = await AuthorizationService.HasPermissionAsync(Permissions.System.ManageSettings);
+
+    var showAdminSection = canManageUsers || canManageRoles || canManageDepartments || canViewAuditLogs || canManageSettings;
+
+    // Check for "Auditor" role specifically for the badge, or derive it.
+    // Using role check here for the visual badge only.
+    var isAuditor = await AuthorizationService.IsInRoleAsync("Auditor");
+    var hasQuickAdd = canCreateDocuments || canCreateTasks || (canCreateCapa && !isAuditor);
 }
 <!DOCTYPE html>
 <html lang="en" class="h-full">
@@ -189,7 +220,7 @@
                         <span>Reports</span>
                     </a>
                 }
-                @if (isManager || isExecutive || isSystemAdmin)
+                @if (canViewApprovals)
                 {
                     <a data-nav="/approvals" href="/Approvals" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium relative">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +230,7 @@
                         <span id="badge-approvals" class="hidden absolute right-2 top-1/2 -translate-y-1/2 min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-indigo-500 rounded-full flex items-center justify-center">0</span>
                     </a>
                 }
-                @if (isExecutive || isSystemAdmin)
+                @if (canViewSupervision)
                 {
                     <a data-nav="/supervision" href="/Supervision" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,6 +244,8 @@
             <!-- Operations Section -->
             <div class="space-y-1.5">
                 <div class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Operations</div>
+                @if (canViewDocuments)
+                {
                 <a data-nav="/documents" href="/Documents" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium relative">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -220,12 +253,18 @@
                     <span>Documents</span>
                     <span id="badge-documents" class="hidden absolute right-2 top-1/2 -translate-y-1/2 min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-amber-500 rounded-full flex items-center justify-center">0</span>
                 </a>
+                }
+                @if (canViewDocuments)
+                {
                 <a data-nav="/templates" href="/Templates" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/>
                     </svg>
                     <span>Templates</span>
                 </a>
+                }
+                @if (canViewTasks)
+                {
                 <a data-nav="/tasks" href="/Tasks" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium relative">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
@@ -233,6 +272,7 @@
                     <span>Tasks</span>
                     <span id="badge-tasks" class="hidden absolute right-2 top-1/2 -translate-y-1/2 min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full flex items-center justify-center">0</span>
                 </a>
+                }
                 @if (!isAuditor)
                 {
                     <a data-nav="/chat" href="/Chat" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium relative">
@@ -243,7 +283,7 @@
                         <span id="badge-messages" class="hidden absolute right-2 top-1/2 -translate-y-1/2 min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-blue-500 rounded-full flex items-center justify-center">0</span>
                     </a>
                 }
-                @if (isManager || isExecutive || isSystemAdmin)
+                @if (canDelegatePermissions)
                 {
                     <a data-nav="/permissiondelegation" href="/PermissionDelegation" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,7 +301,7 @@
                         <span>Audits</span>
                     </a>
                 }
-                @if (isAuditor || isSystemAdmin)
+                @if (canViewAudits)
                 {
                     <a data-nav="/chat/audit" href="/Chat/Audit" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,49 +319,69 @@
                         <span>CAPA</span>
                     </a>
                 }
+                @if (canViewStock)
+                {
                 <a data-nav="/stock" href="/Stock" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                     </svg>
                     <span>Stock</span>
                 </a>
+                }
             </div>
 
             <!-- Administration Section (Restricted) -->
-            @if (isSystemAdmin)
+            @if (showAdminSection)
             {
                 <div class="space-y-1.5">
                     <div class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Administration</div>
+                    @if (canManageUsers)
+                    {
                     <a data-nav="/users" href="/Users" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                         </svg>
                         <span>Users</span>
                     </a>
+                    }
+                    @if (canManageRoles)
+                    {
                     <a data-nav="/roles" href="/Roles" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                         </svg>
                         <span>Roles</span>
                     </a>
+                    }
+                    @if (canManagePolicies)
+                    {
                     <a data-nav="/policies" href="/Policies" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 11c0-1.657 1.343-3 3-3h6m-6 0a3 3 0 00-3 3m0 0v6m0-6H6m6 6a3 3 0 01-3-3m3 3h6a3 3 0 003-3m-9 0v-6m0 6H6a3 3 0 01-3-3m3 3V8a3 3 0 013-3h6a3 3 0 013 3v6"/>
                         </svg>
                         <span>Policies</span>
                     </a>
+                    }
+                    @if (canManageDepartments)
+                    {
                     <a data-nav="/departments" href="/Departments" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                         </svg>
                         <span>Departments</span>
                     </a>
+                    }
+                    @if (canViewAuditLogs)
+                    {
                     <a data-nav="/audit-logs" href="/AuditLogs" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <span>Audit Logs</span>
                     </a>
+                    }
+                    @if (canManageSettings)
+                    {
                     <a data-nav="/settings" href="/Settings" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
@@ -329,6 +389,7 @@
                         </svg>
                         <span>Settings</span>
                     </a>
+                    }
                 </div>
             }
 
@@ -368,7 +429,7 @@
 
             <div class="flex items-center gap-2">
                 <!-- Quick Actions (Hidden for Auditors - Read-only role) -->
-                @if (!isAuditor)
+                @if (hasQuickAdd)
                 {
                 <div class="relative hidden md:block" x-data="{ open: false }">
                     <button @@click="open = !open" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors">
@@ -388,18 +449,21 @@
                          x-transition:leave-end="opacity-0 scale-95"
                          @@click.outside="open = false"
                          class="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 py-1 origin-top-right">
+                        @if (canCreateDocuments)
+                        {
                         <a href="/Documents/Create" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
                             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             New Document
                         </a>
-                        @if (isManager || isExecutive || isSystemAdmin)
+                        }
+                        @if (canCreateTasks)
                         {
                             <a href="/Tasks/Create" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                 New Task
                             </a>
                         }
-                        @if (canViewCapa && !isAuditor)
+                        @if (canCreateCapa)
                         {
                             <a href="/Capa?action=create" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>

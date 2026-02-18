@@ -155,6 +155,17 @@ public static class Permissions
         public const string View = "AuditLogs.View";
         public const string Export = "AuditLogs.Export";
     }
+
+    public static class Stock
+    {
+        public const string View = "Stock.View";
+        public const string Manage = "Stock.Manage";
+    }
+
+    public static class Analytics
+    {
+        public const string View = "Analytics.View";
+    }
     
     public static class System
     {
@@ -224,6 +235,9 @@ public static class DefaultRoles
             Permissions.Organization.ManageHierarchy,
             Permissions.AuditLogs.View,
             Permissions.AuditLogs.Export,
+            Permissions.Stock.View,
+            Permissions.Stock.Manage,
+            Permissions.Analytics.View,
         };
     }
     
@@ -252,6 +266,9 @@ public static class DefaultRoles
             Permissions.Reports.ViewAll,
             Permissions.AuditLogs.View,
             Permissions.AuditLogs.Export,
+            Permissions.Stock.View,
+            Permissions.Stock.Manage,
+            Permissions.Analytics.View,
         };
     }
     
@@ -298,6 +315,11 @@ public static class DefaultRoles
             Permissions.Organization.View,
             // Audit logs
             Permissions.AuditLogs.View,
+            // Stock
+            Permissions.Stock.View,
+            Permissions.Stock.Manage,
+            // Analytics
+            Permissions.Analytics.View,
         };
     }
     
@@ -328,6 +350,8 @@ public static class DefaultRoles
             Permissions.Reports.Create,
             Permissions.Reports.Export,
             Permissions.Organization.View,
+            Permissions.Stock.View,
+            Permissions.Analytics.View,
         };
     }
     
@@ -354,6 +378,7 @@ public static class DefaultRoles
             Permissions.Reports.View,
             Permissions.Reports.Create,
             Permissions.Organization.View,
+            Permissions.Analytics.View,
         };
     }
     
