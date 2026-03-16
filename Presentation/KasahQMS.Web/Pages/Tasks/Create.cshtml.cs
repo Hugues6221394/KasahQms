@@ -1,12 +1,15 @@
 using KasahQMS.Application.Common.Interfaces;
+using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Application.Features.Documents.Commands;
 using KasahQMS.Application.Features.Tasks.Commands;
+using KasahQMS.Domain.Entities.Notifications;
 using KasahQMS.Domain.Entities.Tasks;
 using KasahQMS.Domain.Enums;
 using KasahQMS.Infrastructure.Persistence.Data;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace KasahQMS.Web.Pages.Tasks;
@@ -18,19 +21,22 @@ public class CreateModel : PageModel
     private readonly IMediator _mediator;
     private readonly ILogger<CreateModel> _logger;
     private readonly IWebHostEnvironment _environment;
+    private readonly IHierarchyService _hierarchyService;
 
     public CreateModel(
         ApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
         IMediator mediator,
         ILogger<CreateModel> logger,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IHierarchyService hierarchyService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _mediator = mediator;
         _logger = logger;
         _environment = environment;
+        _hierarchyService = hierarchyService;
     }
 
     [BindProperty] public string Title { get; set; } = string.Empty;
@@ -43,17 +49,19 @@ public class CreateModel : PageModel
     [BindProperty] public List<IFormFile>? Attachments { get; set; }
     [BindProperty] public List<Guid>? AssignedToUserIds { get; set; }
     [BindProperty] public Guid? AssignedToOrgUnitId { get; set; }
+    [BindProperty] public bool ReportToSuperior { get; set; }
+    [BindProperty] public Guid? ReportToUserId { get; set; }
 
     public List<UserOption> Users { get; set; } = new();
     public List<DocumentOption> Documents { get; set; } = new();
     public List<TemplateOption> Templates { get; set; } = new();
     public List<OrgUnitOption> Departments { get; set; } = new();
+    public List<SelectListItem> SuperiorOptions { get; set; } = new();
     public bool CanAssignToDepartment { get; set; }
     public string? ErrorMessage { get; set; }
 
     public async Task OnGetAsync()
     {
-        // Authorization check: Only managers can create tasks
         var currentUser = await _dbContext.Users
             .AsNoTracking()
             .Include(u => u.Roles)
@@ -61,7 +69,6 @@ public class CreateModel : PageModel
 
         if (currentUser == null)
         {
-            // Not authenticated - will be redirected by [Authorize]
             return;
         }
 
@@ -69,17 +76,18 @@ public class CreateModel : PageModel
         var isAuditor = currentUser.Roles?.Any(r => r.Name == "Auditor") == true;
         if (isAuditor)
         {
-            ErrorMessage = "Auditors cannot create tasks. Only managers can assign work.";
+            ErrorMessage = "Auditors cannot create tasks.";
             return;
         }
 
         // Check if user is manager
         var isManager = currentUser.Roles?.Any(r => r.Name is "TMD" or "Deputy Country Manager" 
             or "Department Manager" or "Manager" or "System Admin" or "Admin") == true;
-        if (!isManager)
+
+        // If staff (non-manager), default assign to self
+        if (!isManager && _currentUserService.UserId.HasValue)
         {
-            ErrorMessage = "Only managers can create tasks. Contact your manager to assign work.";
-            return;
+            AssignedToId = _currentUserService.UserId.Value;
         }
 
         await LoadLookupsAsync();
@@ -87,7 +95,6 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        // Authorization check: Only managers can create tasks
         var currentUser = await _dbContext.Users
             .AsNoTracking()
             .Include(u => u.Roles)
@@ -99,19 +106,19 @@ public class CreateModel : PageModel
         // Auditors cannot create tasks
         if (currentUser.Roles?.Any(r => r.Name == "Auditor") == true)
         {
-            ModelState.AddModelError("", "Auditors cannot create tasks. This is a read-only role.");
+            ModelState.AddModelError("", "Auditors cannot create tasks.");
             await LoadLookupsAsync();
             return Page();
         }
 
-        // Only managers can create tasks
+        // Check if user is manager
         var isManager = currentUser.Roles?.Any(r => r.Name is "TMD" or "Deputy Country Manager" 
             or "Department Manager" or "Manager" or "System Admin" or "Admin") == true;
-        if (!isManager)
+
+        // If staff, ensure they're assigning to themselves
+        if (!isManager && _currentUserService.UserId.HasValue)
         {
-            ModelState.AddModelError("", "Only managers can create tasks.");
-            await LoadLookupsAsync();
-            return Page();
+            AssignedToId = _currentUserService.UserId.Value;
         }
 
         if (string.IsNullOrWhiteSpace(Title))
@@ -180,6 +187,33 @@ public class CreateModel : PageModel
         }
 
         var taskId = result.Value;
+
+        // Handle reporting to superior
+        if (ReportToSuperior && ReportToUserId.HasValue)
+        {
+            var task = await _dbContext.QmsTasks.FindAsync(taskId);
+            if (task != null)
+            {
+                task.IsReportedToSuperior = true;
+                task.ReportedToUserId = ReportToUserId.Value;
+                await _dbContext.SaveChangesAsync();
+
+                // Create notification for superior
+                var superior = await _dbContext.Users.FindAsync(ReportToUserId.Value);
+                if (superior != null)
+                {
+                    var notification = Notification.Create(
+                        ReportToUserId.Value,
+                        "Task Reported for Review",
+                        $"{currentUser.FullName} has created a task '{Title}' and reported it to you for review.",
+                        NotificationType.TaskUpdate,
+                        taskId,
+                        "Task");
+                    _dbContext.Notifications.Add(notification);
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+        }
 
         var files = Attachments ?? new List<IFormFile>();
         if (files.Count == 0 && Request.Form.Files.Count > 0)
@@ -272,6 +306,29 @@ public class CreateModel : PageModel
             .OrderBy(d => d.Title)
             .Select(d => new TemplateOption(d.Id, d.Title))
             .ToListAsync();
+
+        // Populate superior options for staff to report to
+        if (_currentUserService.UserId.HasValue)
+        {
+            var superiorIds = await _hierarchyService.GetManagerChainAsync(_currentUserService.UserId.Value);
+            if (superiorIds.Any())
+            {
+                var superiors = await _dbContext.Users
+                    .AsNoTracking()
+                    .Where(u => superiorIds.Contains(u.Id))
+                    .OrderBy(u => u.FirstName)
+                    .ThenBy(u => u.LastName)
+                    .ToListAsync();
+
+                SuperiorOptions = superiors
+                    .Select(s => new SelectListItem
+                    {
+                        Value = s.Id.ToString(),
+                        Text = $"{s.FirstName} {s.LastName}"
+                    })
+                    .ToList();
+            }
+        }
 
         // TMD/Deputy can assign to any department
         // Managers can only see their own department (for department-level assignment)

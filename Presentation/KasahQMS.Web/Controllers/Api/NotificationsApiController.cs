@@ -69,4 +69,24 @@ public class NotificationsApiController : ControllerBase
         await _db.SaveChangesAsync();
         return NoContent();
     }
+
+    [HttpPost("read-all")]
+    public async Task<IActionResult> MarkAllRead()
+    {
+        var uid = _currentUser.UserId ?? (Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var g) ? g : (Guid?)null);
+        if (uid == null)
+            return Unauthorized();
+
+        var unread = await _db.Notifications
+            .Where(n => n.UserId == uid.Value && !n.IsRead)
+            .ToListAsync();
+
+        foreach (var n in unread)
+        {
+            n.MarkAsRead();
+        }
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
 }

@@ -28,6 +28,11 @@ public class QmsTask : AuditableEntity
     public Guid? AssignedToOrgUnitId { get; set; }
     public List<string> Tags { get; set; } = new();
     
+    /// <summary>When true, the creator has flagged this task for superior review.</summary>
+    public bool IsReportedToSuperior { get; set; }
+    /// <summary>The superior (manager) to whom this task is reported for review.</summary>
+    public Guid? ReportedToUserId { get; set; }
+    
     // Navigation properties
     public virtual User? AssignedTo { get; set; }
     public virtual User? CompletedBy { get; set; }

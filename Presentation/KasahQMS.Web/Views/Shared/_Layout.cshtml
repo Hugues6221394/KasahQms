@@ -196,7 +196,7 @@
         </div>
 
         <!-- Navigation -->
-        <nav class="px-4 py-6 space-y-8 text-sm overflow-y-auto h-[calc(100vh-72px-68px)]">
+        <nav class="px-4 py-6 space-y-8 text-sm overflow-y-auto h-[calc(100vh-72px)]">
             <!-- Overview Section -->
             <div class="space-y-1.5">
                 <div class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Overview</div>
@@ -475,6 +475,13 @@
 
             <!-- Help & Support -->
             <div class="pt-4 border-t border-slate-100">
+                <a data-nav="/training" href="/Training" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                    </svg>
+                    <span>Training Hub</span>
+                </a>
                 <a href="/Support" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -484,14 +491,6 @@
             </div>
         </nav>
 
-        <!-- User Profile at Bottom -->
-        <div class="sidebar-user-profile">
-            <div class="sidebar-user-avatar">@initials</div>
-            <div class="min-w-0 flex-1">
-                <div class="sidebar-user-name truncate">@displayName</div>
-                <div class="sidebar-user-role">@roleLabel</div>
-            </div>
-        </div>
     </aside>
 
     <div class="flex-1 flex flex-col min-h-screen lg:ml-[280px]">
@@ -520,24 +519,14 @@
                 <!-- Quick Actions (Hidden for Auditors - Read-only role) -->
                 @if (hasQuickAdd)
                 {
-                <div class="relative hidden md:block" x-data="{ open: false }">
-                    <button @@click="open = !open" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors">
+                <div id="quick-add-wrapper" class="relative hidden md:block">
+                    <button id="quick-add-btn" type="button" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
                         Quick Add
                     </button>
-                    
-                    <!-- Dropdown -->
-                    <div x-show="open" x-cloak
-                         x-transition:enter="transition ease-out duration-150"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100 scale-100"
-                         x-transition:leave-end="opacity-0 scale-95"
-                         @@click.outside="open = false"
-                         class="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 py-1 origin-top-right">
+                    <div id="quick-add-panel" class="hidden absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 py-1 origin-top-right z-50">
                         @if (canCreateDocuments)
                         {
                         <a href="/Documents/Create" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
@@ -574,39 +563,23 @@
                 }
 
                 <!-- Notifications -->
-                <div class="relative" x-data="notificationsDropdown()" x-init="init()">
-                    <button @@click="open = !open; if(open) fetchNotifications()" class="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                <div id="notif-wrapper" class="relative">
+                    <button id="notif-btn" type="button" class="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
-                        <span id="notification-dot" x-show="unreadCount > 0" x-cloak class="absolute top-2 right-2 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-white"></span>
+                        <span id="notification-dot" class="hidden absolute top-2 right-2 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-white"></span>
                         <span id="badge-notifications" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-brand-500 rounded-full flex items-center justify-center">0</span>
                     </button>
-                    <div x-show="open" x-cloak @@click.outside="open = false"
-                         x-transition class="absolute right-0 mt-2 w-96 rounded-xl border border-slate-200 bg-white shadow-xl py-2 origin-top-right z-50">
+                    <div id="notif-panel" class="hidden absolute right-0 mt-2 w-96 rounded-xl border border-slate-200 bg-white shadow-xl py-2 origin-top-right z-50">
                         <div class="px-4 py-2 border-b border-slate-100 flex justify-between items-center">
                             <span class="font-semibold text-slate-800">Notifications</span>
                             <a href="/Notifications" class="text-sm text-brand-600 hover:underline">View all</a>
                         </div>
                         <div class="max-h-80 overflow-y-auto">
-                            <template x-if="loading">
-                                <div class="p-4 text-center text-slate-500 text-sm">Loading...</div>
-                            </template>
-                            <template x-if="!loading && (!items || items.length === 0)">
-                                <div class="p-4 text-center text-slate-500 text-sm">No notifications</div>
-                            </template>
-                            <template x-if="!loading && items && items.length > 0">
-                                <div class="divide-y divide-slate-100">
-                                    <template x-for="n in items" :key="n.id">
-                                        <a :href="n.relatedEntityType === 'TaskAssignment' && n.relatedEntityId ? '/Tasks/Details/' + n.relatedEntityId : (n.relatedEntityType === 'DocumentSubmitted' && n.relatedEntityId ? '/Documents/Details/' + n.relatedEntityId : '/Notifications')"
-                                           class="block px-4 py-3 hover:bg-slate-50 text-left">
-                                            <div class="font-medium text-slate-900 text-sm" x-text="n.title"></div>
-                                            <div class="text-slate-500 text-xs mt-0.5" x-text="n.message"></div>
-                                            <div class="text-slate-400 text-xs mt-1" x-text="n.createdAt ? new Date(n.createdAt).toLocaleString() : ''"></div>
-                                        </a>
-                                    </template>
-                                </div>
-                            </template>
+                            <div id="notif-loading" class="hidden p-4 text-center text-slate-500 text-sm">Loading...</div>
+                            <div id="notif-empty" class="p-4 text-center text-slate-500 text-sm">No notifications</div>
+                            <div id="notif-list" class="hidden divide-y divide-slate-100"></div>
                         </div>
                     </div>
                 </div>
@@ -615,8 +588,8 @@
                 <div class="hidden md:block h-8 w-px bg-slate-200 mx-1"></div>
 
                 <!-- User Menu -->
-                <div class="relative" x-data="{ open: false }">
-                    <button class="flex items-center gap-3 pl-2 pr-3 py-1.5 hover:bg-slate-50 rounded-xl transition-colors" @@click="open = !open">
+                <div id="user-menu-wrapper" class="relative">
+                    <button id="user-menu-btn" type="button" class="flex items-center gap-3 pl-2 pr-3 py-1.5 hover:bg-slate-50 rounded-xl transition-colors">
                         <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-sm font-bold shadow-md shadow-brand-500/30">
                             @initials
                         </div>
@@ -624,21 +597,11 @@
                             <div class="text-sm font-semibold text-slate-800">@displayName</div>
                             <div class="text-xs text-slate-500">@roleLabel</div>
                         </div>
-                        <svg class="hidden md:block h-4 w-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg id="user-menu-chevron" class="hidden md:block h-4 w-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
-
-                    <!-- Dropdown Menu -->
-                    <div x-show="open" x-cloak
-                         x-transition:enter="transition ease-out duration-150"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100 scale-100"
-                         x-transition:leave-end="opacity-0 scale-95"
-                         @@click.outside="open = false"
-                         class="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 py-1 origin-top-right">
+                    <div id="user-menu-panel" class="hidden absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 py-1 origin-top-right z-50">
                         <div class="px-4 py-3 border-b border-slate-100">
                             <p class="text-sm font-semibold text-slate-900">@displayName</p>
                             <p class="text-xs text-slate-500 truncate">@roleLabel</p>
@@ -659,7 +622,7 @@
                             </a>
                         </div>
                         <div class="border-t border-slate-100 py-1">
-                            <a class="flex items-center gap-3 px-4 py-2.5 text-sm text-accent-600 hover:bg-accent-50 transition-colors" href="/Account/Logout">
+                            <a class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors" href="/Account/Logout">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                 </svg>
@@ -696,28 +659,145 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
 <script>
- document.addEventListener('alpine:init', function() {
-   Alpine.data('notificationsDropdown', function() {
-     return {
-       open: false,
-       loading: false,
-       items: [],
-       unreadCount: 0,
-       init: function() {
-         var self = this;
-         window.addEventListener('qms:notification', function() { self.unreadCount++; if (self.open) self.fetchNotifications(); });
-       },
-       fetchNotifications: function() {
-         var self = this;
-         self.loading = true;
-         fetch('/api/NotificationsApi').then(function(r) { return r.json(); }).then(function(d) {
-           self.items = d.items || [];
-           self.unreadCount = d.unreadCount != null ? d.unreadCount : 0;
-         }).catch(function() { self.items = []; }).finally(function() { self.loading = false; });
-       }
-     };
-   });
- });
+// =====================================================
+// Header Dropdowns - Pure Vanilla JS (no Alpine dependency)
+// =====================================================
+(function() {
+  var panels = [];
+
+  function closeAll(except) {
+    panels.forEach(function(p) { if (p !== except) p.classList.add('hidden'); });
+    var chevron = document.getElementById('user-menu-chevron');
+    if (chevron && except !== document.getElementById('user-menu-panel')) chevron.classList.remove('rotate-180');
+  }
+
+  function togglePanel(panelId, chevronId) {
+    var panel = document.getElementById(panelId);
+    if (!panel) return;
+    var isHidden = panel.classList.contains('hidden');
+    closeAll(panel);
+    if (isHidden) {
+      panel.classList.remove('hidden');
+      if (chevronId) { var c = document.getElementById(chevronId); if (c) c.classList.add('rotate-180'); }
+    } else {
+      panel.classList.add('hidden');
+      if (chevronId) { var c2 = document.getElementById(chevronId); if (c2) c2.classList.remove('rotate-180'); }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var qaPanel = document.getElementById('quick-add-panel');
+    var notifPanel = document.getElementById('notif-panel');
+    var userPanel = document.getElementById('user-menu-panel');
+
+    if (qaPanel) panels.push(qaPanel);
+    if (notifPanel) panels.push(notifPanel);
+    if (userPanel) panels.push(userPanel);
+
+    // Quick Add
+    var qaBtn = document.getElementById('quick-add-btn');
+    if (qaBtn) qaBtn.addEventListener('click', function(e) { e.stopPropagation(); togglePanel('quick-add-panel', null); });
+
+    // Notifications
+    var notifBtn = document.getElementById('notif-btn');
+    if (notifBtn) {
+      notifBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var wasHidden = notifPanel && notifPanel.classList.contains('hidden');
+        togglePanel('notif-panel', null);
+        if (wasHidden) { fetchNotifications(); markAllNotifsRead(); }
+      });
+    }
+
+    // User Menu
+    var userBtn = document.getElementById('user-menu-btn');
+    if (userBtn) userBtn.addEventListener('click', function(e) { e.stopPropagation(); togglePanel('user-menu-panel', 'user-menu-chevron'); });
+
+    // Close on outside click
+    document.addEventListener('click', function() { closeAll(null); });
+    // Prevent panel clicks from closing
+    panels.forEach(function(p) { if (p) p.addEventListener('click', function(e) { e.stopPropagation(); }); });
+  });
+
+  // ---- Notifications fetch & render ----
+  var notifUnreadCount = 0;
+  var notifItems = [];
+
+  function renderNotifications() {
+    var loading = document.getElementById('notif-loading');
+    var empty = document.getElementById('notif-empty');
+    var list = document.getElementById('notif-list');
+    var dot = document.getElementById('notification-dot');
+    if (!list) return;
+    if (loading) loading.classList.add('hidden');
+    if (notifItems.length === 0) {
+      if (empty) empty.classList.remove('hidden');
+      if (list) list.classList.add('hidden');
+    } else {
+      if (empty) empty.classList.add('hidden');
+      list.classList.remove('hidden');
+      list.innerHTML = notifItems.map(function(n) {
+        var href = (n.relatedEntityType === 'TaskAssignment' && n.relatedEntityId) ? '/Tasks/Details/' + n.relatedEntityId
+                 : (n.relatedEntityType === 'DocumentSubmitted' && n.relatedEntityId) ? '/Documents/Details/' + n.relatedEntityId
+                 : '/Notifications';
+        var time = n.createdAt ? new Date(n.createdAt).toLocaleString() : '';
+        return '<a href="' + href + '" onclick="qmsNotifGo(event,\'' + (n.id||'') + '\',\'' + href + '\')" class="block px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0">'
+          + '<div class="font-medium text-slate-900 text-sm">' + (n.title||'') + '</div>'
+          + '<div class="text-slate-500 text-xs mt-0.5">' + (n.message||'') + '</div>'
+          + '<div class="text-slate-400 text-xs mt-1">' + time + '</div>'
+          + '</a>';
+      }).join('');
+    }
+    if (dot) { notifUnreadCount > 0 ? dot.classList.remove('hidden') : dot.classList.add('hidden'); }
+  }
+
+  window.qmsNotifGo = function(e, id, href) {
+    e.preventDefault();
+    if (id) { fetch('/api/NotificationsApi/' + id + '/read', { method: 'POST' }).finally(function() { window.location.href = href; }); }
+    else { window.location.href = href; }
+  };
+
+  function fetchNotifications() {
+    var loading = document.getElementById('notif-loading');
+    var empty = document.getElementById('notif-empty');
+    var list = document.getElementById('notif-list');
+    if (loading) loading.classList.remove('hidden');
+    if (empty) empty.classList.add('hidden');
+    if (list) list.classList.add('hidden');
+    fetch('/api/NotificationsApi?limit=10').then(function(r) { return r.json(); }).then(function(d) {
+      notifItems = d.items || [];
+      notifUnreadCount = d.unreadCount != null ? Number(d.unreadCount) : 0;
+      renderNotifications();
+    }).catch(function() { notifItems = []; renderNotifications(); });
+  }
+
+  function markAllNotifsRead() {
+    if (!notifUnreadCount) return;
+    fetch('/api/NotificationsApi/read-all', { method: 'POST' }).then(function() {
+      notifUnreadCount = 0;
+      notifItems = notifItems.map(function(n) { return Object.assign({}, n, { isRead: true }); });
+      renderNotifications();
+      try { window.dispatchEvent(new CustomEvent('qms:notificationsRead')); window.dispatchEvent(new CustomEvent('qms:unreadCount', { detail: { count: 0 } })); } catch(e) {}
+    });
+  }
+
+  // Listen for real-time notification events
+  window.addEventListener('qms:notification', function() {
+    notifUnreadCount++;
+    var dot = document.getElementById('notification-dot');
+    if (dot) dot.classList.remove('hidden');
+  });
+  window.addEventListener('qms:unreadCount', function(e) {
+    notifUnreadCount = e && e.detail ? Number(e.detail.count || 0) : 0;
+    var dot = document.getElementById('notification-dot');
+    if (dot) { notifUnreadCount > 0 ? dot.classList.remove('hidden') : dot.classList.add('hidden'); }
+  });
+  window.addEventListener('qms:notificationsRead', function() {
+    notifUnreadCount = 0;
+    var dot = document.getElementById('notification-dot');
+    if (dot) dot.classList.add('hidden');
+  });
+})();
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -725,6 +805,10 @@
 <script src="~/js/animations.js"></script>
 <script src="~/js/signalr-notifications.js"></script>
 <script src="~/js/notifications-badges.js"></script>
+@if (User?.Identity?.IsAuthenticated == true)
+{
+    <script src="~/js/onboarding-tour.js"></script>
+}
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

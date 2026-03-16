@@ -1,0 +1,105 @@
+@page "{id:guid}"
+@model KasahQMS.Web.Pages.Templates.ViewModel
+@{
+    ViewData["Title"] = Model.Template?.Title ?? "Template";
+}
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <nav class="flex items-center gap-2 text-sm text-slate-500 mb-1">
+                <a href="/Templates" class="hover:text-slate-900">Templates</a>
+                <span>/</span>
+                <span class="text-slate-700">View</span>
+            </nav>
+            <h1 class="text-2xl font-semibold text-slate-900">@Model.Template?.Title</h1>
+            <p class="text-sm text-slate-500">@Model.Template?.DocumentNumber</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/Templates" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                ← Back to Templates
+            </a>
+            <a href="/Documents/CreateFromTemplate/@Model.Template?.Id" class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Use Template
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Template == null)
+    {
+        <div class="card p-12 text-center">
+            <p class="text-slate-500">Template not found.</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid gap-6 lg:grid-cols-3">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Template Content</h2>
+                    @if (!string.IsNullOrWhiteSpace(Model.Template.Content))
+                    {
+                        <div class="prose max-w-none text-slate-700 border border-slate-200 rounded-lg p-4 bg-slate-50">
+                            @Html.Raw(Model.Template.Content)
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-slate-400 italic">No content provided.</p>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Template.Description))
+                {
+                    <div class="card p-6">
+                        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-2">Description</h2>
+                        <p class="text-slate-700">@Model.Template.Description</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar Details -->
+            <div class="space-y-4">
+                <div class="card p-6 space-y-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Details</h2>
+                    <dl class="space-y-3 text-sm">
+                        <div>
+                            <dt class="text-xs text-slate-400 uppercase tracking-wide">Document Number</dt>
+                            <dd class="font-mono text-slate-700 mt-0.5">@Model.Template.DocumentNumber</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-slate-400 uppercase tracking-wide">Document Type</dt>
+                            <dd class="text-slate-700 mt-0.5">@Model.Template.DocumentType</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-slate-400 uppercase tracking-wide">Status</dt>
+                            <dd class="mt-0.5">
+                                <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">@Model.Template.Status</span>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-slate-400 uppercase tracking-wide">Created</dt>
+                            <dd class="text-slate-700 mt-0.5">@Model.Template.CreatedAt</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-slate-400 uppercase tracking-wide">Authorized Departments</dt>
+                            <dd class="text-slate-700 mt-0.5">@Model.AuthorizedDepartments</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="card p-4 bg-brand-50 border-brand-200">
+                    <p class="text-sm text-brand-800 mb-3">Ready to use this template? Create a new document based on it.</p>
+                    <a href="/Documents/CreateFromTemplate/@Model.Template.Id"
+                       class="block w-full text-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors">
+                        Use This Template
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

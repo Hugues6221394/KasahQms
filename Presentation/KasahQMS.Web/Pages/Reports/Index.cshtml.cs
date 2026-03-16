@@ -364,7 +364,7 @@ public class IndexModel : PageModel
                 PreviewRows = suppliers.Select(s => new Dictionary<string, object>
                 {
                     ["Supplier"] = s.Name, ["Code"] = (object?)s.Code ?? "—",
-                    ["Status"] = s.QualificationStatus.ToString(), ["Score"] = (object)s.PerformanceScore,
+                    ["Status"] = s.QualificationStatus.ToString(), ["Score"] = (object?)s.PerformanceScore ?? "—",
                     ["Next Audit"] = s.NextAuditDate?.ToString("yyyy-MM-dd") ?? "—"
                 }).ToList();
                 break;

@@ -42,6 +42,38 @@
       window.dispatchEvent(new CustomEvent('qms:notification', { detail: payload }));
     } catch (e) {}
   });
+
+  // Compatibility with other server event names
+  connection.on('NotificationReceived', function (payload) {
+    try {
+      window.dispatchEvent(new CustomEvent('qms:notification', { detail: payload }));
+    } catch (e) {}
+  });
+  connection.on('TaskAssigned', function (payload) {
+    try {
+      window.dispatchEvent(new CustomEvent('qms:notification', { detail: payload }));
+    } catch (e) {}
+  });
+  connection.on('TaskUpdate', function (payload) {
+    try {
+      window.dispatchEvent(new CustomEvent('qms:notification', { detail: payload }));
+    } catch (e) {}
+  });
+  connection.on('DocumentReceived', function (payload) {
+    try {
+      window.dispatchEvent(new CustomEvent('qms:notification', { detail: payload }));
+    } catch (e) {}
+  });
+  connection.on('NewMessage', function (payload) {
+    try {
+      window.dispatchEvent(new CustomEvent('qms:notification', { detail: payload }));
+    } catch (e) {}
+  });
+  connection.on('RefreshBadges', function () {
+    try {
+      window.dispatchEvent(new CustomEvent('qms:refreshBadges'));
+    } catch (e) {}
+  });
   
   // Handle unread count updates
   connection.on('UnreadCount', function (count) {

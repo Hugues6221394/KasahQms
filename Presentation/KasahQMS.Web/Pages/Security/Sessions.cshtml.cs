@@ -72,6 +72,20 @@ public class SessionsModel : PageModel
         CurrentSessionToken = HttpContext.Request.Cookies["KasahQmsAuth"];
 
         var sessions = await _sessionService.GetActiveSessionsAsync(userId.Value);
+        
+        // Parse browser from UserAgent if Browser is null
+        foreach (var s in sessions)
+        {
+            if (string.IsNullOrEmpty(s.Browser) && !string.IsNullOrEmpty(s.UserAgent))
+            {
+                if (s.UserAgent.Contains("Edg")) s.Browser = "Edge";
+                else if (s.UserAgent.Contains("Chrome")) s.Browser = "Chrome";
+                else if (s.UserAgent.Contains("Firefox")) s.Browser = "Firefox";
+                else if (s.UserAgent.Contains("Safari")) s.Browser = "Safari";
+                else s.Browser = "Unknown";
+            }
+        }
+        
         Sessions = sessions.Select(s => new SessionRow(
             s.Id,
             s.DeviceInfo ?? "Unknown Device",
@@ -80,7 +94,7 @@ public class SessionsModel : PageModel
             s.Location ?? "Unknown",
             s.LastActivityAt,
             s.CreatedAt,
-            false
+            CurrentSessionToken != null && s.Token == CurrentSessionToken
         )).ToList();
     }
 

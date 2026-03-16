@@ -4,16 +4,7 @@
     ViewData["Title"] = "Notifications";
 }
 
-<div class="space-y-6" x-data="{
-    notifications: @Json.Serialize(Model.Notifications),
-    markAsRead(id) {
-        if (window.notificationsHub) {
-            window.notificationsHub.invoke('MarkAsRead', id);
-            this.notifications = this.notifications.map(n => n.id === id ? { ...n, isRead: true } : n);
-            if (window.qmsBadges) window.qmsBadges.decrementBadge('notifications');
-        }
-    }
-}">
+<div class="space-y-6">
     <div class="rounded-2xl border border-slate-200 bg-white p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -22,8 +13,8 @@
                 <p class="mt-2 text-sm text-slate-500">Stay updated with latest activities and alerts across quality workflows.</p>
             </div>
             <div class="flex items-center gap-3">
-                <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600" x-text="notifications.length + ' total'"></div>
-                <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700" x-text="notifications.filter(n => !n.isRead).length + ' unread'"></div>
+                <div id="notif-total-badge" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">0 total</div>
+                <div id="notif-unread-badge" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">0 unread</div>
                 @if (Model.Notifications.Any(n => !n.IsRead))
                 {
                     <form method="post" asp-page-handler="MarkAllAsRead">
@@ -36,34 +27,8 @@
     </div>
 
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <template x-if="notifications.length > 0">
-            <div class="divide-y divide-slate-100">
-                <template x-for="n in notifications" :key="n.id">
-                    <div class="flex items-start gap-4 p-4 transition-colors hover:bg-slate-50" :class="n.isRead ? 'opacity-75' : 'bg-slate-50/50'" @@click="markAsRead(n.id)">
-                        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl"
-                             :class="n.type === 'Task' ? 'bg-indigo-100 text-indigo-600' : n.type === 'Document' ? 'bg-emerald-100 text-emerald-600' : 'bg-brand-100 text-brand-600'">
-                            <svg x-show="n.type === 'Task'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                            <svg x-show="n.type === 'Document'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            <svg x-show="n.type !== 'Task' && n.type !== 'Document'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center justify-between gap-2">
-                                <h3 class="truncate text-sm font-semibold text-slate-900" x-text="n.title"></h3>
-                                <span class="whitespace-nowrap text-xs text-slate-400" x-text="n.time"></span>
-                            </div>
-                            <p class="mt-1 text-sm text-slate-600" x-text="n.message"></p>
-                            <div class="mt-2 flex items-center gap-2" x-if="n.relatedEntityId">
-                                <a :href="n.relatedEntityType === 'Task' ? '/Tasks/Details/' + n.relatedEntityId : '/Documents/Details/' + n.relatedEntityId" class="text-xs font-medium text-brand-600 hover:text-brand-700 underline" @@click.stop>
-                                    View Related <span x-text="n.relatedEntityType"></span>
-                                </a>
-                            </div>
-                        </div>
-                        <div x-show="!n.isRead" class="mt-2 h-2 w-2 rounded-full bg-brand-500"></div>
-                    </div>
-                </template>
-            </div>
-        </template>
-        <div x-show="notifications.length === 0" class="py-20 text-center">
+        <div id="notif-list-container" class="divide-y divide-slate-100"></div>
+        <div id="notif-empty-state" class="hidden py-20 text-center">
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50">
                 <svg class="h-8 w-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
             </div>
@@ -107,3 +72,95 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+<script>
+(function() {
+    var notifications = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Notifications));
+
+    function esc(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function iconHtml(type) {
+        if (type === 'Task') return '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>';
+        if (type === 'Document') return '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>';
+        return '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>';
+    }
+
+    function iconBg(type) {
+        if (type === 'Task') return 'bg-indigo-100 text-indigo-600';
+        if (type === 'Document') return 'bg-emerald-100 text-emerald-600';
+        return 'bg-brand-100 text-brand-600';
+    }
+
+    function render() {
+        var container = document.getElementById('notif-list-container');
+        var empty = document.getElementById('notif-empty-state');
+        var totalBadge = document.getElementById('notif-total-badge');
+        var unreadBadge = document.getElementById('notif-unread-badge');
+        if (!container) return;
+
+        var unread = notifications.filter(function(n) { return !n.isRead; }).length;
+        if (totalBadge) totalBadge.textContent = notifications.length + ' total';
+        if (unreadBadge) unreadBadge.textContent = unread + ' unread';
+
+        if (notifications.length === 0) {
+            container.innerHTML = '';
+            if (empty) empty.classList.remove('hidden');
+            return;
+        }
+        if (empty) empty.classList.add('hidden');
+
+        container.innerHTML = notifications.map(function(n) {
+            var relatedLink = '';
+            if (n.relatedEntityId) {
+                var href = (n.relatedEntityType === 'Task') ? '/Tasks/Details/' + n.relatedEntityId : '/Documents/Details/' + n.relatedEntityId;
+                relatedLink = '<div class="mt-2"><a href="' + esc(href) + '" onclick="event.stopPropagation()" class="text-xs font-medium text-brand-600 hover:text-brand-700 underline">View Related ' + esc(n.relatedEntityType) + '</a></div>';
+            }
+            var rowBg = n.isRead ? 'opacity-75' : 'bg-slate-50/50';
+            var dot = n.isRead ? '' : '<div class="mt-2 h-2 w-2 rounded-full bg-brand-500 flex-shrink-0"></div>';
+            return '<div class="flex items-start gap-4 p-4 transition-colors hover:bg-slate-50 cursor-pointer ' + rowBg + '" onclick="qmsPageMarkRead(\'' + (n.id||'') + '\')">'
+                + '<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ' + iconBg(n.type) + '">' + iconHtml(n.type) + '</div>'
+                + '<div class="min-w-0 flex-1">'
+                +   '<div class="flex items-center justify-between gap-2">'
+                +     '<h3 class="truncate text-sm font-semibold text-slate-900">' + esc(n.title) + '</h3>'
+                +     '<span class="whitespace-nowrap text-xs text-slate-400">' + esc(n.time) + '</span>'
+                +   '</div>'
+                +   '<p class="mt-1 text-sm text-slate-600">' + esc(n.message) + '</p>'
+                +   relatedLink
+                + '</div>'
+                + dot
+                + '</div>';
+        }).join('');
+    }
+
+    window.qmsPageMarkRead = function(id) {
+        if (!id) return;
+        var n = notifications.find(function(x) { return x.id === id; });
+        if (n && !n.isRead) {
+            fetch('/api/NotificationsApi/' + id + '/read', { method: 'POST' }).finally(function() {
+                notifications = notifications.map(function(x) { return x.id === id ? Object.assign({}, x, { isRead: true }) : x; });
+                render();
+                try { window.dispatchEvent(new CustomEvent('qms:notificationsRead')); } catch(e) {}
+            });
+        }
+    };
+
+    // Auto mark all as read on page open
+    var hasUnread = notifications.some(function(n) { return !n.isRead; });
+    if (hasUnread) {
+        fetch('/api/NotificationsApi/read-all', { method: 'POST' }).then(function() {
+            notifications = notifications.map(function(n) { return Object.assign({}, n, { isRead: true }); });
+            render();
+            try {
+                window.dispatchEvent(new CustomEvent('qms:notificationsRead'));
+                window.dispatchEvent(new CustomEvent('qms:unreadCount', { detail: { count: 0 } }));
+            } catch(e) {}
+        });
+    }
+
+    render();
+})();
+</script>
+}

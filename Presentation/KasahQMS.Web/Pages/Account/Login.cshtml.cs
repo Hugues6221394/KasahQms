@@ -18,19 +18,22 @@ public class LoginModel : PageModel
     private readonly IPasswordHasher _passwordHasher;
     private readonly DashboardRoutingService _dashboardRoutingService;
     private readonly IAuditLoggingService _auditLoggingService;
+    private readonly ISessionService _sessionService;
 
     public LoginModel(
         ILogger<LoginModel> logger,
         ApplicationDbContext dbContext,
         IPasswordHasher passwordHasher,
         DashboardRoutingService dashboardRoutingService,
-        IAuditLoggingService auditLoggingService)
+        IAuditLoggingService auditLoggingService,
+        ISessionService sessionService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _dashboardRoutingService = dashboardRoutingService;
         _auditLoggingService = auditLoggingService;
+        _sessionService = sessionService;
     }
 
     [BindProperty]
@@ -38,6 +41,9 @@ public class LoginModel : PageModel
 
     [BindProperty]
     public string Password { get; set; } = string.Empty;
+
+    [BindProperty]
+    public bool RememberMe { get; set; }
 
     public string? ErrorMessage { get; set; }
 
@@ -107,7 +113,8 @@ public class LoginModel : PageModel
 
             // Record successful login with IP
             user.RecordSuccessfulLogin();
-            user.LastLoginIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            user.LastLoginIp = ipAddress;
             await _dbContext.SaveChangesAsync();
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -118,9 +125,45 @@ public class LoginModel : PageModel
                 principal,
                 new AuthenticationProperties
                 {
-                    IsPersistent = false,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                    IsPersistent = RememberMe,
+                    ExpiresUtc = RememberMe
+                        ? DateTimeOffset.UtcNow.AddDays(30)
+                        : DateTimeOffset.UtcNow.AddHours(8)
                 });
+
+            // Create session record with device/browser info
+            try
+            {
+                var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+                var deviceInfo = userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase)
+                    ? "Mobile Device" : "Desktop/Laptop";
+                var browser = ParseBrowser(userAgent);
+                var tokenHash = Guid.NewGuid().ToString("N"); // simple token for session tracking
+
+                var session = await _sessionService.CreateSessionAsync(
+                    user.Id, user.TenantId, tokenHash,
+                    deviceInfo, ipAddress, userAgent);
+
+                // Parse and set browser if not already set
+                if (string.IsNullOrEmpty(session.Browser))
+                {
+                    session.Browser = browser;
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                // Store session token in cookie for current-session detection
+                Response.Cookies.Append("KasahQmsAuth", tokenHash, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Expires = RememberMe ? DateTimeOffset.UtcNow.AddDays(30) : DateTimeOffset.UtcNow.AddHours(8)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create session record for user {UserId}", user.Id);
+            }
 
             await _auditLoggingService.LogUserLoginAsync(user.Id);
 
@@ -139,6 +182,17 @@ public class LoginModel : PageModel
             ErrorMessage = "Invalid email or password.";
             return Page();
         }
+    }
+
+    private static string ParseBrowser(string userAgent)
+    {
+        if (string.IsNullOrEmpty(userAgent)) return "Unknown";
+        if (userAgent.Contains("Edg/", StringComparison.OrdinalIgnoreCase)) return "Edge";
+        if (userAgent.Contains("OPR/", StringComparison.OrdinalIgnoreCase) || userAgent.Contains("Opera", StringComparison.OrdinalIgnoreCase)) return "Opera";
+        if (userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase)) return "Chrome";
+        if (userAgent.Contains("Firefox", StringComparison.OrdinalIgnoreCase)) return "Firefox";
+        if (userAgent.Contains("Safari", StringComparison.OrdinalIgnoreCase)) return "Safari";
+        return "Unknown";
     }
 
     private async Task LoadSampleCredentialsAsync()
@@ -162,7 +216,7 @@ public class LoginModel : PageModel
             .OrderBy(u => u.FirstName)
             .ToListAsync();
 
-        SampleCredentials = users
+                SampleCredentials = users
             .Select(u => new SampleCredential(
                 u.Roles?.FirstOrDefault()?.Name ?? "User",
                 u.Email,
@@ -172,3 +226,5 @@ public class LoginModel : PageModel
 }
 
 public record SampleCredential(string Role, string Email, string Password);
+
+

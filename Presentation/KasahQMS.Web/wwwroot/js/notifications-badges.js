@@ -232,6 +232,9 @@
         } catch (e) { }
     }
 
+    // Expose global refresh function
+    window.qmsRefreshBadges = function () { fetchBadges(); };
+
     // Expose functions globally
     window.qmsBadges = {
         refresh: fetchBadges,
@@ -251,6 +254,32 @@
     fetchBadges();
     initSignalR();
 
+    // Sync with generic notification events from signalr-notifications.js
+    window.addEventListener('qms:notification', function () {
+        badges.notifications++;
+        updateAllBadges();
+    });
+    window.addEventListener('qms:unreadCount', function (e) {
+        var count = e && e.detail ? Number(e.detail.count || 0) : 0;
+        badges.notifications = Number.isFinite(count) ? count : badges.notifications;
+        updateAllBadges();
+    });
+    window.addEventListener('qms:notificationsRead', function () {
+        badges.notifications = 0;
+        updateAllBadges();
+    });
+    window.addEventListener('qms:refreshBadges', function () {
+        fetchBadges();
+    });
+
     // Refresh badges periodically (every 60 seconds as fallback)
     setInterval(fetchBadges, 60000);
+
+    // Immediately refresh badges when landing on specific pages
+    document.addEventListener('DOMContentLoaded', function () {
+        var refreshPaths = ['/Tasks', '/Chat', '/Documents', '/Notifications', '/Messages'];
+        if (refreshPaths.some(function(p) { return location.pathname.startsWith(p); })) {
+            setTimeout(window.qmsRefreshBadges, 1500);
+        }
+    });
 })();
