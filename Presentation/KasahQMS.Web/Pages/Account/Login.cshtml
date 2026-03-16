@@ -14,7 +14,8 @@
     <title>@ViewData["Title"] - KASAH QMS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -36,265 +37,505 @@
                             800: '#065f46',
                             900: '#064e3b',
                             950: '#022c22',
-                        },
-                        accent: {
-                            50: '#fef2f2',
-                            100: '#fee2e2',
-                            500: '#ef4444',
-                            600: '#dc2626',
                         }
                     }
                 }
             }
         }
     </script>
-    <style>
-        .gradient-mesh {
-            background-color: #022c22;
-            background-image:
-                radial-gradient(at 40% 20%, #059669 0px, transparent 50%),
-                radial-gradient(at 80% 0%, #047857 0px, transparent 50%),
-                radial-gradient(at 0% 50%, #065f46 0px, transparent 50%),
-                radial-gradient(at 80% 50%, #10b981 0px, transparent 50%),
-                radial-gradient(at 0% 100%, #064e3b 0px, transparent 50%),
-                radial-gradient(at 80% 100%, #047857 0px, transparent 50%);
-        }
-
-        .floating {
-            animation: float 6s ease-in-out infinite;
-        }
-
-        @@keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .card-shine {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card-shine::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                to bottom right,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.05) 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
-            transform: rotate(45deg);
-            animation: shine 4s infinite;
-        }
-
-        @@keyframes shine {
-            0% { transform: translateX(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) rotate(45deg); }
-        }
-    </style>
 </head>
-<body class="h-full font-sans antialiased">
-    <div class="min-h-full flex">
-        <!-- Left Panel - Branding -->
-        <div class="hidden lg:flex lg:w-1/2 xl:w-3/5 gradient-mesh relative overflow-hidden">
-            <!-- Floating Elements -->
-            <div class="absolute inset-0 overflow-hidden">
-                <div class="absolute top-20 left-20 w-72 h-72 bg-brand-400/20 rounded-full blur-3xl floating"></div>
-                <div class="absolute bottom-20 right-20 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl floating" style="animation-delay: -2s;"></div>
-                <div class="absolute top-1/2 left-1/3 w-64 h-64 bg-brand-500/10 rounded-full blur-2xl floating" style="animation-delay: -4s;"></div>
+<body class="h-full font-sans antialiased bg-gray-50 overflow-hidden">
+    <div class="min-h-screen flex flex-col lg:flex-row">
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- LEFT HERO SECTION (60%) -->
+        <!-- ════════════════════════════════════════════ -->
+        <div class="relative lg:w-[60%] w-full h-[320px] md:h-[400px] lg:h-screen flex-shrink-0 overflow-hidden" id="heroSection">
+            <!-- Background Image -->
+            <div class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000" id="heroBg"
+                 style="background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80');">
+            </div>
+            <!-- Dark Gradient Overlay -->
+            <div class="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30"></div>
+
+            <!-- Floating Particle Dots (CSS only) -->
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="particle" style="left:10%;top:20%;"></div>
+                <div class="particle" style="left:25%;top:60%;animation-delay:-2s;"></div>
+                <div class="particle" style="left:50%;top:30%;animation-delay:-4s;"></div>
+                <div class="particle" style="left:70%;top:70%;animation-delay:-1s;"></div>
+                <div class="particle" style="left:85%;top:15%;animation-delay:-3s;"></div>
+                <div class="particle" style="left:40%;top:80%;animation-delay:-5s;"></div>
+                <div class="particle" style="left:60%;top:45%;animation-delay:-2.5s;"></div>
+                <div class="particle" style="left:15%;top:75%;animation-delay:-1.5s;"></div>
+                <div class="particle" style="left:90%;top:50%;animation-delay:-3.5s;"></div>
+                <div class="particle" style="left:35%;top:10%;animation-delay:-4.5s;"></div>
             </div>
 
-            <!-- Content -->
-            <div class="relative z-10 flex flex-col justify-between p-12 w-full">
-                <!-- Logo -->
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
-                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Hero Content -->
+            <div class="relative z-10 flex flex-col justify-between h-full p-6 md:p-10 lg:p-14">
+                <!-- Top: Logo -->
+                <div class="flex items-center gap-3 anim-fadeInUp" style="animation-delay: 0.1s;">
+                    <div class="w-11 h-11 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
+                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                         </svg>
                     </div>
                     <span class="text-white font-bold text-xl tracking-tight">KASAH QMS</span>
                 </div>
 
-                <!-- Main Content -->
-                <div class="max-w-lg">
-                    <h1 class="text-4xl xl:text-5xl font-bold text-white leading-tight mb-6">
-                        Enterprise Quality<br/>
-                        <span class="text-brand-300">Management System</span>
+                <!-- Middle: Headline + Features (hidden on small mobile) -->
+                <div class="hidden md:block max-w-xl">
+                    <!-- Animated Headline -->
+                    <h1 class="anim-fadeInUp" style="animation-delay: 0.3s;">
+                        <span class="block text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white leading-tight tracking-tight typewriter-wrap">
+                            Transform Your<br/>Quality Management
+                        </span>
                     </h1>
-                    <p class="text-lg text-brand-100/80 leading-relaxed mb-8">
-                        Streamline your quality processes, manage documents, track audits, and ensure compliance with our enterprise-grade QMS platform built for regulated industries.
+                    <p class="mt-5 text-lg lg:text-xl text-gray-300 leading-relaxed anim-fadeInUp max-w-md" style="animation-delay: 0.5s;">
+                        Enterprise-grade QMS trusted by businesses worldwide
                     </p>
 
-                    <!-- Features -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex items-start gap-3">
-                            <div class="w-8 h-8 bg-brand-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                            </div>
+                    <!-- Animated Feature Showcase -->
+                    <div class="mt-8 anim-fadeInUp" style="animation-delay: 0.7s;">
+                        <div class="flex items-center gap-3 h-12" id="featureShowcase">
+                            <div class="feature-icon w-10 h-10 rounded-xl bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/30 flex items-center justify-center text-xl flex-shrink-0" id="featureIcon">📄</div>
                             <div>
-                                <div class="text-sm font-semibold text-white">Document Control</div>
-                                <div class="text-xs text-brand-200/70">Version tracking & workflows</div>
+                                <div class="text-white font-semibold text-sm" id="featureTitle">Document Control & Versioning</div>
+                                <div class="text-emerald-300/70 text-xs" id="featureSub">Full lifecycle document management</div>
                             </div>
                         </div>
-                        <div class="flex items-start gap-3">
-                            <div class="w-8 h-8 bg-brand-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="text-sm font-semibold text-white">Audit Management</div>
-                                <div class="text-xs text-brand-200/70">Internal & external audits</div>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <div class="w-8 h-8 bg-brand-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="text-sm font-semibold text-white">CAPA Tracking</div>
-                                <div class="text-xs text-brand-200/70">Corrective & preventive actions</div>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <div class="w-8 h-8 bg-brand-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="text-sm font-semibold text-white">Compliance Ready</div>
-                                <div class="text-xs text-brand-200/70">ISO 9001 & regulatory</div>
-                            </div>
+                        <!-- Feature progress dots -->
+                        <div class="flex gap-1.5 mt-4">
+                            <div class="feature-dot active" data-index="0"></div>
+                            <div class="feature-dot" data-index="1"></div>
+                            <div class="feature-dot" data-index="2"></div>
+                            <div class="feature-dot" data-index="3"></div>
+                            <div class="feature-dot" data-index="4"></div>
+                            <div class="feature-dot" data-index="5"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Footer -->
-                <div class="text-sm text-brand-200/60">
-                    Trusted by enterprises worldwide for mission-critical quality management.
+                <!-- Bottom: Glassmorphism Stats Cards -->
+                <div class="hidden lg:flex gap-4 anim-fadeInUp" style="animation-delay: 0.9s;">
+                    <div class="glass-card floating-card">
+                        <div class="text-2xl font-bold text-white">10,000+</div>
+                        <div class="text-xs text-gray-300 mt-0.5">Documents Managed</div>
+                    </div>
+                    <div class="glass-card floating-card" style="animation-delay: -2s;">
+                        <div class="text-2xl font-bold text-white">99.9%</div>
+                        <div class="text-xs text-gray-300 mt-0.5">Uptime Guaranteed</div>
+                    </div>
+                    <div class="glass-card floating-card" style="animation-delay: -4s;">
+                        <div class="flex items-center gap-2">
+                            <div class="text-2xl font-bold text-white">ISO 9001</div>
+                            <svg class="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="text-xs text-gray-300 mt-0.5">Fully Compliant</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Panel - Login Form -->
-        <div class="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
-            <div class="mx-auto w-full max-w-sm">
-                <!-- Mobile Logo -->
-                <div class="lg:hidden flex items-center gap-3 mb-10">
-                    <div class="w-11 h-11 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/30">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        <!-- ════════════════════════════════════════════ -->
+        <!-- RIGHT LOGIN PANEL (40%) -->
+        <!-- ════════════════════════════════════════════ -->
+        <div class="flex-1 flex flex-col justify-center items-center px-6 sm:px-10 lg:px-16 xl:px-20 bg-gradient-to-b from-white via-white to-gray-50/80 anim-slideInRight min-h-0 lg:h-screen overflow-y-auto py-8 lg:py-0">
+            <div class="w-full max-w-[400px]">
+
+                <!-- Brand Mark -->
+                <div class="flex items-center gap-3 mb-10 anim-fadeInUp" style="animation-delay: 0.4s;">
+                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                         </svg>
                     </div>
-                    <span class="font-bold text-xl text-slate-900">KASAH QMS</span>
+                    <div>
+                        <div class="font-bold text-xl text-gray-900 tracking-tight">KASAH</div>
+                        <div class="text-[11px] text-gray-400 font-medium tracking-widest uppercase -mt-0.5">Quality Management</div>
+                    </div>
                 </div>
 
-                <!-- Welcome Text -->
-                <div class="mb-10">
-                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Welcome back</h2>
-                    <p class="mt-2 text-slate-600">Sign in to your account to continue.</p>
+                <!-- Welcome Heading -->
+                <div class="mb-8 anim-fadeInUp" style="animation-delay: 0.5s;">
+                    <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Welcome Back</h2>
+                    <p class="mt-2 text-gray-500">Sign in to your account</p>
                 </div>
 
-                <!-- Login Form -->
-                <form method="post" class="space-y-6">
-                    @Html.AntiForgeryToken()
-
-                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                    {
-                        <div class="p-4 bg-accent-50 border border-accent-200 rounded-xl flex items-start gap-3">
-                            <svg class="w-5 h-5 text-accent-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- Error Message -->
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 error-slide-in">
+                        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <p class="text-sm text-accent-700">@Model.ErrorMessage</p>
                         </div>
-                    }
+                        <div>
+                            <div class="text-sm font-semibold text-red-800">Authentication Failed</div>
+                            <p class="text-sm text-red-600 mt-0.5">@Model.ErrorMessage</p>
+                        </div>
+                    </div>
+                }
 
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-slate-700 mb-2">Work Email</label>
-                        <div class="relative">
+                <!-- Login Form -->
+                <form method="post" class="space-y-5" id="loginForm">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Email Field -->
+                    <div class="anim-fadeInUp" style="animation-delay: 0.6s;">
+                        <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                        <div class="relative group">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
                             <input type="email" id="email" name="Email"
                                 value="@Model.Email"
                                 required
                                 autocomplete="email"
-                                class="w-full px-4 py-3.5 pl-11 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                                class="w-full px-4 py-3.5 pl-12 border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-400 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all duration-300 text-sm"
                                 placeholder="you@company.com">
-                            <svg class="absolute left-4 top-4 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
                         </div>
                     </div>
 
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-slate-700 mb-2">Password</label>
-                        <div class="relative">
+                    <!-- Password Field -->
+                    <div class="anim-fadeInUp" style="animation-delay: 0.7s;">
+                        <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <div class="relative group">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </div>
                             <input type="password" id="password" name="Password"
                                 required
                                 autocomplete="current-password"
-                                class="w-full px-4 py-3.5 pl-11 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                                class="w-full px-4 py-3.5 pl-12 pr-12 border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-400 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all duration-300 text-sm"
                                 placeholder="Enter your password">
-                            <svg class="absolute left-4 top-4 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                            </svg>
+                            <!-- Show/Hide Toggle -->
+                            <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" tabindex="-1">
+                                <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <svg id="eyeOffIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-slate-500">
-                            Use your issued account credentials.
-                        </div>
-                        <a href="#" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">
-                            Need help?
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="flex items-center justify-between anim-fadeInUp" style="animation-delay: 0.8s;">
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" name="RememberMe" class="w-4 h-4 rounded-md border-2 border-gray-300 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0 transition-colors">
+                            <span class="text-sm text-gray-600">Remember me</span>
+                        </label>
+                        <a href="#" class="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors duration-300">
+                            Forgot password?
                         </a>
                     </div>
 
-                    <button type="submit"
-                        class="w-full py-3.5 px-4 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 focus:ring-4 focus:ring-brand-200 transition-all shadow-lg shadow-brand-500/30 hover:shadow-brand-500/40 hover:shadow-xl">
-                        Sign In
-                    </button>
+                    <!-- Submit Button -->
+                    <div class="anim-fadeInUp" style="animation-delay: 0.9s;">
+                        <button type="submit" id="submitBtn"
+                            class="w-full py-4 px-6 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-semibold rounded-2xl hover:from-emerald-700 hover:to-emerald-800 focus:ring-4 focus:ring-emerald-200 transition-all duration-300 shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 btn-glow relative overflow-hidden text-[15px]">
+                            <span id="btnText" class="flex items-center justify-center gap-2">
+                                Sign In
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                </svg>
+                            </span>
+                            <span id="btnSpinner" class="hidden flex items-center justify-center gap-2">
+                                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Signing in...
+                            </span>
+                        </button>
+                    </div>
                 </form>
 
-                <!-- Demo Credentials -->
-                <div class="mt-8 rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                    <div class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Demo Credentials</div>
-                    <div class="text-xs text-slate-500 mb-4">Default password: @Model.PasswordHint</div>
-                    <div class="space-y-2.5">
-                        @foreach (var item in Model.SampleCredentials)
-                        {
-                            <div class="flex items-center justify-between rounded-lg bg-white px-4 py-3 border border-slate-200 hover:border-brand-300 transition-colors cursor-pointer group"
-                                 onclick="document.getElementById('email').value = '@item.Email'; document.getElementById('password').value = '@item.Password';">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-xs">
-                                        @item.Role.Substring(0, 1)
-                                    </div>
-                                    <div>
-                                        <div class="font-medium text-slate-800 text-sm group-hover:text-brand-700 transition-colors">@item.Role</div>
-                                        <div class="text-xs text-slate-500">@item.Email</div>
-                                    </div>
-                                </div>
-                                <svg class="w-4 h-4 text-slate-300 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </div>
-                        }
+                <!-- Trust Badges -->
+                <div class="mt-8 flex items-center justify-center gap-5 anim-fadeInUp" style="animation-delay: 1s;">
+                    <div class="flex items-center gap-1.5 text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <span class="text-[11px] font-medium">256-bit SSL</span>
+                    </div>
+                    <div class="w-px h-3 bg-gray-200"></div>
+                    <div class="flex items-center gap-1.5 text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span class="text-[11px] font-medium">GDPR</span>
+                    </div>
+                    <div class="w-px h-3 bg-gray-200"></div>
+                    <div class="flex items-center gap-1.5 text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span class="text-[11px] font-medium">SOC 2</span>
                     </div>
                 </div>
 
-                <!-- Footer -->
-                <p class="mt-10 text-center text-sm text-slate-500">
-                    © @DateTime.Now.Year KASAH Technologies. All rights reserved.
-                </p>
+                <!-- Divider -->
+                <div class="mt-8 border-t border-gray-100"></div>
+
+                <!-- Footer Branding -->
+                <div class="mt-6 text-center anim-fadeInUp" style="animation-delay: 1.1s;">
+                    <p class="text-xs text-gray-400">
+                        Powered by <span class="font-semibold text-gray-500">KASAH Technologies</span>
+                    </p>
+                    <p class="text-[11px] text-gray-300 mt-1">
+                        © @DateTime.Now.Year All rights reserved.
+                    </p>
+                </div>
+
             </div>
         </div>
+
     </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- JAVASCRIPT -->
+    <!-- ════════════════════════════════════════════ -->
+    <script>
+        // Background image rotation
+        const bgImages = [
+            'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80',
+            'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80',
+            'https://images.unsplash.com/photo-1497215842964-222b430dc094?w=1920&q=80',
+            'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80'
+        ];
+        let currentBgIndex = 0;
+        const heroBg = document.getElementById('heroBg');
+
+        // Preload images
+        bgImages.forEach(src => { const img = new Image(); img.src = src; });
+
+        // Pick random starting image
+        currentBgIndex = Math.floor(Math.random() * bgImages.length);
+        heroBg.style.backgroundImage = `url('${bgImages[currentBgIndex]}')`;
+
+        setInterval(() => {
+            heroBg.style.opacity = '0';
+            setTimeout(() => {
+                currentBgIndex = (currentBgIndex + 1) % bgImages.length;
+                heroBg.style.backgroundImage = `url('${bgImages[currentBgIndex]}')`;
+                heroBg.style.opacity = '1';
+            }, 800);
+        }, 8000);
+
+        // Feature showcase rotation
+        const features = [
+            { icon: '📄', title: 'Document Control & Versioning', sub: 'Full lifecycle document management' },
+            { icon: '🔍', title: 'Audit Management & Tracking', sub: 'Internal & external audit workflows' },
+            { icon: '⚡', title: 'CAPA Lifecycle Management', sub: 'Corrective & preventive actions' },
+            { icon: '📊', title: 'Real-time Analytics & Reporting', sub: 'Dashboards & compliance insights' },
+            { icon: '🛡️', title: 'Compliance & Risk Management', sub: 'Regulatory framework alignment' },
+            { icon: '👥', title: 'Training & Competency Tracking', sub: 'Employee qualification records' }
+        ];
+        let currentFeature = 0;
+        const featureIcon = document.getElementById('featureIcon');
+        const featureTitle = document.getElementById('featureTitle');
+        const featureSub = document.getElementById('featureSub');
+        const featureDots = document.querySelectorAll('.feature-dot');
+        const showcase = document.getElementById('featureShowcase');
+
+        setInterval(() => {
+            if (!showcase) return;
+            showcase.style.opacity = '0';
+            showcase.style.transform = 'translateY(8px)';
+            setTimeout(() => {
+                currentFeature = (currentFeature + 1) % features.length;
+                const f = features[currentFeature];
+                featureIcon.textContent = f.icon;
+                featureTitle.textContent = f.title;
+                featureSub.textContent = f.sub;
+                featureDots.forEach((d, i) => d.classList.toggle('active', i === currentFeature));
+                showcase.style.opacity = '1';
+                showcase.style.transform = 'translateY(0)';
+            }, 300);
+        }, 3000);
+
+        // Password toggle
+        function togglePassword() {
+            const pwd = document.getElementById('password');
+            const eyeOn = document.getElementById('eyeIcon');
+            const eyeOff = document.getElementById('eyeOffIcon');
+            if (pwd.type === 'password') {
+                pwd.type = 'text';
+                eyeOn.classList.add('hidden');
+                eyeOff.classList.remove('hidden');
+            } else {
+                pwd.type = 'password';
+                eyeOn.classList.remove('hidden');
+                eyeOff.classList.add('hidden');
+            }
+        }
+
+        // Submit spinner
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            const txt = document.getElementById('btnText');
+            const spinner = document.getElementById('btnSpinner');
+            btn.disabled = true;
+            btn.classList.add('opacity-80');
+            txt.classList.add('hidden');
+            spinner.classList.remove('hidden');
+        });
+    </script>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- CSS ANIMATIONS -->
+    <!-- ════════════════════════════════════════════ -->
+    <style>
+        /* ── Entry Animations ── */
+        .anim-fadeInUp {
+            opacity: 0;
+            transform: translateY(24px);
+            animation: fadeInUp 0.7s ease-out forwards;
+        }
+
+        .anim-slideInRight {
+            animation: slideInRight 0.6s ease-out forwards;
+        }
+
+        @@keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @@keyframes slideInRight {
+            from { opacity: 0; transform: translateX(40px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ── Floating Cards ── */
+        .floating-card {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @@keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50%      { transform: translateY(-10px); }
+        }
+
+        /* ── Glass Card ── */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateY(-4px) !important;
+        }
+
+        /* ── Button Glow ── */
+        .btn-glow {
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+        .btn-glow:hover { animation: none; }
+
+        @@keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 10px 40px -10px rgba(16, 185, 129, 0.35); }
+            50%      { box-shadow: 0 10px 60px -10px rgba(16, 185, 129, 0.55); }
+        }
+
+        /* ── Error Slide In ── */
+        .error-slide-in {
+            animation: errorSlide 0.5s ease-out forwards;
+        }
+        @@keyframes errorSlide {
+            from { opacity: 0; transform: translateX(20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ── Particles ── */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            animation: particleFloat 8s ease-in-out infinite;
+        }
+        .particle:nth-child(even) {
+            width: 3px; height: 3px;
+            background: rgba(52, 211, 153, 0.3);
+            animation-duration: 10s;
+        }
+        .particle:nth-child(3n) {
+            width: 5px; height: 5px;
+            background: rgba(255, 255, 255, 0.15);
+            animation-duration: 12s;
+        }
+
+        @@keyframes particleFloat {
+            0%, 100% { transform: translate(0, 0) scale(1);   opacity: 0.3; }
+            25%      { transform: translate(15px, -25px) scale(1.2); opacity: 0.7; }
+            50%      { transform: translate(-10px, -50px) scale(0.8); opacity: 0.4; }
+            75%      { transform: translate(20px, -25px) scale(1.1); opacity: 0.6; }
+        }
+
+        /* ── Feature Showcase ── */
+        #featureShowcase {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .feature-dot {
+            width: 20px; height: 3px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.4s ease;
+        }
+        .feature-dot.active {
+            width: 32px;
+            background: rgba(52, 211, 153, 0.8);
+        }
+
+        /* ── Background Transition ── */
+        #heroBg {
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        /* ── Input Focus Ring ── */
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+        }
+
+        /* ── Checkbox ── */
+        input[type="checkbox"] {
+            accent-color: #059669;
+        }
+
+        /* ── Responsive ── */
+        @@media (max-width: 1023px) {
+            .anim-slideInRight {
+                animation: fadeInUp 0.6s ease-out forwards;
+            }
+        }
+        @@media (max-width: 767px) {
+            #heroSection {
+                height: 200px !important;
+            }
+        }
+    </style>
 </body>
 </html>

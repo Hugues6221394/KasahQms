@@ -40,6 +40,13 @@ public class StaffModel : PageModel
     public List<TaskItem> Tasks { get; set; } = new();
     public List<ApprovalItem> PendingApprovals { get; set; } = new();
     public List<DocumentItem> MyDocuments { get; set; } = new();
+    public List<NotificationItem> Notifications { get; set; } = new();
+    public List<TrainingItem> TrainingItems { get; set; } = new();
+    public int MyDocumentsCount { get; set; }
+    public int PendingTasksCount { get; set; }
+    public int OverdueTasksCount { get; set; }
+    public int AwaitingApprovalCount { get; set; }
+    public string CurrentDate { get; set; } = "";
 
     public async Task OnGetAsync()
     {
@@ -52,6 +59,7 @@ public class StaffModel : PageModel
         }
 
         DisplayName = currentUser.FullName;
+        CurrentDate = DateTime.UtcNow.ToString("dddd, MMMM dd, yyyy");
 
         // Personal statistics only
         var myDocuments = await _dbContext.Documents.CountAsync(d =>
@@ -79,10 +87,10 @@ public class StaffModel : PageModel
 
         Stats = new List<StatCard>
         {
-            new("My documents", myDocuments.ToString(), "Created by you"),
-            new("Pending tasks", myPendingTasks.ToString(), "Assigned to you"),
-            new("Overdue tasks", myOverdueTasks.ToString(), "Requires attention"),
-            new("Awaiting approval", pendingApprovals.ToString(), "Your submissions")
+            new("My documents", myDocuments.ToString(), "Created by you", myDocuments),
+            new("Pending tasks", myPendingTasks.ToString(), "Assigned to you", myPendingTasks),
+            new("Overdue tasks", myOverdueTasks.ToString(), "Requires attention", myOverdueTasks),
+            new("Awaiting approval", pendingApprovals.ToString(), "Your submissions", pendingApprovals)
         };
 
         // Get my tasks directly from database if query fails (graceful fallback)
@@ -139,12 +147,44 @@ public class StaffModel : PageModel
             .ToListAsync();
 
         MyDocuments = myDocs;
+
+        MyDocumentsCount = myDocuments;
+        PendingTasksCount = myPendingTasks;
+        OverdueTasksCount = myOverdueTasks;
+        AwaitingApprovalCount = pendingApprovals;
+
+        try
+        {
+            Notifications = await _dbContext.Notifications.AsNoTracking()
+                .Where(n => n.UserId == currentUser.Id && !n.IsRead)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(5)
+                .Select(n => new NotificationItem(n.Title, n.Message ?? "", n.CreatedAt.ToString("MMM dd, HH:mm"), n.IsRead))
+                .ToListAsync();
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Failed to load notifications"); }
+
+        try
+        {
+            TrainingItems = await _dbContext.TrainingRecords.AsNoTracking()
+                .Where(t => t.UserId == currentUser.Id)
+                .OrderByDescending(t => t.ScheduledDate)
+                .Take(5)
+                .Select(t => new TrainingItem(
+                    t.Title,
+                    t.ExpiryDate.HasValue ? t.ExpiryDate.Value.ToString("MMM dd, yyyy") : t.ScheduledDate.ToString("MMM dd, yyyy"),
+                    t.CompletedDate.HasValue ? "Completed" : "Pending"))
+                .ToListAsync();
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Failed to load training records"); }
     }
 
-    public record StatCard(string Title, string Value, string Subtitle);
+    public record StatCard(string Title, string Value, string Subtitle, int CountTo);
     public record TaskItem(string Title, string DueDate, string Status);
     public record ApprovalItem(string Title, string Owner, string Stage);
     public record DocumentItem(string Title, string Number, string Status, string Created);
+    public record NotificationItem(string Title, string Message, string When, bool IsRead);
+    public record TrainingItem(string Title, string DueDate, string Status);
 
     private async Task<User?> GetCurrentUserAsync()
     {

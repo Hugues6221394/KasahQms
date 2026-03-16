@@ -4,7 +4,7 @@
     ViewData["Title"] = Model.Audit != null ? $"Audit: {Model.Audit.AuditNumber}" : "Audit Details";
 }
 
-<div class="space-y-6 animate-fade-in">
+<div class="space-y-6 animate-fade-in animate-on-scroll">
     <!-- Error Message -->
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {

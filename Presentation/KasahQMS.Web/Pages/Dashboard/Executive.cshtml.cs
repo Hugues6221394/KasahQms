@@ -45,6 +45,15 @@ public class ExecutiveModel : PageModel
     public List<ApprovalItem> PendingApprovals { get; set; } = new();
     public List<ActivityItem> Activity { get; set; } = new();
     public List<InsightItem> ExecutiveInsights { get; set; } = new();
+    public int ActiveDocumentsCount { get; set; }
+    public int OpenCapasCount { get; set; }
+    public int PendingApprovalsCount { get; set; }
+    public int UpcomingAuditsCount { get; set; }
+    public int ComplianceScorePercent { get; set; }
+    public int SlaPercent { get; set; }
+    public int OverdueItemsCount { get; set; }
+    public List<CriticalItem> CriticalItems { get; set; } = new();
+    public string CurrentDate { get; set; } = "";
     public string DocumentsTrendJson { get; set; } = "{}";
     public string CapaStatusJson { get; set; } = "{}";
     public string DepartmentBreakdownJson { get; set; } = "{}";
@@ -60,6 +69,7 @@ public class ExecutiveModel : PageModel
         }
 
         DisplayName = currentUser?.FullName ?? "Executive";
+        CurrentDate = DateTime.UtcNow.ToString("dddd, MMMM dd, yyyy");
 
         // Get visible user IDs (all subordinates recursively)
         var visibleUserIds = currentUser != null && _currentUserService.UserId.HasValue
@@ -79,11 +89,16 @@ public class ExecutiveModel : PageModel
 
         Stats = new List<StatCard>
         {
-            new("Active documents", activeDocuments.ToString(), "System-wide"),
-            new("Open CAPAs", openCapas.ToString(), "Requires follow-up"),
-            new("Pending approvals", pendingApprovals.ToString(), "Awaiting leadership"),
-            new("Audits scheduled", upcomingAudits.ToString(), "Next 30 days")
+            new("Active documents", activeDocuments.ToString(), "System-wide", activeDocuments),
+            new("Open CAPAs", openCapas.ToString(), "Requires follow-up", openCapas),
+            new("Pending approvals", pendingApprovals.ToString(), "Awaiting leadership", pendingApprovals),
+            new("Audits scheduled", upcomingAudits.ToString(), "Next 30 days", upcomingAudits)
         };
+
+        ActiveDocumentsCount = activeDocuments;
+        OpenCapasCount = openCapas;
+        PendingApprovalsCount = pendingApprovals;
+        UpcomingAuditsCount = upcomingAudits;
 
         // Get tasks using refactored query (includes hierarchy)
         var myTasksQuery = new GetMyTasksQuery { Limit = 5 };
@@ -142,6 +157,27 @@ public class ExecutiveModel : PageModel
             new("Risk hotspots", overdueItems.ToString(), "Overdue items")
         };
 
+        ComplianceScorePercent = totalDocs == 0 ? 0 : (int)(approvedDocs * 100.0 / totalDocs);
+        SlaPercent = totalTasks == 0 ? 0 : (int)(completedTasks * 100.0 / totalTasks);
+        OverdueItemsCount = overdueItems;
+
+        // Critical items (overdue CAPAs + overdue tasks)
+        var overdueCAPAs = await _dbContext.Capas.AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.Status != CapaStatus.Closed && c.Status != CapaStatus.EffectivenessVerified)
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(3)
+            .Select(c => new CriticalItem(c.Title ?? "CAPA", "CAPA", c.CreatedAt.ToString("MMM dd"), "High"))
+            .ToListAsync();
+
+        var overdueTasks = await _dbContext.QmsTasks.AsNoTracking()
+            .Where(t => t.TenantId == tenantId && t.Status == QmsTaskStatus.Overdue)
+            .OrderByDescending(t => t.DueDate)
+            .Take(3)
+            .Select(t => new CriticalItem(t.Title, "Task", t.DueDate != null ? t.DueDate.Value.ToString("MMM dd") : "N/A", "Critical"))
+            .ToListAsync();
+
+        CriticalItems = overdueCAPAs.Concat(overdueTasks).Take(5).ToList();
+
         DocumentsTrendJson = await BuildDocumentTrendAsync(tenantId);
         CapaStatusJson = await BuildCapaStatusAsync(tenantId);
         DepartmentBreakdownJson = await BuildDepartmentBreakdownAsync(tenantId);
@@ -156,11 +192,12 @@ public class ExecutiveModel : PageModel
         }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
     }
 
-    public record StatCard(string Title, string Value, string Subtitle);
+    public record StatCard(string Title, string Value, string Subtitle, int CountTo);
     public record TaskItem(string Title, string DueDate, string Status);
     public record ApprovalItem(string Title, string Owner, string Stage);
     public record ActivityItem(string Title, string Description, string When);
     public record InsightItem(string Label, string Value, string Note);
+    public record CriticalItem(string Title, string Type, string DueDate, string Severity);
 
     private async Task<User?> GetCurrentUserAsync()
     {

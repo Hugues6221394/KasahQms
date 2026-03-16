@@ -5,277 +5,151 @@
 }
 
 <div class="space-y-8 animate-fade-in">
-    <!-- Page Header -->
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-            <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Admin Dashboard</h1>
-            <p class="mt-1 text-slate-500">Welcome back, @Model.DisplayName. System administration and management.</p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-            <a href="/Users"
-               class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:shadow-xl">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-                Manage Users
-            </a>
-            <a href="/AuditLogs"
-               class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 hover:border-brand-300 transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                Audit Logs
-            </a>
-        </div>
-    </div>
-
-    <!-- Stats Grid -->
-    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        @foreach (var stat in Model.Stats)
-        {
-            <div class="card p-6 card-hover">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@stat.Title</p>
-                        <p class="mt-3 text-3xl font-bold text-slate-900">@stat.Value</p>
-                        <p class="mt-1 text-sm text-slate-500">@stat.Subtitle</p>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-100 to-brand-50 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-
-    <!-- Charts Section -->
-    <div class="grid gap-6 xl:grid-cols-2">
-        <!-- Users Trend Chart -->
-        <div class="card p-6">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-slate-900">Users Trend</h2>
-                    <p class="text-sm text-slate-500">Monthly user registrations</p>
-                </div>
-                <span class="inline-flex items-center px-3 py-1 rounded-lg bg-brand-50 text-brand-700 text-xs font-medium">
-                    Last 6 months
-                </span>
-            </div>
-            <div class="h-[280px]">
-                <canvas id="usersTrendChart"></canvas>
+    <section class="relative overflow-hidden rounded-2xl">
+        <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1600&q=80" alt="Enterprise office" class="absolute inset-0 h-full w-full object-cover" loading="eager" />
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/70 to-brand-900/50"></div>
+        <div class="relative px-6 py-10 lg:px-10 lg:py-12">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-brand-200">System Administration</p>
+            <h1 class="mt-3 text-3xl font-bold tracking-tight text-white lg:text-4xl">Welcome back, @Model.DisplayName</h1>
+            <p class="mt-2 text-sm text-slate-200">@Model.CurrentDate</p>
+            <div class="mt-6 flex flex-wrap gap-3">
+                <a href="/Users" class="inline-flex items-center rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Manage Users</a>
+                <a href="/AuditLogs" class="inline-flex items-center rounded-xl border border-brand-300/40 bg-brand-500/20 px-4 py-2.5 text-sm font-semibold text-brand-100 transition hover:bg-brand-500/30">Audit Logs</a>
             </div>
         </div>
+    </section>
 
-        <!-- System Health Chart -->
-        <div class="card p-6">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-slate-900">System Health</h2>
-                    <p class="text-sm text-slate-500">Overview metrics</p>
-                </div>
-            </div>
-            <div class="h-[280px] flex items-center justify-center">
-                <canvas id="systemHealthChart"></canvas>
-            </div>
+    <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="card p-6">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Users</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900" data-count-to="@Model.TotalUsersCount">0</p>
+            <p class="mt-1 text-sm text-slate-500">@(Model.UserGrowthPercent >= 0 ? "+" : "")@Model.UserGrowthPercent% this month</p>
+        </article>
+        <article class="card p-6">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Documents</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900" data-count-to="@Model.ActiveDocumentsCount">0</p>
+            <p class="mt-1 text-sm text-slate-500">System-wide compliance content</p>
+        </article>
+        <article class="card p-6">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Open Tasks</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900" data-count-to="@Model.OpenTasksCount">0</p>
+            <p class="mt-1 text-sm text-slate-500">Operational workload</p>
+        </article>
+        <article class="card p-6">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Users</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900" data-count-to="@Model.ActiveUsersCount">0</p>
+            <p class="mt-1 text-sm text-slate-500">Platform engagement</p>
+        </article>
+    </section>
+
+    <section>
+        <h2 class="text-lg font-semibold text-slate-900">Quick Actions</h2>
+        <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <a href="/Documents/Create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Create Document</p><p class="mt-1 text-sm text-slate-500">Start new policy artifact</p></a>
+            <a href="/Tasks?action=create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Assign Task</p><p class="mt-1 text-sm text-slate-500">Delegate corrective work</p></a>
+            <a href="/Audits/Create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Schedule Audit</p><p class="mt-1 text-sm text-slate-500">Plan internal or external audit</p></a>
+            <a href="/Capa/Create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Raise CAPA</p><p class="mt-1 text-sm text-slate-500">Track systemic remediation</p></a>
         </div>
-    </div>
+    </section>
 
-    <!-- Users and Activity -->
-    <div class="grid gap-6 xl:grid-cols-2">
-        <!-- Recent Users -->
-        <div class="card p-6">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-slate-900">Recent Users</h2>
-                    <p class="text-sm text-slate-500">Latest registered users</p>
-                </div>
-                <a href="/Users" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1">
-                    View all
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                </a>
+    <section class="grid gap-6 xl:grid-cols-5">
+        <div class="card p-6 xl:col-span-3">
+            <div class="mb-5 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-slate-900">Recent Activity Timeline</h3>
+                <a href="/AuditLogs" class="text-sm font-medium text-brand-600">View all</a>
             </div>
-            <div class="space-y-3">
-                @if (Model.RecentUsers.Any())
-                {
-                    @foreach (var user in Model.RecentUsers)
-                    {
-                        <div class="rounded-xl border border-slate-200 px-4 py-4 hover:bg-slate-50 hover:border-brand-200 transition-all">
-                            <div class="font-semibold text-slate-800 text-sm">@user.Name</div>
-                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                                <span>@user.Email</span>
-                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span class="text-blue-600 font-medium">@user.Status</span>
-                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span>@user.Created</span>
-                            </div>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="text-center py-8">
-                        <p class="text-sm text-slate-500">No users found</p>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="card p-6">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-slate-900">Recent Activity</h2>
-                    <p class="text-sm text-slate-500">Latest system actions</p>
-                </div>
-                <a href="/AuditLogs" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1">
-                    Audit logs
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                </a>
-            </div>
-            <div class="space-y-1">
+            <div class="space-y-4">
                 @if (Model.Activity.Any())
                 {
-                    @foreach (var activity in Model.Activity)
+                    @foreach (var item in Model.Activity)
                     {
-                        <div class="flex items-start justify-between py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors">
-                            <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 flex-shrink-0 mt-0.5">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="font-medium text-slate-800 text-sm">@activity.Title</div>
-                                    <div class="text-xs text-slate-500">@activity.Description</div>
-                                </div>
-                            </div>
-                            <div class="text-xs text-slate-400 whitespace-nowrap ml-4">@activity.When</div>
+                        <div class="border-l-2 border-brand-200 pl-4">
+                            <p class="text-sm font-semibold text-slate-800">@item.Title</p>
+                            <p class="text-xs text-slate-500">@item.Description</p>
+                            <p class="mt-1 text-xs text-slate-400">@item.When</p>
                         </div>
                     }
                 }
                 else
                 {
-                    <div class="text-center py-8">
-                        <p class="text-sm text-slate-500">No recent activity</p>
-                    </div>
+                    <p class="text-sm text-slate-500">No recent activity.</p>
                 }
             </div>
         </div>
-    </div>
+        <div class="space-y-6 xl:col-span-2">
+            <div class="card p-6">
+                <h3 class="text-lg font-semibold text-slate-900">Role Widgets</h3>
+                <div class="mt-4 space-y-3 text-sm">
+                    <div class="flex items-center justify-between"><span class="text-slate-500">System health</span><span class="font-semibold text-emerald-600">98%</span></div>
+                    <div class="flex items-center justify-between"><span class="text-slate-500">Users active now</span><span class="font-semibold text-slate-800" data-count-to="@Model.ActiveUsersCount">0</span></div>
+                    <div class="flex items-center justify-between"><span class="text-slate-500">Open operational tasks</span><span class="font-semibold text-slate-800" data-count-to="@Model.OpenTasksCount">0</span></div>
+                </div>
+            </div>
+            <div class="card p-6">
+                <div class="mb-4 flex items-center justify-between"><h3 class="text-lg font-semibold text-slate-900">Recent Users</h3><a href="/Users" class="text-sm font-medium text-brand-600">View</a></div>
+                <div class="space-y-3">
+                    @if (Model.RecentUsers.Any())
+                    {
+                        @foreach (var user in Model.RecentUsers)
+                        {
+                            <div class="rounded-xl border border-slate-200 px-3 py-2.5">
+                                <p class="text-sm font-medium text-slate-800">@user.Name</p>
+                                <p class="text-xs text-slate-500">@user.Email | @user.Status</p>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-sm text-slate-500">No recent users.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-2">
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold text-slate-900">User Growth</h3>
+            <p class="text-sm text-slate-500">Registrations over the last 6 months</p>
+            <div class="mt-4 h-[280px]"><canvas id="usersTrendChart"></canvas></div>
+        </div>
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold text-slate-900">Compliance Health Mix</h3>
+            <p class="text-sm text-slate-500">Users and document status distribution</p>
+            <div class="mt-4 h-[280px]"><canvas id="systemHealthChart"></canvas></div>
+        </div>
+    </section>
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const countUp = () => document.querySelectorAll('[data-count-to]').forEach(el => {
+            const target = Number(el.dataset.countTo || 0); let cur = 0; const step = Math.max(1, Math.ceil(target / 40));
+            const timer = setInterval(() => { cur = Math.min(target, cur + step); el.textContent = cur.toLocaleString(); if (cur >= target) clearInterval(timer); }, 20);
+        });
+        countUp();
+
         const usersTrend = @Html.Raw(Model.UsersTrendJson);
         const systemHealth = @Html.Raw(Model.SystemHealthJson);
-
-        // Chart.js global configuration
-        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
         Chart.defaults.color = '#64748b';
 
-        // Users Trend Chart
         const usersCtx = document.getElementById('usersTrendChart');
         if (usersCtx) {
             new Chart(usersCtx, {
                 type: 'line',
-                data: {
-                    labels: usersTrend.labels,
-                    datasets: [{
-                        label: 'Users',
-                        data: usersTrend.values,
-                        borderColor: '#059669',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderWidth: 2.5,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#059669',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            titleColor: '#ffffff',
-                            bodyColor: '#e2e8f0',
-                            padding: 12,
-                            cornerRadius: 8,
-                            displayColors: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#f1f5f9', drawBorder: false },
-                            ticks: { padding: 10 }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { padding: 10 }
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    }
-                }
+                data: { labels: usersTrend.labels, datasets: [{ data: usersTrend.values, borderColor: '#0f766e', backgroundColor: 'rgba(15,118,110,.12)', fill: true, tension: .35 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 
-        // System Health Chart
         const healthCtx = document.getElementById('systemHealthChart');
         if (healthCtx) {
             new Chart(healthCtx, {
-                type: 'bar',
-                data: {
-                    labels: systemHealth.labels,
-                    datasets: [{
-                        label: 'Count',
-                        data: systemHealth.values,
-                        backgroundColor: ['#10b981', '#ef4444', '#3b82f6', '#f59e0b'],
-                        borderRadius: 8,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            titleColor: '#ffffff',
-                            bodyColor: '#e2e8f0',
-                            padding: 12,
-                            cornerRadius: 8
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#f1f5f9', drawBorder: false },
-                            ticks: { padding: 10 }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { padding: 10 }
-                        }
-                    }
-                }
+                type: 'doughnut',
+                data: { labels: systemHealth.labels, datasets: [{ data: systemHealth.values, backgroundColor: ['#0ea5e9', '#f59e0b', '#10b981', '#ef4444'] }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%' }
             });
         }
     </script>
 }
-

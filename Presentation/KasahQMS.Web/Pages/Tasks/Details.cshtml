@@ -28,7 +28,7 @@ else
         </div>
     }
 
-    <div class="max-w-5xl mx-auto space-y-6">
+    <div class="max-w-5xl mx-auto space-y-6 animate-on-scroll">
         <!-- Header -->
         <div class="flex items-center justify-between flex-wrap gap-3">
             <div class="flex items-center gap-2 text-sm text-slate-500">
@@ -85,7 +85,7 @@ else
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Task Details -->
             <div class="lg:col-span-2 space-y-6">
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-on-scroll">
                     <div class="flex items-start justify-between mb-4">
                         <div>
                             <h1 class="text-2xl font-bold text-slate-900">@Model.TaskItem.Title</h1>
@@ -160,7 +160,7 @@ else
                 <!-- Linked Document Preview -->
                 @if (Model.LinkedDocument != null)
                 {
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-on-scroll">
                         <h2 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                             <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             Linked Document
@@ -197,7 +197,7 @@ else
                 <!-- Task Attachments -->
                 @if (Model.Attachments.Any())
                 {
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-on-scroll">
                         <h2 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                             <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                             Attachments (@Model.Attachments.Count)
@@ -228,7 +228,7 @@ else
                 <!-- Add Activity (only for assignee) -->
                 @if (Model.CanAddActivity)
                 {
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-on-scroll">
                         <h2 class="text-lg font-semibold text-slate-900 mb-4">Update Progress</h2>
                         <form method="post" asp-page-handler="AddActivity" asp-route-id="@Model.TaskItem.Id">
                             @Html.AntiForgeryToken()
@@ -268,7 +268,7 @@ else
                 }
 
                 <!-- Activity History -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-on-scroll">
                     <h2 class="text-lg font-semibold text-slate-900 mb-4">Activity History</h2>
                     @if (Model.Activities.Any())
                     {

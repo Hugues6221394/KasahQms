@@ -46,6 +46,14 @@ public class ManagerModel : PageModel
     public List<ApprovalItem> PendingApprovals { get; set; } = new();
     public List<ActivityItem> Activity { get; set; } = new();
     public List<SubordinateItem> SubordinateWork { get; set; } = new();
+    public int DeptDocumentsCount { get; set; }
+    public int OpenCapasCount { get; set; }
+    public int PendingApprovalsCount { get; set; }
+    public int OverdueTasksCount { get; set; }
+    public int TeamMemberCount { get; set; }
+    public List<TeamMemberItem> TeamMembers { get; set; } = new();
+    public int RiskCount { get; set; }
+    public string CurrentDate { get; set; } = "";
     public string DocumentsTrendJson { get; set; } = "{}";
     public string TaskStatusJson { get; set; } = "{}";
 
@@ -61,6 +69,7 @@ public class ManagerModel : PageModel
 
         DisplayName = currentUser.FullName;
         DepartmentName = currentUser.OrganizationUnit?.Name ?? "Department";
+        CurrentDate = DateTime.UtcNow.ToString("dddd, MMMM dd, yyyy");
 
         // Get visible user IDs (all subordinates recursively)
         var visibleUserIds = await _hierarchyService.GetVisibleUserIdsAsync(currentUser.Id);
@@ -92,11 +101,16 @@ public class ManagerModel : PageModel
 
         Stats = new List<StatCard>
         {
-            new("Department Documents", activeDocuments.ToString(), "Created by team", "/Documents"),
-            new("Open CAPAs", openCapas.ToString(), "Requires follow-up", "/Capa"),
-            new("Pending Approvals", pendingApprovals.ToString(), "Awaiting your review", "/Documents?status=Submitted"),
-            new("Overdue Tasks", overdueTasks.ToString(), "Team tasks", "/Tasks?status=Overdue")
+            new("Department Documents", activeDocuments.ToString(), "Created by team", "/Documents", activeDocuments),
+            new("Open CAPAs", openCapas.ToString(), "Requires follow-up", "/Capa", openCapas),
+            new("Pending Approvals", pendingApprovals.ToString(), "Awaiting your review", "/Documents?status=Submitted", pendingApprovals),
+            new("Overdue Tasks", overdueTasks.ToString(), "Team tasks", "/Tasks?status=Overdue", overdueTasks)
         };
+
+        DeptDocumentsCount = activeDocuments;
+        OpenCapasCount = openCapas;
+        PendingApprovalsCount = pendingApprovals;
+        OverdueTasksCount = overdueTasks;
 
         // Get tasks using refactored query (includes subordinate tasks)
         var myTasksQuery = new GetMyTasksQuery { Limit = 5 };
@@ -140,9 +154,31 @@ public class ManagerModel : PageModel
         // Subordinate work summary
         var subordinates = await _hierarchyService.GetSubordinateUserIdsAsync(currentUser.Id, recursive: true);
         var subordinateList = subordinates.ToList();
-        
+        TeamMemberCount = subordinateList.Count;
+
         if (subordinateList.Any())
         {
+            var memberData = await _dbContext.Users.AsNoTracking()
+                .Where(u => subordinateList.Contains(u.Id))
+                .Select(u => new
+                {
+                    u.FullName,
+                    u.FirstName,
+                    u.LastName,
+                    TaskCount = _dbContext.QmsTasks.Count(t => t.AssignedToId == u.Id && t.Status != QmsTaskStatus.Completed && t.Status != QmsTaskStatus.Cancelled),
+                    CompletedCount = _dbContext.QmsTasks.Count(t => t.AssignedToId == u.Id && t.Status == QmsTaskStatus.Completed)
+                })
+                .Take(8)
+                .ToListAsync();
+
+            TeamMembers = memberData
+                .Select(m => new TeamMemberItem(
+                    m.FullName,
+                    $"{(m.FirstName?.Length > 0 ? m.FirstName[0].ToString() : "")}{(m.LastName?.Length > 0 ? m.LastName[0].ToString() : "")}",
+                    m.TaskCount,
+                    m.CompletedCount))
+                .ToList();
+
             var subordinateDocs = await _dbContext.Documents.AsNoTracking()
                 .Where(d => d.TenantId == tenantId && 
                            subordinateList.Contains(d.CreatedById) &&
@@ -159,6 +195,13 @@ public class ManagerModel : PageModel
                 .ToList();
         }
 
+        try
+        {
+            RiskCount = await _dbContext.RiskRegisterEntries.AsNoTracking()
+                .CountAsync(r => r.Status != "Closed" && r.Status != null);
+        }
+        catch { RiskCount = 0; }
+
         DocumentsTrendJson = await BuildDocumentTrendAsync(tenantId, visibleUserIds);
         TaskStatusJson = await BuildTaskStatusAsync(tenantId, visibleUserIds);
     }
@@ -172,11 +215,12 @@ public class ManagerModel : PageModel
         }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
     }
 
-    public record StatCard(string Title, string Value, string Subtitle, string Link);
+    public record StatCard(string Title, string Value, string Subtitle, string Link, int CountTo);
     public record TaskItem(string Title, string DueDate, string Status);
     public record ApprovalItem(string Title, string Owner, string Stage);
     public record ActivityItem(string Title, string Description, string When);
     public record SubordinateItem(string Title, string Owner, string Status);
+    public record TeamMemberItem(string Name, string Initials, int TaskCount, int CompletedCount);
 
     private async Task<User?> GetCurrentUserAsync()
     {
