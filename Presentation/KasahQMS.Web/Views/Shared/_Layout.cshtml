@@ -9,7 +9,7 @@
     var roleLabel = roles.FirstOrDefault() ?? "Member";
     var initials = displayName.Length >= 2 ? displayName.Substring(0, 2).ToUpper() : displayName.ToUpper();
     
-    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    var userId = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     Guid? userGuid = userId != null ? Guid.Parse(userId) : null;
 
     // Permission checks for navigation
@@ -164,10 +164,11 @@
     </style>
 
     <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/responsive.css" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 to-slate-100 font-sans antialiased">
-@if (User.Identity?.IsAuthenticated == true)
+@if (User?.Identity?.IsAuthenticated == true)
 {
     <div id="user-context" class="hidden" data-user-id="@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "")"></div>
 }

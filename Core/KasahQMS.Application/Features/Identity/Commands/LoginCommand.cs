@@ -65,18 +65,29 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
                 return Result.Failure<AuthResponseDto>(Error.Unauthorized);
             }
 
+            // Check lockout status - auto-unlock if lockout time has passed
             if (user.IsLockedOut)
             {
-                await _auditLogService.LogAuthenticationAsync(
-                    user.Id,
-                    "LOGIN_FAILED",
-                    "Account locked",
-                    _currentUserService.IpAddress,
-                    _currentUserService.UserAgent,
-                    false,
-                    cancellationToken);
+                if (user.LockoutEndTime.HasValue && user.LockoutEndTime.Value < DateTime.UtcNow)
+                {
+                    // Lockout period has expired - unlock the user
+                    user.Unlock();
+                    await _userRepository.UpdateAsync(user, cancellationToken);
+                    _logger.LogInformation("User {Email} auto-unlocked after lockout period expired", request.Email);
+                }
+                else
+                {
+                    await _auditLogService.LogAuthenticationAsync(
+                        user.Id,
+                        "LOGIN_FAILED",
+                        "Account locked",
+                        _currentUserService.IpAddress,
+                        _currentUserService.UserAgent,
+                        false,
+                        cancellationToken);
 
-                return Result.Failure<AuthResponseDto>(Error.Forbidden);
+                    return Result.Failure<AuthResponseDto>(Error.Forbidden);
+                }
             }
 
             var passwordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);

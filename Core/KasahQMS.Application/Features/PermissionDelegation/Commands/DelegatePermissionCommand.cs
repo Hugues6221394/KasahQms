@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace KasahQMS.Application.Features.PermissionDelegation.Commands;
 
-[Authorize(Permissions = Permissions.Users.ViewAll)]
+[Authorize(Permissions = Permissions.Users.DelegatePermission)]
 public record DelegatePermissionCommand(
     Guid SubordinateId,
     string Permission,

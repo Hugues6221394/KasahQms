@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace KasahQMS.Infrastructure.Services;
 
 /// <summary>
-/// File storage service implementation.
-/// Supports local file system storage with encryption.
+/// File storage service implementation with path traversal protection.
+/// Supports local file system storage.
 /// Can be extended for cloud storage (Azure Blob, AWS S3, etc.)
 /// </summary>
 public class FileStorageService : IFileStorageService
@@ -19,8 +19,9 @@ public class FileStorageService : IFileStorageService
     {
         _configuration = configuration;
         _logger = logger;
-        _basePath = configuration["FileStorage:BasePath"] ?? Path.Combine(AppContext.BaseDirectory, "Storage");
-        
+        _basePath = Path.GetFullPath(
+            configuration["FileStorage:BasePath"] ?? Path.Combine(AppContext.BaseDirectory, "Storage"));
+
         // Ensure base directory exists
         if (!Directory.Exists(_basePath))
         {
@@ -40,15 +41,15 @@ public class FileStorageService : IFileStorageService
         {
             // Generate unique file name to prevent collisions
             var uniqueFileName = $"{Guid.NewGuid()}_{SanitizeFileName(fileName)}";
-            
+
             // Build path with tenant isolation
             var relativePath = Path.Combine(
                 tenantId.ToString(),
                 folder ?? "general",
                 DateTime.UtcNow.ToString("yyyy/MM"));
-            
+
             var fullPath = Path.Combine(_basePath, relativePath);
-            
+
             // Ensure directory exists
             if (!Directory.Exists(fullPath))
             {
@@ -56,13 +57,16 @@ public class FileStorageService : IFileStorageService
             }
 
             var filePath = Path.Combine(fullPath, uniqueFileName);
-            
+
+            // Validate path is within base path (prevent path traversal)
+            ValidatePathWithinBase(filePath);
+
             // Write file
             using var outputStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
             await fileStream.CopyToAsync(outputStream, cancellationToken);
 
             var storagePath = Path.Combine(relativePath, uniqueFileName);
-            
+
             _logger.LogInformation(
                 "File uploaded successfully: {FileName} -> {StoragePath}",
                 fileName, storagePath);
@@ -80,8 +84,8 @@ public class FileStorageService : IFileStorageService
     {
         try
         {
-            var fullPath = Path.Combine(_basePath, storagePath);
-            
+            var fullPath = GetSafeFullPath(storagePath);
+
             if (!File.Exists(fullPath))
             {
                 _logger.LogWarning("File not found: {StoragePath}", storagePath);
@@ -95,6 +99,11 @@ public class FileStorageService : IFileStorageService
 
             return memoryStream;
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Path traversal attempt detected: {StoragePath}", storagePath);
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to download file: {StoragePath}", storagePath);
@@ -106,8 +115,8 @@ public class FileStorageService : IFileStorageService
     {
         try
         {
-            var fullPath = Path.Combine(_basePath, storagePath);
-            
+            var fullPath = GetSafeFullPath(storagePath);
+
             if (!File.Exists(fullPath))
             {
                 _logger.LogWarning("File not found for deletion: {StoragePath}", storagePath);
@@ -115,9 +124,14 @@ public class FileStorageService : IFileStorageService
             }
 
             File.Delete(fullPath);
-            
+
             _logger.LogInformation("File deleted: {StoragePath}", storagePath);
             return Task.FromResult(true);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Path traversal attempt detected: {StoragePath}", storagePath);
+            throw;
         }
         catch (Exception ex)
         {
@@ -128,21 +142,35 @@ public class FileStorageService : IFileStorageService
 
     public Task<bool> ExistsAsync(string storagePath, CancellationToken cancellationToken = default)
     {
-        var fullPath = Path.Combine(_basePath, storagePath);
-        return Task.FromResult(File.Exists(fullPath));
+        try
+        {
+            var fullPath = GetSafeFullPath(storagePath);
+            return Task.FromResult(File.Exists(fullPath));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Task.FromResult(false);
+        }
     }
 
     public Task<long> GetFileSizeAsync(string storagePath, CancellationToken cancellationToken = default)
     {
-        var fullPath = Path.Combine(_basePath, storagePath);
-        
-        if (!File.Exists(fullPath))
+        try
+        {
+            var fullPath = GetSafeFullPath(storagePath);
+
+            if (!File.Exists(fullPath))
+            {
+                return Task.FromResult(0L);
+            }
+
+            var fileInfo = new FileInfo(fullPath);
+            return Task.FromResult(fileInfo.Length);
+        }
+        catch (UnauthorizedAccessException)
         {
             return Task.FromResult(0L);
         }
-
-        var fileInfo = new FileInfo(fullPath);
-        return Task.FromResult(fileInfo.Length);
     }
 
     public async Task<string> CopyAsync(
@@ -161,11 +189,39 @@ public class FileStorageService : IFileStorageService
         return await UploadAsync(sourceStream, fileName, "application/octet-stream", targetTenantId, targetFolder, cancellationToken);
     }
 
+    /// <summary>
+    /// Gets the full path and validates it is within the base path to prevent path traversal attacks.
+    /// </summary>
+    private string GetSafeFullPath(string storagePath)
+    {
+        var fullPath = Path.GetFullPath(Path.Combine(_basePath, storagePath));
+        ValidatePathWithinBase(fullPath);
+        return fullPath;
+    }
+
+    /// <summary>
+    /// Validates that the given path is within the base storage path.
+    /// Throws UnauthorizedAccessException if path traversal is detected.
+    /// </summary>
+    private void ValidatePathWithinBase(string fullPath)
+    {
+        var normalizedPath = Path.GetFullPath(fullPath);
+        var normalizedBase = Path.GetFullPath(_basePath);
+
+        if (!normalizedPath.StartsWith(normalizedBase, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                "Path traversal attempt blocked. Path: {Path}, Base: {Base}",
+                normalizedPath, normalizedBase);
+            throw new UnauthorizedAccessException("Access to path outside storage directory is not allowed.");
+        }
+    }
+
     private static string SanitizeFileName(string fileName)
     {
         var invalidChars = Path.GetInvalidFileNameChars();
         var sanitized = new string(fileName.Where(c => !invalidChars.Contains(c)).ToArray());
-        
+
         // Limit length
         if (sanitized.Length > 100)
         {
@@ -177,4 +233,3 @@ public class FileStorageService : IFileStorageService
         return sanitized;
     }
 }
-

@@ -155,6 +155,10 @@ public class AuthorizationService : IAuthorizationService
         if (document.Status != DocumentStatus.Draft)
             return false;
 
+        // Creator can edit their own draft
+        if (document.CreatedById == userId)
+            return true;
+
         // System Admin/TMD can always edit drafts
         return user.Roles?.Any(r => r.Name is "System Admin" or "Admin" or "TMD") == true;
     }
@@ -205,8 +209,8 @@ public class AuthorizationService : IAuthorizationService
         if (user.Roles?.Any(r => r.Name == "Auditor") == true)
             return false;
 
-        // Document must be Submitted for approval
-        if (document.Status != DocumentStatus.Submitted)
+        // Document must be Submitted or InReview for approval
+        if (document.Status != DocumentStatus.Submitted && document.Status != DocumentStatus.InReview)
             return false;
 
         // Only admin/TMD/managers can approve

@@ -1,3 +1,6 @@
+#pragma warning disable CS8602 // EF Core navigation properties in query filters are translated to SQL JOINs
+using KasahQMS.Application.Common.Interfaces;
+using KasahQMS.Domain.Common;
 using KasahQMS.Domain.Entities.AuditLog;
 using KasahQMS.Domain.Entities.Audits;
 using KasahQMS.Domain.Entities.Capa;
@@ -12,15 +15,39 @@ using KasahQMS.Domain.Entities.Tasks;
 using KasahQMS.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Linq.Expressions;
 
 namespace KasahQMS.Infrastructure.Persistence.Data;
 
 /// <summary>
-/// Application database context.
+/// Application database context with tenant isolation via global query filters.
 /// </summary>
 public class ApplicationDbContext : DbContext
 {
+    private readonly ICurrentUserService? _currentUserService;
+    private Guid? _tenantId;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        ICurrentUserService currentUserService) : base(options)
+    {
+        _currentUserService = currentUserService;
+        _tenantId = currentUserService.TenantId;
+    }
+
+    /// <summary>
+    /// Set the tenant filter explicitly (for seeding or background jobs).
+    /// </summary>
+    public void SetTenantId(Guid tenantId) => _tenantId = tenantId;
+
+    /// <summary>
+    /// Disable tenant filter (for cross-tenant admin operations).
+    /// </summary>
+    public void DisableTenantFilter() => _tenantId = null;
+
+    private Guid? CurrentTenantId => _tenantId ?? _currentUserService?.TenantId;
 
     // Identity
     public DbSet<Tenant> Tenants => Set<Tenant>();
@@ -87,6 +114,71 @@ public class ApplicationDbContext : DbContext
 
         // Apply configurations from assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+        // ===========================================
+        // Global Query Filters for Tenant Isolation
+        // ===========================================
+        // These filters ensure that queries automatically scope to the current tenant.
+        // Soft delete capability is built into AuditableEntity (IsDeleted, DeletedAt, DeletedById)
+        // but filters will be added incrementally as needed for compliance workflows.
+        // Use IgnoreQueryFilters() when cross-tenant access is explicitly needed.
+
+        modelBuilder.Entity<User>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Document>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Audit>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Capa>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<QmsTask>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AuditLogEntry>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<OrganizationUnit>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<Role>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<SystemSetting>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<UserPermissionDelegation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<ChatThread>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<UserLoginActivity>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<StockItem>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<StockLocation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<StockMovement>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<StockReservation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<DocumentType>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<DocumentCategory>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+
+        // ===========================================
+        // Child Entity Query Filters (matching parent tenant filters)
+        // ===========================================
+        // These filter child entities by their parent entity's TenantId to ensure
+        // tenant isolation at multiple levels
+        modelBuilder.Entity<RefreshToken>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.User.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<UserRole>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.User.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<DocumentVersion>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.Document.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<DocumentApproval>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.Document.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<DocumentAttachment>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.Document.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<DocumentTypeApprover>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.DocumentType.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<DocumentAccessLog>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.Document.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<AuditChecklistItem>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.Audit.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<AuditFinding>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.Audit.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<CapaAction>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.Capa.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<Notification>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.User.TenantId == CurrentTenantId);
 
         // Configure Role permissions as JSON string
         modelBuilder.Entity<Role>()

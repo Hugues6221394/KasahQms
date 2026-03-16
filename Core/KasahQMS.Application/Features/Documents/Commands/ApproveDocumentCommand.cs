@@ -73,15 +73,20 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
                 return Result.Failure(Error.Forbidden);
             }
 
-            // Check if more approvals are required
-            bool requiresMoreApprovals = false;
-            if (document.DocumentTypeId.HasValue)
+            // Documents must have a DocumentTypeId to use the approval workflow
+            // This prevents bypassing the multi-step approval chain
+            if (!document.DocumentTypeId.HasValue)
             {
-                requiresMoreApprovals = await _workflowService.RequiresAdditionalApprovalsAsync(
-                    document.Id, 
-                    userId.Value, 
-                    cancellationToken);
+                _logger.LogWarning("Document {DocumentId} cannot be approved without a DocumentTypeId", document.Id);
+                return Result.Failure(Error.Custom("Document.MissingType",
+                    "Document must have a document type assigned before it can be approved."));
             }
+
+            // Check if more approvals are required
+            var requiresMoreApprovals = await _workflowService.RequiresAdditionalApprovalsAsync(
+                document.Id,
+                userId.Value,
+                cancellationToken);
 
             if (requiresMoreApprovals)
             {

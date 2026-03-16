@@ -123,7 +123,7 @@ public class ChatHub : Hub
         // Allow managers/executives to send to any department, others only to their own
         var userRoles = await _db.Users.AsNoTracking()
             .Where(x => x.Id == userId.Value)
-            .SelectMany(x => x.Roles)
+            .SelectMany(x => x.Roles!)
             .Select(r => r.Name)
             .ToListAsync();
         var isManagerOrExec = userRoles.Any(r => r == "TMD" || r == "Deputy Country Manager" || r == "Department Manager" || r == "System Admin");

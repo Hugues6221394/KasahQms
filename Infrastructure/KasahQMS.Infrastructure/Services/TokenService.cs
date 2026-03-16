@@ -24,7 +24,8 @@ public class TokenService : ITokenService
     public Task<string> GenerateAccessToken(User user, CancellationToken cancellationToken = default)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!";
+        var secretKey = jwtSettings["SecretKey"]
+            ?? throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
         var issuer = jwtSettings["Issuer"] ?? "KasahQMS";
         var audience = jwtSettings["Audience"] ?? "KasahQMS";
         var expirationMinutes = int.Parse(jwtSettings["AccessTokenExpirationMinutes"] ?? "60");
@@ -37,7 +38,8 @@ public class TokenService : ITokenService
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Name, user.FullName),
-            new("tenant_id", user.TenantId.ToString())
+            new("tenant_id", user.TenantId.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
         if (user.Roles != null)
@@ -68,8 +70,9 @@ public class TokenService : ITokenService
 
     public Task<bool> ValidateRefreshToken(string refreshToken, CancellationToken cancellationToken = default)
     {
-        // In a real implementation, this would verify the token against stored tokens
-        return Task.FromResult(!string.IsNullOrEmpty(refreshToken));
+        // Refresh token validation must be performed via IRefreshTokenRepository.GetByTokenAsync.
+        throw new NotSupportedException(
+            "Refresh token validation must be performed via IRefreshTokenRepository.GetByTokenAsync.");
     }
 
     public Task<Guid?> ValidateAccessToken(string accessToken, CancellationToken cancellationToken = default)
@@ -77,7 +80,10 @@ public class TokenService : ITokenService
         try
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!";
+            var secretKey = jwtSettings["SecretKey"]
+                ?? throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
+            var issuer = jwtSettings["Issuer"] ?? "KasahQMS";
+            var audience = jwtSettings["Audience"] ?? "KasahQMS";
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(secretKey);
@@ -86,8 +92,10 @@ public class TokenService : ITokenService
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = false,
-                ValidateAudience = false,
+                ValidateIssuer = true,
+                ValidIssuer = issuer,
+                ValidateAudience = true,
+                ValidAudience = audience,
                 ClockSkew = TimeSpan.Zero
             };
 

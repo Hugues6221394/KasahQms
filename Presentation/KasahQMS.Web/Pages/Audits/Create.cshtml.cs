@@ -119,7 +119,7 @@ public class CreateModel : PageModel
     private async Task LoadAuditorsAsync()
     {
         var auditors = await _dbContext.Users
-            .Where(u => u.Roles.Any(r => r.Name == "Auditor" || r.Name == "Internal Auditor"))
+            .Where(u => u.Roles != null && u.Roles.Any(r => r.Name == "Auditor" || r.Name == "Internal Auditor"))
             .Select(u => new AuditorItem(u.Id, u.FullName))
             .ToListAsync();
 

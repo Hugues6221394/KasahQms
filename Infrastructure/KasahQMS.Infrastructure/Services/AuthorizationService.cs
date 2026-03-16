@@ -59,9 +59,11 @@ public class AuthorizationService : IAuthorizationService
     public async Task<bool> IsInRoleAsync(string role, CancellationToken cancellationToken = default)
     {
         var userId = _currentUserService.UserId;
+        var tenantId = _currentUserService.TenantId;
         if (userId == null) return false;
 
-        var cacheKey = $"user_roles_{userId}";
+        // Include tenantId in cache key to prevent cross-tenant cache collision
+        var cacheKey = $"user_roles_{tenantId}_{userId}";
         var roles = await _cacheService.GetOrCreateAsync(
             cacheKey,
             async () => await GetUserRolesFromDbAsync(userId.Value, cancellationToken),
@@ -176,9 +178,11 @@ public class AuthorizationService : IAuthorizationService
     public async Task<IEnumerable<string>> GetUserPermissionsAsync(CancellationToken cancellationToken = default)
     {
         var userId = _currentUserService.UserId;
+        var tenantId = _currentUserService.TenantId;
         if (userId == null) return Enumerable.Empty<string>();
 
-        var cacheKey = $"user_permissions_{userId}";
+        // Include tenantId in cache key to prevent cross-tenant cache collision
+        var cacheKey = $"user_permissions_{tenantId}_{userId}";
         var permissions = await _cacheService.GetOrCreateAsync(
             cacheKey,
             async () => await GetUserPermissionsFromDbAsync(userId.Value, cancellationToken),

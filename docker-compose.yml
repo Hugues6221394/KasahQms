@@ -1,0 +1,55 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=kasah_qms;Username=kasahqms;Password=${DB_PASSWORD}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY}
+      - EmailSettings__SmtpServer=${SMTP_SERVER:-smtp.gmail.com}
+      - EmailSettings__SmtpPort=${SMTP_PORT:-587}
+      - EmailSettings__Username=${SMTP_USERNAME}
+      - EmailSettings__Password=${SMTP_PASSWORD}
+      - EmailSettings__FromAddress=${SMTP_FROM_ADDRESS:-noreply@kasah.rw}
+      - EmailSettings__FromName=${SMTP_FROM_NAME:-KASAH QMS}
+      - FileStorage__BasePath=/app/storage
+    volumes:
+      - app-storage:/app/storage
+      - app-logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - kasahqms
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=kasah_qms
+      - POSTGRES_USER=kasahqms
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kasahqms -d kasah_qms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - kasahqms
+
+volumes:
+  postgres-data:
+  app-storage:
+  app-logs:
+
+networks:
+  kasahqms:
+    driver: bridge

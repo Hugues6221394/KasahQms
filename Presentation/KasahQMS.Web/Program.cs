@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Threading.RateLimiting;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Web.Hubs;
+using KasahQMS.Web.Middleware;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -66,11 +67,17 @@ builder.Services.AddScoped<IPushNotificationSender, SignalRPushNotificationSende
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];
 
-// Security: Validate JWT secret key exists and meets minimum length
+// Security: Validate JWT secret key exists, meets minimum length, and is not a placeholder
 if (string.IsNullOrEmpty(secretKey) || secretKey.Length < 32)
 {
     throw new InvalidOperationException(
-        "JWT SecretKey must be configured in appsettings.json and be at least 32 characters long.");
+        "JWT SecretKey must be configured and be at least 32 characters long. " +
+        "Set it via environment variable 'JwtSettings__SecretKey' or in appsettings.");
+}
+if (secretKey.Contains("YourSuperSecretKey", StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        "JWT SecretKey contains a placeholder value. Configure a real secret for this environment.");
 }
 
 builder.Services.AddAuthentication(options =>
@@ -96,6 +103,9 @@ builder.Services.AddAuthentication(options =>
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/Login";
     options.Cookie.Name = "KasahQmsAuth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
     options.SlidingExpiration = true;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 })
@@ -112,19 +122,6 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
         ClockSkew = TimeSpan.Zero // Strict token expiration
     };
-
-    // Security: Handle authentication events
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            if (context.Exception is SecurityTokenExpiredException)
-            {
-                context.Response.Headers["Token-Expired"] = "true";
-            }
-            return Task.CompletedTask;
-        }
-    };
 });
 
 builder.Services.AddAuthorization();
@@ -135,8 +132,20 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllersWithViews(options =>
 {
-    // Security: Add global authorization filter for production
-    // options.Filters.Add(new AuthorizeFilter());
+    // Security: Global authorization filter — all MVC actions require auth by default
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter());
+});
+
+// Swagger/OpenAPI Documentation
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "KASAH QMS API",
+        Version = "v1",
+        Description = "Kasah Quality Management System API"
+    });
 });
 
 builder.Services.AddRazorPages(options =>
@@ -189,6 +198,18 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
+    // Global default rate limit for all endpoints
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 200,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 10
+            }));
+
     // General API rate limit
     options.AddFixedWindowLimiter("api", limiterOptions =>
     {
@@ -198,7 +219,7 @@ builder.Services.AddRateLimiter(options =>
         limiterOptions.QueueLimit = 10;
     });
 
-    // Strict limit for authentication endpoints
+    // Strict limit for authentication endpoints (brute-force protection)
     options.AddFixedWindowLimiter("auth", limiterOptions =>
     {
         limiterOptions.PermitLimit = 5;
@@ -222,9 +243,10 @@ builder.Services.AddRateLimiter(options =>
 // Health Checks
 // ===========================================
 
-builder.Services.AddHealthChecks();
-// Add database health check when persistence is configured
-// .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!);
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>("Database");
+// Note: For NpgSQL-specific health checks, install: dotnet add package AspNetCore.HealthChecks.NpgSql
+// Then add: .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection") ?? "", name: "PostgreSQL")
 
 // ===========================================
 // Build Application
@@ -243,10 +265,7 @@ using (var scope = app.Services.CreateScope())
     
     try
     {
-        // Ensure database is created
-        await dbContext.Database.EnsureCreatedAsync();
-        
-        // Apply pending migrations
+        // Apply pending migrations (creates DB if needed)
         var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
         if (pendingMigrations.Any())
         {
@@ -273,10 +292,22 @@ using (var scope = app.Services.CreateScope())
 // Middleware Pipeline
 // ===========================================
 
-// Error Handling
+// Error Handling — structured JSON for API; friendly pages for browsers
+app.UseGlobalExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+
+    // Enable Swagger UI in development
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "KASAH QMS API v1");
+        options.RoutePrefix = "api/docs";
+        options.DefaultModelsExpandDepth(2);
+        options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
+    });
 }
 else
 {
@@ -310,7 +341,7 @@ app.Use(async (context, next) =>
     // Content Security Policy (allow SignalR WebSocket connections)
     headers["Content-Security-Policy"] =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
         "font-src 'self' https://fonts.gstatic.com; " +
         "img-src 'self' data: https:; " +
@@ -356,7 +387,18 @@ app.UseRouting();
 // Rate Limiting
 app.UseRateLimiter();
 
-// CORS
+// Rate Limiting Response Headers
+app.Use(async (context, next) =>
+{
+    await next();
+
+    if (context.Response.Headers.ContainsKey("Retry-After"))
+    {
+        context.Response.Headers["RateLimit-Limit"] = "200";
+        context.Response.Headers["RateLimit-Remaining"] = "0";
+        context.Response.Headers["RateLimit-Reset"] = context.Response.Headers["Retry-After"];
+    }
+});
 app.UseCors(app.Environment.IsDevelopment() ? "Development" : "Production");
 
 // Authentication & Authorization

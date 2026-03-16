@@ -54,9 +54,23 @@ public class WorkflowService : IWorkflowService
 
             // Find current approver position and return next
             var currentIndex = approvers.IndexOf(document.CurrentApproverId.Value);
-            if (currentIndex < 0 || currentIndex >= approvers.Count - 1)
+
+            // If current approver not found in workflow, this is a misconfiguration
+            // (e.g., approver was removed from the workflow but document still references them)
+            if (currentIndex < 0)
             {
-                // No more approvers
+                _logger.LogError(
+                    "Workflow misconfiguration: current approver {ApproverId} not found in workflow for document {DocumentId}",
+                    document.CurrentApproverId.Value, documentId);
+                throw new InvalidOperationException(
+                    $"Current approver {document.CurrentApproverId.Value} is no longer part of the approval workflow. " +
+                    "Please reassign the document to a valid approver.");
+            }
+
+            // Check if there are more approvers after the current one
+            if (currentIndex >= approvers.Count - 1)
+            {
+                // Current approver is the last one - no more approvers needed
                 return null;
             }
 
@@ -88,7 +102,19 @@ public class WorkflowService : IWorkflowService
             }
 
             var currentIndex = approvers.IndexOf(currentApproverId);
-            return currentIndex >= 0 && currentIndex < approvers.Count - 1;
+
+            // If current approver not found in workflow, this is a misconfiguration
+            if (currentIndex < 0)
+            {
+                _logger.LogError(
+                    "Workflow misconfiguration: approver {ApproverId} not found in workflow for document {DocumentId}",
+                    currentApproverId, documentId);
+                throw new InvalidOperationException(
+                    $"Approver {currentApproverId} is no longer part of the approval workflow. " +
+                    "Please reassign the document to a valid approver.");
+            }
+
+            return currentIndex < approvers.Count - 1;
         }
         catch (Exception ex)
         {

@@ -86,9 +86,9 @@ public class ExceptionHandlingMiddleware
         return exception switch
         {
             UnauthorizedAccessException => (HttpStatusCode.Forbidden, "You do not have permission to perform this action."),
-            ArgumentException => (HttpStatusCode.BadRequest, exception.Message),
+            ArgumentException => (HttpStatusCode.BadRequest, "The request contains invalid data."),
             KeyNotFoundException => (HttpStatusCode.NotFound, "The requested resource was not found."),
-            InvalidOperationException => (HttpStatusCode.BadRequest, exception.Message),
+            InvalidOperationException => (HttpStatusCode.BadRequest, "The requested operation is not valid."),
             TimeoutException => (HttpStatusCode.RequestTimeout, "The request timed out. Please try again."),
             OperationCanceledException => (HttpStatusCode.BadRequest, "The operation was cancelled."),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred. Please try again later.")

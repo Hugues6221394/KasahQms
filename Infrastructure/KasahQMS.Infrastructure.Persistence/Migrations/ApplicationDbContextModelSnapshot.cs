@@ -118,9 +118,18 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
@@ -140,6 +149,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("PlannedStartDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<string>("Scope")
                         .HasMaxLength(2000)
@@ -432,6 +446,12 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -440,6 +460,9 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ImplementationNotes")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<bool?>("IsEffective")
                         .HasColumnType("boolean");
@@ -461,6 +484,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("RootCauseAnalysis")
                         .HasColumnType("text");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<Guid?>("SourceAuditFindingId")
                         .HasColumnType("uuid");
@@ -677,9 +705,18 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsLocked")
                         .HasColumnType("boolean");
@@ -694,6 +731,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("LastModifiedById")
                         .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -753,6 +795,12 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<int>("CurrentVersion")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
@@ -774,6 +822,9 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<string>("FilePath")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsTemplate")
                         .HasColumnType("boolean");
 
@@ -785,6 +836,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("OriginalFileName")
                         .HasColumnType("text");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<Guid?>("SourceTemplateId")
                         .HasColumnType("uuid");
@@ -1127,11 +1183,20 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
@@ -1152,6 +1217,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("RoleId")
                         .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<string>("Scope")
                         .IsRequired()
@@ -1191,11 +1261,20 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
@@ -1211,6 +1290,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -1283,9 +1367,18 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsSystemRole")
                         .HasColumnType("boolean");
@@ -1304,6 +1397,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<string>("Permissions")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -1363,6 +1461,12 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -1377,6 +1481,9 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsLockedOut")
@@ -1428,6 +1535,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("RequirePasswordChange")
                         .HasColumnType("boolean");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
@@ -1462,10 +1574,19 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("DelegatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
@@ -1478,6 +1599,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -1575,6 +1701,12 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("DeviceInfo")
                         .HasColumnType("text");
 
@@ -1585,11 +1717,19 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<string>("IpAddress")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("LastModifiedById")
                         .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -1634,8 +1774,17 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsService")
                         .HasColumnType("boolean");
@@ -1664,6 +1813,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<decimal>("ReorderQuantity")
                         .HasColumnType("numeric");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<string>("SKU")
                         .IsRequired()
@@ -1718,6 +1872,12 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -1725,6 +1885,9 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsVirtual")
@@ -1739,6 +1902,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -1769,6 +1937,12 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("ExternalReference")
                         .HasColumnType("text");
 
@@ -1777,6 +1951,9 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("InitiatedById")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1824,6 +2001,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("ReservationId")
                         .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -1874,11 +2056,20 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ExternalReference")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("IssuedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1923,6 +2114,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("ReservedById")
                         .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -1979,11 +2175,20 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2005,6 +2210,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ReviewerRemarks")
                         .HasColumnType("text");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");

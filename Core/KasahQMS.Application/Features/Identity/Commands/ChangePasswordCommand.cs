@@ -12,6 +12,7 @@ public record ChangePasswordCommand(string CurrentPassword, string NewPassword, 
 public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, Result>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
@@ -20,6 +21,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
 
     public ChangePasswordCommandHandler(
         IUserRepository userRepository,
+        IRefreshTokenRepository refreshTokenRepository,
         IPasswordHasher passwordHasher,
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
@@ -27,6 +29,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         ILogger<ChangePasswordCommandHandler> logger)
     {
         _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
         _passwordHasher = passwordHasher;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
@@ -86,6 +89,14 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
             user.ChangePassword(newHash);
 
             await _userRepository.UpdateAsync(user, cancellationToken);
+
+            // Revoke all existing refresh tokens for security
+            await _refreshTokenRepository.RevokeByUserIdAsync(
+                user.Id,
+                "Password changed",
+                _currentUserService.IpAddress,
+                cancellationToken);
+
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             await _auditLogService.LogAuthenticationAsync(

@@ -264,8 +264,7 @@ public class DatabaseSeeder
             SystemSetting.Create(tenant.Id, "Notifications.AuditReminderCadence", "Weekly", systemAdmin.Id, "Audit reminder cadence"),
             SystemSetting.Create(tenant.Id, "Retention.AuditLogYears", "7", systemAdmin.Id, "Audit log retention"),
             SystemSetting.Create(tenant.Id, "Retention.DocumentArchiveMonths", "24", systemAdmin.Id, "Document archive threshold"),
-            SystemSetting.Create(tenant.Id, "Backups.Frequency", "Daily", systemAdmin.Id, "Backup cadence"),
-            SystemSetting.Create(tenant.Id, "Seed.PasswordHint", seedPassword, systemAdmin.Id, "Seeded demo password")
+            SystemSetting.Create(tenant.Id, "Backups.Frequency", "Daily", systemAdmin.Id, "Backup cadence")
         };
 
         var auditLogs = new List<AuditLogEntry>

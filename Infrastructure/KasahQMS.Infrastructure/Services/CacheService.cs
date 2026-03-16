@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using KasahQMS.Application.Common.Interfaces.Services;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -5,13 +6,14 @@ using Microsoft.Extensions.Logging;
 namespace KasahQMS.Infrastructure.Services;
 
 /// <summary>
-/// In-memory cache service implementation.
-/// Can be extended to support distributed caching (Redis) for horizontal scaling.
+/// In-memory cache service implementation with key tracking for prefix-based removal.
+/// For horizontal scaling, consider Redis which natively supports pattern-based key deletion.
 /// </summary>
 public class CacheService : ICacheService
 {
     private readonly IMemoryCache _memoryCache;
     private readonly ILogger<CacheService> _logger;
+    private readonly ConcurrentDictionary<string, byte> _keyRegistry = new();
 
     public CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger)
     {
@@ -47,7 +49,14 @@ public class CacheService : ICacheService
         // Set sliding expiration to extend cache on access
         options.SetSlidingExpiration(TimeSpan.FromMinutes(5));
 
+        // Register callback to remove key from registry when evicted
+        options.RegisterPostEvictionCallback((evictedKey, _, _, _) =>
+        {
+            _keyRegistry.TryRemove(evictedKey.ToString()!, out _);
+        });
+
         _memoryCache.Set(key, value, options);
+        _keyRegistry.TryAdd(key, 0);
         _logger.LogDebug("Cache set for key: {Key}", key);
 
         return Task.CompletedTask;
@@ -56,16 +65,24 @@ public class CacheService : ICacheService
     public Task RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
         _memoryCache.Remove(key);
+        _keyRegistry.TryRemove(key, out _);
         _logger.LogDebug("Cache removed for key: {Key}", key);
         return Task.CompletedTask;
     }
 
     public Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken = default)
     {
-        // Note: IMemoryCache doesn't support prefix-based removal natively
-        // For production, consider using a distributed cache like Redis that supports pattern-based key deletion
-        // This is a limitation of the in-memory implementation
-        _logger.LogWarning("RemoveByPrefixAsync is not fully supported with IMemoryCache. Consider using Redis for production.");
+        var keysToRemove = _keyRegistry.Keys
+            .Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var key in keysToRemove)
+        {
+            _memoryCache.Remove(key);
+            _keyRegistry.TryRemove(key, out _);
+        }
+
+        _logger.LogDebug("Cache removed {Count} keys with prefix: {Prefix}", keysToRemove.Count, prefix);
         return Task.CompletedTask;
     }
 
@@ -97,4 +114,3 @@ public class CacheService : ICacheService
         }
     }
 }
-

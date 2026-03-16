@@ -122,6 +122,7 @@ public static class Permissions
         public const string ViewAll = "Users.ViewAll";
         public const string Unlock = "Users.Unlock";
         public const string ResetPassword = "Users.ResetPassword";
+        public const string DelegatePermission = "Users.DelegatePermission";
     }
     
     public static class Roles

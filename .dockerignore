@@ -1,0 +1,15 @@
+**/.dockerignore
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/.idea
+**/bin
+**/obj
+**/node_modules
+**/*.md
+**/build_output*.txt
+**/app_build.log
+**/.claude
+**/Dockerfile
+**/docker-compose*.yml
