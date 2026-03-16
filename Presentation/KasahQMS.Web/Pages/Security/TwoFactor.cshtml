@@ -1,0 +1,140 @@
+@page
+@model KasahQMS.Web.Pages.Security.TwoFactorModel
+@{
+    ViewData["Title"] = "Two-Factor Authentication";
+}
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900">Two-Factor Authentication</h1>
+        <p class="text-sm text-slate-500">Add an extra layer of security to your account using a TOTP authenticator app.</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="p-4 bg-brand-50 border border-brand-200 rounded-xl flex items-start gap-3">
+            <svg class="w-5 h-5 text-brand-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-sm text-brand-800">@Model.StatusMessage</p>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="p-4 bg-accent-50 border border-accent-100 rounded-xl flex items-start gap-3">
+            <svg class="w-5 h-5 text-accent-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-sm text-accent-600">@Model.ErrorMessage</p>
+        </div>
+    }
+
+    <!-- Status Card -->
+    <div class="card p-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center @(Model.IsEnabled ? "bg-brand-100" : "bg-slate-100")">
+                    <svg class="w-6 h-6 @(Model.IsEnabled ? "text-brand-600" : "text-slate-400")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">2FA Status</h2>
+                    <p class="text-sm @(Model.IsEnabled ? "text-brand-600 font-medium" : "text-slate-500")">
+                        @(Model.IsEnabled ? "Enabled" : "Disabled")
+                    </p>
+                </div>
+            </div>
+            @if (!Model.IsEnabled && Model.SecretKey == null)
+            {
+                <form method="post" asp-page-handler="Setup">
+                    <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm">
+                        Enable 2FA
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!-- Setup Flow -->
+    @if (Model.SecretKey != null && !Model.IsEnabled)
+    {
+        <div class="card p-6 space-y-6">
+            <h2 class="text-lg font-semibold text-slate-900">Setup Authenticator</h2>
+
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-slate-600 mb-2">1. Install an authenticator app (Google Authenticator, Authy, etc.)</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-600 mb-2">2. Scan the QR code or enter the secret key manually:</p>
+                    <div class="bg-slate-50 rounded-lg border border-slate-200 p-4 space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Secret Key</label>
+                            <code class="block text-sm font-mono text-slate-800 bg-white rounded px-3 py-2 border border-slate-200 break-all select-all">@Model.SecretKey</code>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">QR Code URI</label>
+                            <code class="block text-sm font-mono text-slate-800 bg-white rounded px-3 py-2 border border-slate-200 break-all select-all">@Model.QrCodeUri</code>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-600 mb-3">3. Enter the 6-digit code from your authenticator app to verify:</p>
+                    <form method="post" asp-page-handler="Enable" class="flex items-end gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Verification Code</label>
+                            <input type="text" asp-for="VerificationCode" maxlength="6" pattern="[0-9]{6}" placeholder="000000"
+                                   class="w-40 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-mono tracking-widest text-center focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" />
+                        </div>
+                        <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm">
+                            Verify &amp; Enable
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Recovery Codes -->
+    @if (Model.RecoveryCodes != null && Model.RecoveryCodes.Any())
+    {
+        <div class="card p-6 border-2 border-amber-200 bg-amber-50/50">
+            <div class="flex items-start gap-3 mb-4">
+                <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div>
+                    <h3 class="text-base font-semibold text-amber-900">Recovery Codes</h3>
+                    <p class="text-sm text-amber-700 mt-1">Save these codes in a secure location. Each code can only be used once. This is the only time they will be shown.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                @foreach (var code in Model.RecoveryCodes)
+                {
+                    <code class="block text-sm font-mono text-amber-900 bg-white rounded px-3 py-2 border border-amber-200 text-center select-all">@code</code>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Disable 2FA -->
+    @if (Model.IsEnabled && Model.RecoveryCodes == null)
+    {
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">Disable Two-Factor Authentication</h2>
+            <p class="text-sm text-slate-600 mb-4">Enter your current authenticator code to disable 2FA. This will reduce the security of your account.</p>
+            <form method="post" asp-page-handler="Disable" class="flex items-end gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Current Code</label>
+                    <input type="text" asp-for="VerificationCode" maxlength="6" pattern="[0-9]{6}" placeholder="000000"
+                           class="w-40 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-mono tracking-widest text-center focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" />
+                </div>
+                <button type="submit" class="rounded-lg border border-accent-300 bg-accent-50 px-4 py-2.5 text-sm font-semibold text-accent-700 hover:bg-accent-100 transition-colors">
+                    Disable 2FA
+                </button>
+            </form>
+        </div>
+    }
+</div>

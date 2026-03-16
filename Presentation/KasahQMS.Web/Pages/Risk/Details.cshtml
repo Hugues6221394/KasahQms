@@ -1,0 +1,234 @@
+@page "{id:guid}"
+@model KasahQMS.Web.Pages.Risk.DetailsModel
+@{
+    ViewData["Title"] = "Risk Details";
+}
+
+<div class="mx-auto max-w-4xl space-y-6">
+    <nav class="flex items-center gap-2 text-sm text-slate-500">
+        <a href="/Risk" class="hover:text-slate-900">Risk Management</a>
+        <span>/</span>
+        <span class="text-slate-700">Details</span>
+    </nav>
+
+    @if (Model.ActionMessage != null)
+    {
+        <div class="p-4 rounded-lg text-sm @(Model.ActionSuccess == true ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700")">
+            @Model.ActionMessage
+        </div>
+    }
+
+    @if (Model.Risk == null)
+    {
+        <div class="card p-8 text-center text-slate-500">Risk assessment not found.</div>
+    }
+    else
+    {
+        var r = Model.Risk;
+
+        <!-- Header -->
+        <div class="card p-6">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-xl font-bold text-slate-900">@r.Title</h1>
+                        <span class="font-mono text-xs text-slate-400">@r.RiskNumber</span>
+                    </div>
+                    <p class="text-sm text-slate-500 mt-1">@r.Description</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @r.ScoreClass">
+                        Score: @r.Score — @r.ScoreLabel
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details + Mini Matrix -->
+        <div class="grid gap-6 md:grid-cols-2">
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Risk Info</h2>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between"><dt class="text-slate-500">Category</dt><dd class="font-medium text-slate-800">@r.Category</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Likelihood</dt><dd class="font-medium text-slate-800">@r.Likelihood / 5</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Impact</dt><dd class="font-medium text-slate-800">@r.Impact / 5</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd class="font-medium text-slate-800">@r.Status</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium text-slate-800">@r.Owner</dd></div>
+                    @if (r.ReviewDate != null)
+                    {
+                        <div class="flex justify-between"><dt class="text-slate-500">Review Date</dt><dd class="font-medium text-slate-800">@r.ReviewDate</dd></div>
+                    }
+                    <div class="flex justify-between"><dt class="text-slate-500">Created</dt><dd class="font-medium text-slate-800">@r.CreatedAt</dd></div>
+                </dl>
+            </div>
+
+            <!-- Mini Risk Matrix -->
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Risk Matrix Position</h2>
+                <table class="mx-auto text-xs">
+                    @for (int likelihood = 5; likelihood >= 1; likelihood--)
+                    {
+                        <tr>
+                            <td class="p-1 text-right text-slate-400 w-6">@likelihood</td>
+                            @for (int impact = 1; impact <= 5; impact++)
+                            {
+                                var isPosition = likelihood == r.Likelihood && impact == r.Impact;
+                                var score = likelihood * impact;
+                                var cellBg = score >= 20 ? "bg-rose-400" : score >= 15 ? "bg-orange-300" : score >= 8 ? "bg-amber-200" : "bg-emerald-200";
+                                <td class="p-0.5">
+                                    <div class="w-10 h-8 rounded flex items-center justify-center @cellBg @(isPosition ? "ring-2 ring-slate-900 ring-offset-1 font-bold" : "opacity-40")">
+                                        @if (isPosition)
+                                        {
+                                            <span>★</span>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </table>
+                <div class="text-center text-xs text-slate-400">L ↑ &nbsp; I →</div>
+                @if (r.ResidualLikelihood.HasValue && r.ResidualImpact.HasValue)
+                {
+                    <div class="text-sm text-slate-600">
+                        Residual: L=@r.ResidualLikelihood × I=@r.ResidualImpact = <strong>@(r.ResidualLikelihood * r.ResidualImpact)</strong>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Mitigation Plan -->
+        <div class="card p-6 space-y-4">
+            <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Mitigation Plan</h2>
+            @if (!string.IsNullOrWhiteSpace(r.MitigationPlan))
+            {
+                <p class="text-sm text-slate-700 whitespace-pre-line">@r.MitigationPlan</p>
+            }
+            else
+            {
+                <p class="text-sm text-slate-400 italic">No mitigation plan defined.</p>
+            }
+        </div>
+
+        <!-- Status Transition Actions -->
+        @if (r.Status != "Closed")
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Status Actions</h2>
+                <div class="flex flex-wrap gap-3">
+                    @if (r.Status == "Identified")
+                    {
+                        <form method="post" asp-page-handler="Transition" asp-route-id="@r.Id">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="newStatus" value="Assessed" />
+                            <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">Mark Assessed</button>
+                        </form>
+                    }
+                    @if (r.Status is "Identified" or "Assessed")
+                    {
+                        <form method="post" asp-page-handler="Transition" asp-route-id="@r.Id">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="newStatus" value="Mitigated" />
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">Mark Mitigated</button>
+                        </form>
+                        <form method="post" asp-page-handler="Transition" asp-route-id="@r.Id">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="newStatus" value="Accepted" />
+                            <button type="submit" class="px-4 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700">Accept Risk</button>
+                        </form>
+                    }
+                    <form method="post" asp-page-handler="Transition" asp-route-id="@r.Id">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="newStatus" value="Closed" />
+                        <button type="submit" class="px-4 py-2 bg-slate-600 text-white text-sm font-medium rounded-lg hover:bg-slate-700">Close</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <!-- Action Items -->
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Action Items</h2>
+            </div>
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                    <tr>
+                        <th class="px-6 py-3 text-left font-semibold">Action</th>
+                        <th class="px-6 py-3 text-left font-semibold">Owner</th>
+                        <th class="px-6 py-3 text-left font-semibold">Due</th>
+                        <th class="px-6 py-3 text-left font-semibold">Status</th>
+                        <th class="px-6 py-3 text-right font-semibold"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @if (!Model.Actions.Any())
+                    {
+                        <tr><td colspan="5" class="px-6 py-6 text-center text-slate-500">No action items recorded.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var a in Model.Actions)
+                        {
+                            <tr>
+                                <td class="px-6 py-3 font-medium text-slate-800">@a.Action</td>
+                                <td class="px-6 py-3 text-slate-600">@a.Owner</td>
+                                <td class="px-6 py-3 text-slate-600">@a.DueDate</td>
+                                <td class="px-6 py-3">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(a.Status == "Completed" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700")">
+                                        @a.Status
+                                    </span>
+                                </td>
+                                <td class="px-6 py-3 text-right">
+                                    @if (a.Status != "Completed")
+                                    {
+                                        <form method="post" asp-page-handler="CompleteAction" asp-route-id="@r.Id" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="actionId" value="@a.Id" />
+                                            <button type="submit" class="text-emerald-600 hover:text-emerald-700 text-xs font-medium">Complete</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-400">@a.CompletedDate</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+
+            <!-- Add Action Form -->
+            <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+                <form method="post" asp-page-handler="AddAction" asp-route-id="@r.Id" class="flex flex-wrap gap-3 items-end">
+                    @Html.AntiForgeryToken()
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-xs text-slate-500 mb-1">Action</label>
+                        <input type="text" asp-for="NewAction" required placeholder="Describe action item"
+                            class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
+                    </div>
+                    <div class="w-44">
+                        <label class="block text-xs text-slate-500 mb-1">Owner</label>
+                        <select asp-for="NewActionOwnerId"
+                            class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
+                            <option value="">— None —</option>
+                            @foreach (var u in Model.Users)
+                            {
+                                <option value="@u.Id">@u.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="w-40">
+                        <label class="block text-xs text-slate-500 mb-1">Due Date</label>
+                        <input type="date" asp-for="NewActionDueDate"
+                            class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
+                    </div>
+                    <button type="submit" class="px-4 py-1.5 text-sm bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                        Add
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+</div>

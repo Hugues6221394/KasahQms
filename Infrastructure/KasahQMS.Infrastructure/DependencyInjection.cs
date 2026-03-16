@@ -30,6 +30,17 @@ public static class DependencyInjection
         // Authorization service
         services.AddScoped<KasahQMS.Application.Common.Security.IAuthorizationService, AuthorizationService>();
         
+        // Security services
+        services.AddScoped<ITwoFactorService, TwoFactorService>();
+        services.AddScoped<ISessionService, SessionService>();
+        services.AddScoped<IPasswordPolicyService, PasswordPolicyService>();
+
+        // Privacy services
+        services.AddScoped<IDataPrivacyService, DataPrivacyService>();
+
+        // Export services
+        services.AddScoped<IExportService, ExportService>();
+
         // Other services
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IFileStorageService, FileStorageService>();

@@ -9,9 +9,13 @@ using KasahQMS.Domain.Entities.Configuration;
 using KasahQMS.Domain.Entities.Documents;
 using KasahQMS.Domain.Entities.Identity;
 using KasahQMS.Domain.Entities.Notifications;
+using KasahQMS.Domain.Entities.Privacy;
+using KasahQMS.Domain.Entities.Risk;
 using KasahQMS.Domain.Entities.Security;
 using KasahQMS.Domain.Entities.Stock;
+using KasahQMS.Domain.Entities.Supplier;
 using KasahQMS.Domain.Entities.Tasks;
+using KasahQMS.Domain.Entities.Training;
 using KasahQMS.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -108,6 +112,28 @@ public class ApplicationDbContext : DbContext
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockReservation> StockReservations => Set<StockReservation>();
 
+    // Security
+    public DbSet<UserTwoFactorAuth> UserTwoFactorAuths => Set<UserTwoFactorAuth>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<PasswordPolicy> PasswordPolicies => Set<PasswordPolicy>();
+
+    // Privacy
+    public DbSet<ConsentRecord> ConsentRecords => Set<ConsentRecord>();
+    public DbSet<DataExportRequest> DataExportRequests => Set<DataExportRequest>();
+    public DbSet<DataRetentionPolicy> DataRetentionPolicies => Set<DataRetentionPolicy>();
+
+    // Training
+    public DbSet<TrainingRecord> TrainingRecords => Set<TrainingRecord>();
+    public DbSet<CompetencyAssessment> CompetencyAssessments => Set<CompetencyAssessment>();
+
+    // Risk
+    public DbSet<RiskAssessment> RiskAssessments => Set<RiskAssessment>();
+    public DbSet<RiskRegisterEntry> RiskRegisterEntries => Set<RiskRegisterEntry>();
+
+    // Supplier
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<SupplierAudit> SupplierAudits => Set<SupplierAudit>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -141,6 +167,25 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<StockReservation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<DocumentType>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<DocumentCategory>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+
+        // Security query filters
+        modelBuilder.Entity<UserSession>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<PasswordPolicy>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+
+        // Privacy query filters
+        modelBuilder.Entity<ConsentRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<DataExportRequest>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<DataRetentionPolicy>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+
+        // Training query filters
+        modelBuilder.Entity<TrainingRecord>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<CompetencyAssessment>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+
+        // Risk query filters
+        modelBuilder.Entity<RiskAssessment>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+
+        // Supplier query filters
+        modelBuilder.Entity<Supplier>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
 
         // ===========================================
         // Child Entity Query Filters (matching parent tenant filters)
@@ -250,6 +295,31 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<StockReservation>().HasIndex(r => new { r.TenantId, r.ReservationNumber }).IsUnique();
         modelBuilder.Entity<StockReservation>().HasIndex(r => new { r.StockItemId, r.Status });
         modelBuilder.Entity<StockReservation>().HasIndex(r => r.TenderId);
+        
+        // Security indexes
+        modelBuilder.Entity<UserTwoFactorAuth>().HasIndex(t => t.UserId).IsUnique();
+        modelBuilder.Entity<UserSession>().HasIndex(s => s.UserId);
+        modelBuilder.Entity<UserSession>().HasIndex(s => s.Token);
+
+        // Privacy indexes
+        modelBuilder.Entity<ConsentRecord>().HasIndex(c => new { c.UserId, c.ConsentType });
+        modelBuilder.Entity<DataExportRequest>().HasIndex(d => d.UserId);
+
+        // Training indexes
+        modelBuilder.Entity<TrainingRecord>().HasIndex(t => t.UserId);
+        modelBuilder.Entity<TrainingRecord>().HasIndex(t => t.Status);
+        modelBuilder.Entity<CompetencyAssessment>().HasIndex(c => c.UserId);
+
+        // Risk indexes
+        modelBuilder.Entity<RiskAssessment>().HasIndex(r => new { r.TenantId, r.RiskNumber }).IsUnique();
+        modelBuilder.Entity<RiskAssessment>().HasIndex(r => r.OwnerId);
+        modelBuilder.Entity<RiskAssessment>().HasIndex(r => r.Status);
+        modelBuilder.Entity<RiskRegisterEntry>().HasIndex(e => e.RiskAssessmentId);
+
+        // Supplier indexes
+        modelBuilder.Entity<Supplier>().HasIndex(s => new { s.TenantId, s.Code }).IsUnique();
+        modelBuilder.Entity<Supplier>().HasIndex(s => s.QualificationStatus);
+        modelBuilder.Entity<SupplierAudit>().HasIndex(a => a.SupplierId);
         
         // Stock Movement relationships
         modelBuilder.Entity<StockMovement>()

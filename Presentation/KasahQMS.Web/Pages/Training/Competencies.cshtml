@@ -1,0 +1,133 @@
+@page
+@model KasahQMS.Web.Pages.Training.CompetenciesModel
+@{
+    ViewData["Title"] = "Competency Assessments";
+}
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">Competency Assessments</h1>
+            <p class="text-sm text-slate-500">Track employee competency levels across skill areas.</p>
+        </div>
+        <button type="button" onclick="document.getElementById('new-assessment-form').classList.toggle('hidden')"
+                class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+            New Assessment
+        </button>
+    </div>
+
+    @if (Model.ActionMessage != null)
+    {
+        <div class="p-4 rounded-lg text-sm @(Model.ActionSuccess == true ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700")">
+            @Model.ActionMessage
+        </div>
+    }
+
+    <!-- New Assessment Form (toggleable) -->
+    <div id="new-assessment-form" class="card p-6 hidden">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">New Competency Assessment</h2>
+        <form method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Employee <span class="text-red-500">*</span></label>
+                    <select asp-for="NewUserId"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="">— Select employee —</option>
+                        @foreach (var u in Model.Users)
+                        {
+                            <option value="@u.Id">@u.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Competency Area <span class="text-red-500">*</span></label>
+                    <input type="text" asp-for="NewCompetencyArea"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                        placeholder="e.g. GMP Documentation">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Level</label>
+                    <select asp-for="NewLevel"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="Novice">Novice</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Competent">Competent</option>
+                        <option value="Proficient">Proficient</option>
+                        <option value="Expert">Expert</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Next Assessment Date</label>
+                    <input type="date" asp-for="NewNextAssessmentDate"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                    <input type="text" asp-for="NewNotes"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                        placeholder="Optional notes">
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button type="submit" class="px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                    Save Assessment
+                </button>
+                <button type="button" onclick="document.getElementById('new-assessment-form').classList.add('hidden')"
+                        class="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Assessments Table -->
+    <div class="card overflow-hidden">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                <tr>
+                    <th class="px-6 py-4 text-left font-semibold">Employee</th>
+                    <th class="px-6 py-4 text-left font-semibold">Competency Area</th>
+                    <th class="px-6 py-4 text-left font-semibold">Level</th>
+                    <th class="px-6 py-4 text-left font-semibold">Assessor</th>
+                    <th class="px-6 py-4 text-left font-semibold">Assessed</th>
+                    <th class="px-6 py-4 text-left font-semibold">Next Assessment</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+                @if (!Model.Assessments.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-slate-500">No competency assessments found.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var a in Model.Assessments)
+                    {
+                        <tr>
+                            <td class="px-6 py-4 font-semibold text-slate-800">@a.Employee</td>
+                            <td class="px-6 py-4 text-slate-600">@a.CompetencyArea</td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex gap-0.5">
+                                        @for (int i = 0; i < 5; i++)
+                                        {
+                                            <div class="w-2 h-6 rounded-sm @(i <= a.LevelValue ? "bg-brand-500" : "bg-slate-200")"></div>
+                                        }
+                                    </div>
+                                    <span class="text-xs text-slate-600">@a.Level</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">@a.Assessor</td>
+                            <td class="px-6 py-4 text-slate-600">@a.AssessedDate</td>
+                            <td class="px-6 py-4 text-slate-600">@a.NextAssessment</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

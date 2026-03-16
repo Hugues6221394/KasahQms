@@ -1,18 +1,129 @@
 @page
 @model KasahQMS.Web.Pages.Privacy.IndexModel
 @{
-    ViewData["Title"] = "Privacy";
+    ViewData["Title"] = "Privacy Center";
 }
 
-<div class="space-y-6">
+<div class="space-y-8">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Privacy Policy</h1>
-        <p class="text-sm text-slate-500">How we protect and manage your data.</p>
+        <h1 class="text-2xl font-semibold text-slate-900">Privacy Center</h1>
+        <p class="text-sm text-slate-500">Manage your data, consent preferences, and exercise your GDPR rights.</p>
     </div>
 
-    <div class="card p-6 space-y-4 text-sm text-slate-600">
-        <p>All data is stored within the organization-approved database with role-based and policy-based access controls.</p>
-        <p>Audit logs are immutable and retained according to configured retention policies.</p>
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="p-4 bg-brand-50 border border-brand-200 rounded-xl flex items-start gap-3">
+            <svg class="w-5 h-5 text-brand-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-sm text-brand-800">@Model.StatusMessage</p>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="p-4 bg-accent-50 border border-accent-100 rounded-xl flex items-start gap-3">
+            <svg class="w-5 h-5 text-accent-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-sm text-accent-600">@Model.ErrorMessage</p>
+        </div>
+    }
+
+    <!-- Consent Management -->
+    <div class="card p-6">
+        <h2 class="text-lg font-semibold text-slate-900 mb-1">Consent Management</h2>
+        <p class="text-sm text-slate-500 mb-6">Control how your data is used. Changes take effect immediately.</p>
+
+        <div class="space-y-4">
+            @foreach (var consent in Model.Consents)
+            {
+                <div class="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3.5">
+                    <div>
+                        <div class="text-sm font-medium text-slate-800">@consent.Type</div>
+                        <div class="text-xs text-slate-500 mt-0.5">@consent.Description</div>
+                    </div>
+                    <form method="post" asp-page-handler="ToggleConsent">
+                        <input type="hidden" name="consentType" value="@consent.Type" />
+                        <input type="hidden" name="isGranted" value="@(!consent.IsGranted)" />
+                        <button type="submit" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 @(consent.IsGranted ? "bg-brand-600" : "bg-slate-200")">
+                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out @(consent.IsGranted ? "translate-x-5" : "translate-x-0")"></span>
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <!-- Export My Data -->
+        <div class="card p-6">
+            <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-base font-semibold text-slate-900">Export My Data</h3>
+                    <p class="text-sm text-slate-500 mt-1 mb-4">Request a copy of all personal data we hold about you. You'll be notified when it's ready to download.</p>
+                    <div class="flex gap-3">
+                        <form method="post" asp-page-handler="ExportData">
+                            <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm">
+                                Request Export
+                            </button>
+                        </form>
+                        <a href="/Privacy/DataExport" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                            View Exports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete My Account -->
+        <div class="card p-6 border border-accent-100">
+            <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl bg-accent-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-accent-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-base font-semibold text-slate-900">Delete My Account</h3>
+                    <p class="text-sm text-slate-500 mt-1 mb-4">Permanently anonymize all your personal data. This action cannot be undone.</p>
+                    <form method="post" asp-page-handler="DeleteAccount">
+                        <button type="submit"
+                                onclick="return confirm('Are you sure you want to delete your account? All personal data will be permanently anonymized. This action cannot be undone.')"
+                                class="rounded-lg border border-accent-300 bg-accent-50 px-4 py-2 text-sm font-semibold text-accent-700 hover:bg-accent-100 transition-colors">
+                            Delete My Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Retention Info -->
+    <div class="card p-6">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">Data Retention Policy</h2>
+        <div class="grid gap-4 md:grid-cols-3">
+            <div class="rounded-lg border border-slate-200 p-4">
+                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Audit Logs</div>
+                <div class="text-lg font-semibold text-slate-900">7 Years</div>
+                <div class="text-xs text-slate-500 mt-1">Retained for regulatory compliance</div>
+            </div>
+            <div class="rounded-lg border border-slate-200 p-4">
+                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Personal Data</div>
+                <div class="text-lg font-semibold text-slate-900">Account Lifetime</div>
+                <div class="text-xs text-slate-500 mt-1">Anonymized upon account deletion</div>
+            </div>
+            <div class="rounded-lg border border-slate-200 p-4">
+                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Data Exports</div>
+                <div class="text-lg font-semibold text-slate-900">30 Days</div>
+                <div class="text-xs text-slate-500 mt-1">Download links expire after 30 days</div>
+            </div>
+        </div>
     </div>
 </div>
 

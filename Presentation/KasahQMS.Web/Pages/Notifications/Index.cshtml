@@ -74,4 +74,86 @@
             <p class="text-slate-500 mt-1">You have no new notifications at the moment.</p>
         </div>
     </div>
+
+    <!-- Email Notification Preferences -->
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100">
+            <h2 class="text-lg font-semibold text-slate-900">Email Notification Preferences</h2>
+            <p class="text-sm text-slate-500 mt-1">Choose which notifications you receive via email.</p>
+        </div>
+        @if (Model.PreferencesSaved)
+        {
+            <div class="mx-5 mt-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+                Preferences saved successfully.
+            </div>
+        }
+        <form method="post" asp-page-handler="SavePreferences" class="p-5 space-y-4">
+            @Html.AntiForgeryToken()
+            <label class="flex items-center justify-between py-3 border-b border-slate-100 cursor-pointer">
+                <div>
+                    <div class="text-sm font-medium text-slate-800">Document Approvals</div>
+                    <div class="text-xs text-slate-500">Notify when documents require your approval or are approved/rejected.</div>
+                </div>
+                <div class="relative">
+                    <input type="hidden" name="PrefDocumentApprovals" value="false" />
+                    <input type="checkbox" name="PrefDocumentApprovals" value="true" @(Model.PrefDocumentApprovals ? "checked" : "")
+                           class="sr-only peer" id="pref-docs" />
+                    <label for="pref-docs" class="block w-11 h-6 bg-slate-200 rounded-full cursor-pointer peer-checked:bg-brand-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></label>
+                </div>
+            </label>
+            <label class="flex items-center justify-between py-3 border-b border-slate-100 cursor-pointer">
+                <div>
+                    <div class="text-sm font-medium text-slate-800">Task Assignments</div>
+                    <div class="text-xs text-slate-500">Notify when tasks are assigned to you or updated.</div>
+                </div>
+                <div class="relative">
+                    <input type="hidden" name="PrefTaskAssignments" value="false" />
+                    <input type="checkbox" name="PrefTaskAssignments" value="true" @(Model.PrefTaskAssignments ? "checked" : "")
+                           class="sr-only peer" id="pref-tasks" />
+                    <label for="pref-tasks" class="block w-11 h-6 bg-slate-200 rounded-full cursor-pointer peer-checked:bg-brand-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></label>
+                </div>
+            </label>
+            <label class="flex items-center justify-between py-3 border-b border-slate-100 cursor-pointer">
+                <div>
+                    <div class="text-sm font-medium text-slate-800">CAPA Updates</div>
+                    <div class="text-xs text-slate-500">Notify on CAPA assignments, status changes, and verifications.</div>
+                </div>
+                <div class="relative">
+                    <input type="hidden" name="PrefCapaUpdates" value="false" />
+                    <input type="checkbox" name="PrefCapaUpdates" value="true" @(Model.PrefCapaUpdates ? "checked" : "")
+                           class="sr-only peer" id="pref-capa" />
+                    <label for="pref-capa" class="block w-11 h-6 bg-slate-200 rounded-full cursor-pointer peer-checked:bg-brand-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></label>
+                </div>
+            </label>
+            <label class="flex items-center justify-between py-3 border-b border-slate-100 cursor-pointer">
+                <div>
+                    <div class="text-sm font-medium text-slate-800">Audit Schedules</div>
+                    <div class="text-xs text-slate-500">Notify about upcoming audit schedules and findings.</div>
+                </div>
+                <div class="relative">
+                    <input type="hidden" name="PrefAuditSchedules" value="false" />
+                    <input type="checkbox" name="PrefAuditSchedules" value="true" @(Model.PrefAuditSchedules ? "checked" : "")
+                           class="sr-only peer" id="pref-audits" />
+                    <label for="pref-audits" class="block w-11 h-6 bg-slate-200 rounded-full cursor-pointer peer-checked:bg-brand-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></label>
+                </div>
+            </label>
+            <label class="flex items-center justify-between py-3 cursor-pointer">
+                <div>
+                    <div class="text-sm font-medium text-slate-800">System Alerts</div>
+                    <div class="text-xs text-slate-500">Important system-wide announcements and security alerts.</div>
+                </div>
+                <div class="relative">
+                    <input type="hidden" name="PrefSystemAlerts" value="false" />
+                    <input type="checkbox" name="PrefSystemAlerts" value="true" @(Model.PrefSystemAlerts ? "checked" : "")
+                           class="sr-only peer" id="pref-system" />
+                    <label for="pref-system" class="block w-11 h-6 bg-slate-200 rounded-full cursor-pointer peer-checked:bg-brand-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></label>
+                </div>
+            </label>
+            <div class="pt-4">
+                <button type="submit" class="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                    Save Preferences
+                </button>
+            </div>
+        </form>
+    </div>
 </div>

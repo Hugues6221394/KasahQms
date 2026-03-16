@@ -1,0 +1,197 @@
+@page "{id:guid}"
+@model KasahQMS.Web.Pages.Suppliers.DetailsModel
+@{
+    ViewData["Title"] = "Supplier Details";
+}
+
+<div class="mx-auto max-w-4xl space-y-6">
+    <nav class="flex items-center gap-2 text-sm text-slate-500">
+        <a href="/Suppliers" class="hover:text-slate-900">Suppliers</a>
+        <span>/</span>
+        <span class="text-slate-700">Details</span>
+    </nav>
+
+    @if (Model.ActionMessage != null)
+    {
+        <div class="p-4 rounded-lg text-sm @(Model.ActionSuccess == true ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700")">
+            @Model.ActionMessage
+        </div>
+    }
+
+    @if (Model.Supplier == null)
+    {
+        <div class="card p-8 text-center text-slate-500">Supplier not found.</div>
+    }
+    else
+    {
+        var s = Model.Supplier;
+
+        <!-- Header -->
+        <div class="card p-6">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-xl font-bold text-slate-900">@s.Name</h1>
+                        <span class="font-mono text-xs text-slate-400">@s.Code</span>
+                    </div>
+                    <p class="text-sm text-slate-500 mt-1">@s.Category</p>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @s.StatusClass">@s.Status</span>
+            </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="grid gap-6 md:grid-cols-2">
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Supplier Info</h2>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between"><dt class="text-slate-500">Contact</dt><dd class="font-medium text-slate-800">@(s.ContactName ?? "—")</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Email</dt><dd class="font-medium text-slate-800">@(s.ContactEmail ?? "—")</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Phone</dt><dd class="font-medium text-slate-800">@(s.ContactPhone ?? "—")</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Address</dt><dd class="font-medium text-slate-800">@(s.Address ?? "—")</dd></div>
+                    @if (s.QualifiedDate != null)
+                    {
+                        <div class="flex justify-between"><dt class="text-slate-500">Qualified Date</dt><dd class="font-medium text-slate-800">@s.QualifiedDate</dd></div>
+                    }
+                    @if (s.NextAuditDate != null)
+                    {
+                        <div class="flex justify-between"><dt class="text-slate-500">Next Audit</dt><dd class="font-medium text-slate-800">@s.NextAuditDate</dd></div>
+                    }
+                    <div class="flex justify-between"><dt class="text-slate-500">Created</dt><dd class="font-medium text-slate-800">@s.CreatedAt</dd></div>
+                </dl>
+            </div>
+
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Performance</h2>
+                @if (s.PerformanceScore.HasValue)
+                {
+                    var pct = Math.Min(100, (int)s.PerformanceScore.Value);
+                    var barColor = pct >= 80 ? "bg-emerald-500" : pct >= 60 ? "bg-amber-500" : "bg-rose-500";
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-slate-900">@pct<span class="text-lg text-slate-400">%</span></div>
+                        <div class="mt-3 w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full @barColor" style="width: @(pct)%"></div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-sm text-slate-400 italic">No performance data available yet.</p>
+                }
+
+                @if (s.Notes != null)
+                {
+                    <div class="pt-4 border-t border-slate-100">
+                        <h3 class="text-xs font-medium text-slate-500 mb-1">Notes</h3>
+                        <p class="text-sm text-slate-700 whitespace-pre-line">@s.Notes</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Qualification Status Actions -->
+        @if (s.Status != "Disqualified")
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Qualification Actions</h2>
+                <div class="flex flex-wrap gap-3">
+                    @if (s.Status is "Pending" or "Conditionally" or "Suspended")
+                    {
+                        <form method="post" asp-page-handler="Qualify" asp-route-id="@s.Id">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">Qualify</button>
+                        </form>
+                    }
+                    @if (s.Status is "Pending")
+                    {
+                        <form method="post" asp-page-handler="Conditional" asp-route-id="@s.Id">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700">Conditionally Approve</button>
+                        </form>
+                    }
+                    @if (s.Status is "Qualified" or "Conditionally")
+                    {
+                        <form method="post" asp-page-handler="Suspend" asp-route-id="@s.Id">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700">Suspend</button>
+                        </form>
+                    }
+                    <form method="post" asp-page-handler="Disqualify" asp-route-id="@s.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">Disqualify</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <!-- Audit History -->
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Audit History</h2>
+            </div>
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                    <tr>
+                        <th class="px-6 py-3 text-left font-semibold">Date</th>
+                        <th class="px-6 py-3 text-left font-semibold">Auditor</th>
+                        <th class="px-6 py-3 text-left font-semibold">Score</th>
+                        <th class="px-6 py-3 text-left font-semibold">Status</th>
+                        <th class="px-6 py-3 text-left font-semibold">Findings</th>
+                        <th class="px-6 py-3 text-left font-semibold">Completed</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @if (!Model.AuditHistory.Any())
+                    {
+                        <tr><td colspan="6" class="px-6 py-6 text-center text-slate-500">No audits recorded.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var a in Model.AuditHistory)
+                        {
+                            <tr>
+                                <td class="px-6 py-3 text-slate-600">@a.AuditDate</td>
+                                <td class="px-6 py-3 text-slate-600">@a.Auditor</td>
+                                <td class="px-6 py-3 font-medium text-slate-800">@a.Score%</td>
+                                <td class="px-6 py-3">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(a.Status == "Completed" ? "bg-emerald-100 text-emerald-700" : a.Status == "InProgress" ? "bg-brand-100 text-brand-700" : "bg-amber-100 text-amber-700")">
+                                        @a.Status
+                                    </span>
+                                </td>
+                                <td class="px-6 py-3 text-slate-600 max-w-xs truncate">@(a.Findings ?? "—")</td>
+                                <td class="px-6 py-3 text-slate-600">@(a.CompletedDate ?? "—")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+
+            <!-- Schedule Audit Form -->
+            <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+                <h3 class="text-sm font-medium text-slate-700 mb-3">Schedule Audit</h3>
+                <form method="post" asp-page-handler="ScheduleAudit" asp-route-id="@s.Id" class="flex flex-wrap gap-3 items-end">
+                    @Html.AntiForgeryToken()
+                    <div class="w-44">
+                        <label class="block text-xs text-slate-500 mb-1">Audit Date</label>
+                        <input type="date" asp-for="AuditDate"
+                            class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
+                    </div>
+                    <div class="w-48">
+                        <label class="block text-xs text-slate-500 mb-1">Auditor</label>
+                        <select asp-for="AuditorId"
+                            class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
+                            <option value="">— Select auditor —</option>
+                            @foreach (var u in Model.Users)
+                            {
+                                <option value="@u.Id">@u.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="px-4 py-1.5 text-sm bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                        Schedule
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+</div>

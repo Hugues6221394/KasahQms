@@ -1,0 +1,217 @@
+@page "{id:guid}"
+@model KasahQMS.Web.Pages.Training.DetailsModel
+@{
+    ViewData["Title"] = "Training Details";
+}
+
+<div class="mx-auto max-w-4xl space-y-6">
+    <nav class="flex items-center gap-2 text-sm text-slate-500">
+        <a href="/Training" class="hover:text-slate-900">Training</a>
+        <span>/</span>
+        <span class="text-slate-700">Details</span>
+    </nav>
+
+    @if (Model.ActionMessage != null)
+    {
+        <div class="p-4 rounded-lg text-sm @(Model.ActionSuccess == true ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700")">
+            @Model.ActionMessage
+        </div>
+    }
+
+    @if (Model.Record == null)
+    {
+        <div class="card p-8 text-center text-slate-500">Training record not found.</div>
+    }
+    else
+    {
+        var r = Model.Record;
+
+        <!-- Header -->
+        <div class="card p-6">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">@r.Title</h1>
+                    <p class="text-sm text-slate-500 mt-1">@r.Description</p>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @r.StatusClass">@r.Status</span>
+            </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="grid gap-6 md:grid-cols-2">
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Training Info</h2>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-slate-500">Type</dt>
+                        <dd class="font-medium text-slate-800">@r.Type</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-slate-500">Employee</dt>
+                        <dd class="font-medium text-slate-800">@r.Employee</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-slate-500">Trainer</dt>
+                        <dd class="font-medium text-slate-800">@r.Trainer</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-slate-500">Scheduled</dt>
+                        <dd class="font-medium text-slate-800">@r.ScheduledDate</dd>
+                    </div>
+                    @if (r.CompletedDate != null)
+                    {
+                        <div class="flex justify-between">
+                            <dt class="text-slate-500">Completed</dt>
+                            <dd class="font-medium text-slate-800">@r.CompletedDate</dd>
+                        </div>
+                    }
+                    @if (r.ExpiryDate != null)
+                    {
+                        <div class="flex justify-between">
+                            <dt class="text-slate-500">Expired</dt>
+                            <dd class="font-medium text-slate-800">@r.ExpiryDate</dd>
+                        </div>
+                    }
+                    <div class="flex justify-between">
+                        <dt class="text-slate-500">Created</dt>
+                        <dd class="font-medium text-slate-800">@r.CreatedAt</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Score & Certificate</h2>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-slate-500">Score</dt>
+                        <dd class="font-medium text-slate-800">@(r.Score.HasValue ? $"{r.Score}%" : "—")</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-slate-500">Passing Score</dt>
+                        <dd class="font-medium text-slate-800">@(r.PassingScore.HasValue ? $"{r.PassingScore}%" : "—")</dd>
+                    </div>
+                    @if (r.Score.HasValue && r.PassingScore.HasValue)
+                    {
+                        <div class="flex justify-between">
+                            <dt class="text-slate-500">Result</dt>
+                            <dd class="font-medium @(r.Score >= r.PassingScore ? "text-emerald-600" : "text-rose-600")">
+                                @(r.Score >= r.PassingScore ? "Passed ✓" : "Failed ✗")
+                            </dd>
+                        </div>
+                    }
+                    <div class="flex justify-between">
+                        <dt class="text-slate-500">Certificate #</dt>
+                        <dd class="font-medium text-slate-800">@(r.CertificateNumber ?? "—")</dd>
+                    </div>
+                </dl>
+
+                @if (r.Status == "Completed")
+                {
+                    <form method="post" asp-page-handler="UpdateCertificate" asp-route-id="@r.Id" class="pt-2 flex gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="text" asp-for="CertificateNumber" value="@r.CertificateNumber"
+                               placeholder="Certificate number"
+                               class="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
+                        <button type="submit" class="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Update</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- Status Transition Actions -->
+        @if (r.Status != "Completed" && r.Status != "Expired")
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Actions</h2>
+                <div class="flex flex-wrap gap-3">
+                    @if (r.Status == "Scheduled")
+                    {
+                        <form method="post" asp-page-handler="Start" asp-route-id="@r.Id">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
+                                Mark In Progress
+                            </button>
+                        </form>
+                    }
+
+                    @if (r.Status is "Scheduled" or "InProgress")
+                    {
+                        <form method="post" asp-page-handler="Complete" asp-route-id="@r.Id" class="flex items-end gap-2">
+                            @Html.AntiForgeryToken()
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">Score (%)</label>
+                                <input type="number" asp-for="CompletionScore" min="0" max="100"
+                                       class="w-20 px-2 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200"
+                                       placeholder="Score">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">Certificate #</label>
+                                <input type="text" asp-for="CertificateNumber"
+                                       class="w-40 px-2 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200"
+                                       placeholder="Optional">
+                            </div>
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">
+                                Complete
+                            </button>
+                        </form>
+                    }
+
+                    <form method="post" asp-page-handler="Expire" asp-route-id="@r.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">
+                            Mark Expired
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <!-- Related Competency Assessments -->
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Competency Assessments for @r.Employee</h2>
+                <a href="/Training/Competencies" class="text-sm text-brand-600 hover:text-brand-700 font-medium">View All</a>
+            </div>
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                    <tr>
+                        <th class="px-6 py-3 text-left font-semibold">Area</th>
+                        <th class="px-6 py-3 text-left font-semibold">Level</th>
+                        <th class="px-6 py-3 text-left font-semibold">Assessor</th>
+                        <th class="px-6 py-3 text-left font-semibold">Date</th>
+                        <th class="px-6 py-3 text-left font-semibold">Next</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @if (!Model.Competencies.Any())
+                    {
+                        <tr><td colspan="5" class="px-6 py-6 text-center text-slate-500">No assessments recorded.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var c in Model.Competencies)
+                        {
+                            <tr>
+                                <td class="px-6 py-3 font-medium text-slate-800">@c.CompetencyArea</td>
+                                <td class="px-6 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex gap-0.5">
+                                            @for (int i = 0; i < 5; i++)
+                                            {
+                                                <div class="w-2 h-6 rounded-sm @(i <= c.LevelValue ? "bg-brand-500" : "bg-slate-200")"></div>
+                                            }
+                                        </div>
+                                        <span class="text-xs text-slate-600">@c.Level</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-3 text-slate-600">@c.Assessor</td>
+                                <td class="px-6 py-3 text-slate-600">@c.AssessedDate</td>
+                                <td class="px-6 py-3 text-slate-600">@c.NextAssessment</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

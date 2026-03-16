@@ -14,200 +14,379 @@ public class IndexModel : PageModel
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IHierarchyService _hierarchyService;
+    private readonly IExportService _exportService;
 
-    public IndexModel(ApplicationDbContext dbContext, ICurrentUserService currentUserService, IHierarchyService hierarchyService)
+    public IndexModel(
+        ApplicationDbContext dbContext,
+        ICurrentUserService currentUserService,
+        IHierarchyService hierarchyService,
+        IExportService exportService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _hierarchyService = hierarchyService;
+        _exportService = exportService;
     }
 
-    public List<ReportItem> Reports { get; set; } = new();
+    [BindProperty(SupportsGet = true)] public string? Category { get; set; }
+    [BindProperty(SupportsGet = true)] public string? ReportType { get; set; }
+    [BindProperty(SupportsGet = true)] public int Days { get; set; } = 30;
+
+    public List<ReportCategory> Categories { get; set; } = new();
+    public List<Dictionary<string, object>> PreviewRows { get; set; } = new();
+    public List<string> PreviewColumns { get; set; } = new();
+    public string SelectedReportTitle { get; set; } = "";
+
     public bool IsDepartmentManager { get; set; }
     public string? DepartmentName { get; set; }
 
     public async Task OnGetAsync()
     {
+        BuildCategories();
+        await DetermineScope();
+        if (!string.IsNullOrEmpty(Category) && !string.IsNullOrEmpty(ReportType))
+            await LoadPreviewAsync();
+    }
+
+    public async Task<IActionResult> OnPostExportAsync(string category, string reportType, int days, string format)
+    {
+        Category = category;
+        ReportType = reportType;
+        Days = days;
+        await DetermineScope();
+        await LoadPreviewAsync();
+
+        if (PreviewRows.Count == 0)
+            return Page();
+
+        var fileName = $"{category}_{reportType}_{DateTime.Now:yyyyMMdd}";
+
+        switch (format?.ToLower())
+        {
+            case "pdf":
+                var pdfBytes = await _exportService.ExportToPdfAsync(SelectedReportTitle, PreviewRows);
+                return File(pdfBytes, "application/pdf", $"{fileName}.pdf");
+
+            case "excel":
+                var excelBytes = await _exportService.ExportToExcelAsync(SelectedReportTitle, PreviewRows);
+                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{fileName}.xlsx");
+
+            case "csv":
+            default:
+                var csvBytes = await _exportService.ExportToCsvAsync(PreviewRows);
+                return File(csvBytes, "text/csv", $"{fileName}.csv");
+        }
+    }
+
+    private void BuildCategories()
+    {
+        Categories = new List<ReportCategory>
+        {
+            new("documents", "Documents", new[]
+            {
+                new ReportTypeItem("status-summary", "Status Summary"),
+                new ReportTypeItem("approval-history", "Approval History"),
+                new ReportTypeItem("overdue-documents", "Overdue Documents")
+            }),
+            new("tasks", "Tasks", new[]
+            {
+                new ReportTypeItem("task-status", "Task Status"),
+                new ReportTypeItem("workload-by-user", "Workload by User"),
+                new ReportTypeItem("overdue-tasks", "Overdue Tasks")
+            }),
+            new("capas", "CAPAs", new[]
+            {
+                new ReportTypeItem("status-distribution", "Status Distribution"),
+                new ReportTypeItem("aging-report", "Aging Report"),
+                new ReportTypeItem("effectiveness-summary", "Effectiveness Summary")
+            }),
+            new("audits", "Audits", new[]
+            {
+                new ReportTypeItem("coverage-report", "Coverage Report"),
+                new ReportTypeItem("finding-summary", "Finding Summary")
+            }),
+            new("training", "Training", new[]
+            {
+                new ReportTypeItem("compliance-report", "Compliance Report"),
+                new ReportTypeItem("expiring-certifications", "Expiring Certifications")
+            }),
+            new("risk", "Risk", new[]
+            {
+                new ReportTypeItem("risk-register", "Risk Register"),
+                new ReportTypeItem("high-risk-items", "High-Risk Items")
+            }),
+            new("suppliers", "Suppliers", new[]
+            {
+                new ReportTypeItem("performance-summary", "Performance Summary"),
+                new ReportTypeItem("audit-schedule", "Audit Schedule")
+            })
+        };
+    }
+
+    private async Task DetermineScope()
+    {
         var userId = _currentUserService.UserId;
-        var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
-
-        var user = userId.HasValue 
-            ? await _dbContext.Users.AsNoTracking().Include(u => u.Roles).Include(u => u.OrganizationUnit).FirstOrDefaultAsync(u => u.Id == userId.Value)
+        var user = userId.HasValue
+            ? await _dbContext.Users.AsNoTracking().Include(u => u.Roles).Include(u => u.OrganizationUnit)
+                .FirstOrDefaultAsync(u => u.Id == userId.Value)
             : null;
-
         var roles = user?.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
         var isTmdOrAdmin = roles.Any(r => r == "TMD" || r == "Deputy Country Manager" || r.Contains("Admin"));
         IsDepartmentManager = !isTmdOrAdmin && roles.Any(r => r.Contains("Manager"));
         DepartmentName = user?.OrganizationUnit?.Name;
-
-        var lastApproved = await _dbContext.Documents
-            .Where(d => d.TenantId == tenantId && d.Status == DocumentStatus.Approved && d.ApprovedAt.HasValue)
-            .MaxAsync(d => (DateTime?)d.ApprovedAt);
-        var lastAudit = await _dbContext.Audits
-            .Where(a => a.TenantId == tenantId && a.Status == AuditStatus.Completed && a.ActualEndDate.HasValue)
-            .MaxAsync(a => (DateTime?)a.ActualEndDate);
-        var lastCapa = await _dbContext.Capas
-            .Where(c => c.TenantId == tenantId && c.Status == CapaStatus.Closed && c.ActualCompletionDate.HasValue)
-            .MaxAsync(c => (DateTime?)c.ActualCompletionDate);
-        var lastDocument = await _dbContext.Documents
-            .Where(d => d.TenantId == tenantId)
-            .MaxAsync(d => (DateTime?)d.CreatedAt);
-        var lastTask = await _dbContext.QmsTasks
-            .Where(t => t.TenantId == tenantId)
-            .MaxAsync(t => (DateTime?)t.CreatedAt);
-
-        Reports = new List<ReportItem>
-        {
-            new("compliance", "Compliance Snapshot", "Executive compliance scorecard", "Quality Office", FormatDate(lastApproved), lastApproved.HasValue ? "Ready" : "Draft"),
-            new("audits", "Audit Evidence Pack", "Internal audit evidence export", "Audit Team", FormatDate(lastAudit), lastAudit.HasValue ? "Ready" : "Draft"),
-            new("capas", "CAPA Effectiveness", "CAPA closure effectiveness report", "Operations", FormatDate(lastCapa), lastCapa.HasValue ? "Ready" : "Draft"),
-            new("docs", "Document Control Log", "Issued documents and approvals", "Document Control", FormatDate(lastDocument), lastDocument.HasValue ? "Ready" : "Draft"),
-            new("tasks", "Task Summary", "Task completion and status report", "Operations", FormatDate(lastTask), lastTask.HasValue ? "Ready" : "Draft")
-        };
     }
 
-    public async Task<IActionResult> OnGetExportExcelAsync(string id)
+    private async Task LoadPreviewAsync()
     {
-        var userId = _currentUserService.UserId;
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+        var cutoff = DateTime.UtcNow.AddDays(-Days);
+        IEnumerable<Guid> visibleUserIds = Array.Empty<Guid>();
+        if (IsDepartmentManager && _currentUserService.UserId.HasValue)
+            visibleUserIds = await _hierarchyService.GetVisibleUserIdsAsync(_currentUserService.UserId.Value);
 
-        // Get user's visible scope
-        var user = userId.HasValue 
-            ? await _dbContext.Users.AsNoTracking().Include(u => u.Roles).Include(u => u.OrganizationUnit).FirstOrDefaultAsync(u => u.Id == userId.Value)
-            : null;
+        var key = $"{Category}|{ReportType}";
+        SelectedReportTitle = $"{Category} — {ReportType}".Replace("-", " ");
 
-        var roles = user?.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
-        var isTmdOrAdmin = roles.Any(r => r == "TMD" || r == "Deputy Country Manager" || r.Contains("Admin"));
-        var isDepartmentManager = !isTmdOrAdmin && roles.Any(r => r.Contains("Manager"));
-
-        // Get visible user IDs for filtering (department managers see only their dept)
-        IEnumerable<Guid> visibleUserIds = new List<Guid>();
-        if (isDepartmentManager && userId.HasValue)
+        switch (key)
         {
-            visibleUserIds = await _hierarchyService.GetVisibleUserIdsAsync(userId.Value);
-        }
-
-        var csv = new StringBuilder();
-        var fileName = $"Report_{id}_{DateTime.Now:yyyyMMdd}.csv";
-
-        switch (id)
-        {
-            case "compliance":
-                csv.AppendLine("Document Number,Title,Status,Created By,Approved At,Approved By");
+            case "documents|status-summary":
+                PreviewColumns = new() { "Document #", "Title", "Status", "Type", "Created" };
                 var docs = await _dbContext.Documents.AsNoTracking()
-                    .Where(d => d.TenantId == tenantId && d.Status == DocumentStatus.Approved)
-                    .Include(d => d.ApprovedBy)
-                    .OrderByDescending(d => d.ApprovedAt)
-                    .Take(500)
-                    .ToListAsync();
-                
-                if (isDepartmentManager)
-                    docs = docs.Where(d => visibleUserIds.Contains(d.CreatedById)).ToList();
-
-                foreach (var d in docs)
+                    .Where(d => d.TenantId == tenantId && d.CreatedAt >= cutoff)
+                    .Include(d => d.DocumentType).OrderByDescending(d => d.CreatedAt).Take(200).ToListAsync();
+                if (IsDepartmentManager) docs = docs.Where(d => visibleUserIds.Contains(d.CreatedById)).ToList();
+                PreviewRows = docs.Select(d => new Dictionary<string, object>
                 {
-                    csv.AppendLine($"\"{d.DocumentNumber}\",\"{d.Title}\",\"{d.Status}\",\"{d.CreatedById}\",\"{d.ApprovedAt:yyyy-MM-dd}\",\"{d.ApprovedBy?.FullName ?? "—"}\"");
-                }
+                    ["Document #"] = d.DocumentNumber, ["Title"] = d.Title, ["Status"] = d.Status.ToString(),
+                    ["Type"] = d.DocumentType?.Name ?? "—", ["Created"] = d.CreatedAt.ToString("yyyy-MM-dd")
+                }).ToList();
                 break;
 
-            case "audits":
-                csv.AppendLine("Audit Number,Title,Status,Lead Auditor,Start Date,End Date,Findings");
-                var audits = await _dbContext.Audits.AsNoTracking()
-                    .Where(a => a.TenantId == tenantId)
-                    .Include(a => a.LeadAuditor)
-                    .Include(a => a.Findings)
-                    .OrderByDescending(a => a.PlannedStartDate)
-                    .Take(200)
-                    .ToListAsync();
-
-                if (isDepartmentManager)
-                    audits = audits.Where(a => a.LeadAuditorId.HasValue && visibleUserIds.Contains(a.LeadAuditorId.Value)).ToList();
-
-                foreach (var a in audits)
+            case "documents|approval-history":
+                PreviewColumns = new() { "Document #", "Title", "Approved At", "Approved By" };
+                var approved = await _dbContext.Documents.AsNoTracking()
+                    .Where(d => d.TenantId == tenantId && d.Status == DocumentStatus.Approved && d.ApprovedAt >= cutoff)
+                    .Include(d => d.ApprovedBy).OrderByDescending(d => d.ApprovedAt).Take(200).ToListAsync();
+                if (IsDepartmentManager) approved = approved.Where(d => visibleUserIds.Contains(d.CreatedById)).ToList();
+                PreviewRows = approved.Select(d => new Dictionary<string, object>
                 {
-                    csv.AppendLine($"\"{a.AuditNumber}\",\"{a.Title}\",\"{a.Status}\",\"{a.LeadAuditor?.FullName ?? "—"}\",\"{a.PlannedStartDate:yyyy-MM-dd}\",\"{a.ActualEndDate:yyyy-MM-dd}\",\"{a.Findings?.Count ?? 0}\"");
-                }
+                    ["Document #"] = d.DocumentNumber, ["Title"] = d.Title,
+                    ["Approved At"] = d.ApprovedAt?.ToString("yyyy-MM-dd") ?? "—",
+                    ["Approved By"] = d.ApprovedBy?.FullName ?? "—"
+                }).ToList();
                 break;
 
-            case "capas":
-                csv.AppendLine("CAPA Number,Title,Type,Status,Owner,Target Date,Actual Completion,Root Cause");
-                var capas = await _dbContext.Capas.AsNoTracking()
-                    .Where(c => c.TenantId == tenantId)
-                    .Include(c => c.Owner)
-                    .OrderByDescending(c => c.CreatedAt)
-                    .Take(300)
-                    .ToListAsync();
-
-                if (isDepartmentManager)
-                    capas = capas.Where(c => c.OwnerId.HasValue && visibleUserIds.Contains(c.OwnerId.Value)).ToList();
-
-                foreach (var c in capas)
+            case "documents|overdue-documents":
+                PreviewColumns = new() { "Document #", "Title", "Status", "Created", "Days Open" };
+                var overdueDocs = await _dbContext.Documents.AsNoTracking()
+                    .Where(d => d.TenantId == tenantId && d.Status != DocumentStatus.Approved && d.Status != DocumentStatus.Archived)
+                    .OrderBy(d => d.CreatedAt).Take(200).ToListAsync();
+                if (IsDepartmentManager) overdueDocs = overdueDocs.Where(d => visibleUserIds.Contains(d.CreatedById)).ToList();
+                PreviewRows = overdueDocs.Select(d => new Dictionary<string, object>
                 {
-                    csv.AppendLine($"\"{c.CapaNumber}\",\"{c.Title}\",\"{c.CapaType}\",\"{c.Status}\",\"{c.Owner?.FullName ?? "—"}\",\"{c.TargetCompletionDate:yyyy-MM-dd}\",\"{c.ActualCompletionDate:yyyy-MM-dd}\",\"{c.RootCauseAnalysis?.Replace("\"", "'")}\"");
-                }
+                    ["Document #"] = d.DocumentNumber, ["Title"] = d.Title, ["Status"] = d.Status.ToString(),
+                    ["Created"] = d.CreatedAt.ToString("yyyy-MM-dd"),
+                    ["Days Open"] = (int)(DateTime.UtcNow - d.CreatedAt).TotalDays
+                }).ToList();
                 break;
 
-            case "docs":
-                csv.AppendLine("Document Number,Title,Status,Type,Created,Created By,Current Version");
-                var allDocs = await _dbContext.Documents.AsNoTracking()
-                    .Where(d => d.TenantId == tenantId && !d.IsTemplate)
-                    .Include(d => d.DocumentType)
-                    .OrderByDescending(d => d.CreatedAt)
-                    .Take(500)
-                    .ToListAsync();
-
-                if (isDepartmentManager)
-                    allDocs = allDocs.Where(d => visibleUserIds.Contains(d.CreatedById)).ToList();
-
-                foreach (var d in allDocs)
-                {
-                    csv.AppendLine($"\"{d.DocumentNumber}\",\"{d.Title}\",\"{d.Status}\",\"{d.DocumentType?.Name ?? "—"}\",\"{d.CreatedAt:yyyy-MM-dd}\",\"{d.CreatedById}\",\"{d.CurrentVersion}\"");
-                }
-                break;
-
-            case "tasks":
-                csv.AppendLine("Task Number,Title,Status,Priority,Assigned To,Due Date,Completed At,Created At");
+            case "tasks|task-status":
+                PreviewColumns = new() { "Task #", "Title", "Status", "Priority", "Assigned To", "Due Date" };
                 var tasks = await _dbContext.QmsTasks.AsNoTracking()
-                    .Where(t => t.TenantId == tenantId)
-                    .Include(t => t.AssignedTo)
-                    .OrderByDescending(t => t.CreatedAt)
-                    .Take(500)
-                    .ToListAsync();
-
-                if (isDepartmentManager)
-                    tasks = tasks.Where(t => t.AssignedToId.HasValue && visibleUserIds.Contains(t.AssignedToId.Value)).ToList();
-
-                foreach (var t in tasks)
+                    .Where(t => t.TenantId == tenantId && t.CreatedAt >= cutoff)
+                    .Include(t => t.AssignedTo).OrderByDescending(t => t.CreatedAt).Take(200).ToListAsync();
+                if (IsDepartmentManager) tasks = tasks.Where(t => t.AssignedToId.HasValue && visibleUserIds.Contains(t.AssignedToId.Value)).ToList();
+                PreviewRows = tasks.Select(t => new Dictionary<string, object>
                 {
-                    csv.AppendLine($"\"{t.TaskNumber}\",\"{t.Title}\",\"{t.Status}\",\"{t.Priority}\",\"{t.AssignedTo?.FullName ?? "—"}\",\"{t.DueDate:yyyy-MM-dd}\",\"{t.CompletedAt:yyyy-MM-dd}\",\"{t.CreatedAt:yyyy-MM-dd}\"");
-                }
+                    ["Task #"] = t.TaskNumber, ["Title"] = t.Title, ["Status"] = t.Status.ToString(),
+                    ["Priority"] = t.Priority.ToString(), ["Assigned To"] = t.AssignedTo?.FullName ?? "—",
+                    ["Due Date"] = t.DueDate?.ToString("yyyy-MM-dd") ?? "—"
+                }).ToList();
                 break;
 
-            default:
-                return Content("Unknown report type.");
+            case "tasks|workload-by-user":
+                PreviewColumns = new() { "User", "Total Tasks", "Open", "In Progress", "Completed" };
+                var allTasks = await _dbContext.QmsTasks.AsNoTracking()
+                    .Where(t => t.TenantId == tenantId && t.AssignedToId.HasValue && t.CreatedAt >= cutoff)
+                    .Include(t => t.AssignedTo).ToListAsync();
+                if (IsDepartmentManager) allTasks = allTasks.Where(t => visibleUserIds.Contains(t.AssignedToId!.Value)).ToList();
+                PreviewRows = allTasks.GroupBy(t => t.AssignedTo?.FullName ?? "Unassigned").Select(g => new Dictionary<string, object>
+                {
+                    ["User"] = g.Key, ["Total Tasks"] = g.Count(),
+                    ["Open"] = g.Count(t => t.Status == QmsTaskStatus.Open),
+                    ["In Progress"] = g.Count(t => t.Status == QmsTaskStatus.InProgress),
+                    ["Completed"] = g.Count(t => t.Status == QmsTaskStatus.Completed)
+                }).ToList();
+                break;
+
+            case "tasks|overdue-tasks":
+                PreviewColumns = new() { "Task #", "Title", "Assigned To", "Due Date", "Days Overdue" };
+                var overdue = await _dbContext.QmsTasks.AsNoTracking()
+                    .Where(t => t.TenantId == tenantId && t.Status == QmsTaskStatus.Overdue)
+                    .Include(t => t.AssignedTo).OrderBy(t => t.DueDate).Take(200).ToListAsync();
+                if (IsDepartmentManager) overdue = overdue.Where(t => t.AssignedToId.HasValue && visibleUserIds.Contains(t.AssignedToId.Value)).ToList();
+                PreviewRows = overdue.Select(t => new Dictionary<string, object>
+                {
+                    ["Task #"] = t.TaskNumber, ["Title"] = t.Title,
+                    ["Assigned To"] = t.AssignedTo?.FullName ?? "—",
+                    ["Due Date"] = t.DueDate?.ToString("yyyy-MM-dd") ?? "—",
+                    ["Days Overdue"] = t.DueDate.HasValue ? (int)(DateTime.UtcNow - t.DueDate.Value).TotalDays : 0
+                }).ToList();
+                break;
+
+            case "capas|status-distribution":
+                PreviewColumns = new() { "CAPA #", "Title", "Type", "Status", "Owner", "Target Date" };
+                var capas = await _dbContext.Capas.AsNoTracking()
+                    .Where(c => c.TenantId == tenantId && c.CreatedAt >= cutoff)
+                    .Include(c => c.Owner).OrderByDescending(c => c.CreatedAt).Take(200).ToListAsync();
+                if (IsDepartmentManager) capas = capas.Where(c => c.OwnerId.HasValue && visibleUserIds.Contains(c.OwnerId.Value)).ToList();
+                PreviewRows = capas.Select(c => new Dictionary<string, object>
+                {
+                    ["CAPA #"] = c.CapaNumber, ["Title"] = c.Title, ["Type"] = c.CapaType.ToString(),
+                    ["Status"] = c.Status.ToString(), ["Owner"] = c.Owner?.FullName ?? "—",
+                    ["Target Date"] = c.TargetCompletionDate?.ToString("yyyy-MM-dd") ?? "—"
+                }).ToList();
+                break;
+
+            case "capas|aging-report":
+                PreviewColumns = new() { "CAPA #", "Title", "Status", "Created", "Age (days)" };
+                var openCapas = await _dbContext.Capas.AsNoTracking()
+                    .Where(c => c.TenantId == tenantId && c.Status != CapaStatus.Closed && c.Status != CapaStatus.EffectivenessVerified)
+                    .Include(c => c.Owner).OrderBy(c => c.CreatedAt).Take(200).ToListAsync();
+                if (IsDepartmentManager) openCapas = openCapas.Where(c => c.OwnerId.HasValue && visibleUserIds.Contains(c.OwnerId.Value)).ToList();
+                PreviewRows = openCapas.Select(c => new Dictionary<string, object>
+                {
+                    ["CAPA #"] = c.CapaNumber, ["Title"] = c.Title, ["Status"] = c.Status.ToString(),
+                    ["Created"] = c.CreatedAt.ToString("yyyy-MM-dd"),
+                    ["Age (days)"] = (int)(DateTime.UtcNow - c.CreatedAt).TotalDays
+                }).ToList();
+                break;
+
+            case "capas|effectiveness-summary":
+                PreviewColumns = new() { "CAPA #", "Title", "Root Cause", "Completed", "Days to Close" };
+                var closedCapas = await _dbContext.Capas.AsNoTracking()
+                    .Where(c => c.TenantId == tenantId && (c.Status == CapaStatus.Closed || c.Status == CapaStatus.EffectivenessVerified) && c.ActualCompletionDate >= cutoff)
+                    .Include(c => c.Owner).OrderByDescending(c => c.ActualCompletionDate).Take(200).ToListAsync();
+                if (IsDepartmentManager) closedCapas = closedCapas.Where(c => c.OwnerId.HasValue && visibleUserIds.Contains(c.OwnerId.Value)).ToList();
+                PreviewRows = closedCapas.Select(c => new Dictionary<string, object>
+                {
+                    ["CAPA #"] = c.CapaNumber, ["Title"] = c.Title,
+                    ["Root Cause"] = c.RootCauseAnalysis ?? "—",
+                    ["Completed"] = c.ActualCompletionDate?.ToString("yyyy-MM-dd") ?? "—",
+                    ["Days to Close"] = c.ActualCompletionDate.HasValue ? (int)(c.ActualCompletionDate.Value - c.CreatedAt).TotalDays : 0
+                }).ToList();
+                break;
+
+            case "audits|coverage-report":
+                PreviewColumns = new() { "Audit #", "Title", "Type", "Status", "Lead Auditor", "Start Date" };
+                var audits = await _dbContext.Audits.AsNoTracking()
+                    .Where(a => a.TenantId == tenantId && a.PlannedStartDate >= cutoff)
+                    .Include(a => a.LeadAuditor).OrderByDescending(a => a.PlannedStartDate).Take(200).ToListAsync();
+                PreviewRows = audits.Select(a => new Dictionary<string, object>
+                {
+                    ["Audit #"] = a.AuditNumber, ["Title"] = a.Title, ["Type"] = a.AuditType.ToString(),
+                    ["Status"] = a.Status.ToString(), ["Lead Auditor"] = a.LeadAuditor?.FullName ?? "—",
+                    ["Start Date"] = a.PlannedStartDate.ToString("yyyy-MM-dd")
+                }).ToList();
+                break;
+
+            case "audits|finding-summary":
+                PreviewColumns = new() { "Audit #", "Finding", "Severity", "Status" };
+                var findings = await _dbContext.AuditFindings.AsNoTracking()
+                    .Join(_dbContext.Audits.Where(a => a.TenantId == tenantId), f => f.AuditId, a => a.Id, (f, a) => new { f, a })
+                    .OrderByDescending(x => x.a.PlannedStartDate).Take(200).ToListAsync();
+                PreviewRows = findings.Select(x => new Dictionary<string, object>
+                {
+                    ["Audit #"] = x.a.AuditNumber, ["Finding"] = x.f.Description ?? "—",
+                    ["Severity"] = x.f.Severity.ToString(), ["Status"] = x.f.Status.ToString()
+                }).ToList();
+                break;
+
+            case "training|compliance-report":
+                PreviewColumns = new() { "Title", "User", "Type", "Status", "Completed", "Expiry" };
+                var training = await _dbContext.TrainingRecords.AsNoTracking()
+                    .Where(t => t.TenantId == tenantId).Include(t => t.User)
+                    .OrderByDescending(t => t.CreatedAt).Take(200).ToListAsync();
+                PreviewRows = training.Select(t => new Dictionary<string, object>
+                {
+                    ["Title"] = t.Title, ["User"] = t.User?.FullName ?? "—",
+                    ["Type"] = t.TrainingType.ToString(), ["Status"] = t.Status.ToString(),
+                    ["Completed"] = t.CompletedDate?.ToString("yyyy-MM-dd") ?? "—",
+                    ["Expiry"] = t.ExpiryDate?.ToString("yyyy-MM-dd") ?? "—"
+                }).ToList();
+                break;
+
+            case "training|expiring-certifications":
+                PreviewColumns = new() { "Title", "User", "Certificate #", "Expiry", "Days Until Expiry" };
+                var expiring = await _dbContext.TrainingRecords.AsNoTracking()
+                    .Where(t => t.TenantId == tenantId && t.ExpiryDate.HasValue && t.ExpiryDate <= DateTime.UtcNow.AddDays(90))
+                    .Include(t => t.User).OrderBy(t => t.ExpiryDate).Take(200).ToListAsync();
+                PreviewRows = expiring.Select(t => new Dictionary<string, object>
+                {
+                    ["Title"] = t.Title, ["User"] = t.User?.FullName ?? "—",
+                    ["Certificate #"] = t.CertificateNumber ?? "—",
+                    ["Expiry"] = t.ExpiryDate?.ToString("yyyy-MM-dd") ?? "—",
+                    ["Days Until Expiry"] = t.ExpiryDate.HasValue ? (int)(t.ExpiryDate.Value - DateTime.UtcNow).TotalDays : 0
+                }).ToList();
+                break;
+
+            case "risk|risk-register":
+                PreviewColumns = new() { "Risk #", "Title", "Category", "Score", "Status", "Owner" };
+                var risks = await _dbContext.RiskAssessments.AsNoTracking()
+                    .Where(r => r.TenantId == tenantId).Include(r => r.Owner)
+                    .OrderByDescending(r => r.RiskScore).Take(200).ToListAsync();
+                PreviewRows = risks.Select(r => new Dictionary<string, object>
+                {
+                    ["Risk #"] = r.RiskNumber, ["Title"] = r.Title,
+                    ["Category"] = r.Category ?? "—", ["Score"] = r.RiskScore,
+                    ["Status"] = r.Status.ToString(), ["Owner"] = r.Owner?.FullName ?? "—"
+                }).ToList();
+                break;
+
+            case "risk|high-risk-items":
+                PreviewColumns = new() { "Risk #", "Title", "Score", "Mitigation Plan", "Review Date" };
+                var highRisk = await _dbContext.RiskAssessments.AsNoTracking()
+                    .Where(r => r.TenantId == tenantId && r.RiskScore >= 15 && r.Status != RiskStatus.Closed)
+                    .OrderByDescending(r => r.RiskScore).Take(200).ToListAsync();
+                PreviewRows = highRisk.Select(r => new Dictionary<string, object>
+                {
+                    ["Risk #"] = r.RiskNumber, ["Title"] = r.Title, ["Score"] = r.RiskScore,
+                    ["Mitigation Plan"] = r.MitigationPlan ?? "—",
+                    ["Review Date"] = r.ReviewDate?.ToString("yyyy-MM-dd") ?? "—"
+                }).ToList();
+                break;
+
+            case "suppliers|performance-summary":
+                PreviewColumns = new() { "Supplier", "Code", "Status", "Score", "Next Audit" };
+                var suppliers = await _dbContext.Suppliers.AsNoTracking()
+                    .Where(s => s.TenantId == tenantId && s.IsActive)
+                    .OrderByDescending(s => s.PerformanceScore).Take(200).ToListAsync();
+                PreviewRows = suppliers.Select(s => new Dictionary<string, object>
+                {
+                    ["Supplier"] = s.Name, ["Code"] = (object?)s.Code ?? "—",
+                    ["Status"] = s.QualificationStatus.ToString(), ["Score"] = (object)s.PerformanceScore,
+                    ["Next Audit"] = s.NextAuditDate?.ToString("yyyy-MM-dd") ?? "—"
+                }).ToList();
+                break;
+
+            case "suppliers|audit-schedule":
+                PreviewColumns = new() { "Supplier", "Audit Date", "Auditor", "Score", "Status" };
+                var sAudits = await _dbContext.SupplierAudits.AsNoTracking()
+                    .Where(sa => sa.TenantId == tenantId).Include(sa => sa.Supplier).Include(sa => sa.Auditor)
+                    .OrderByDescending(sa => sa.AuditDate).Take(200).ToListAsync();
+                PreviewRows = sAudits.Select(sa => new Dictionary<string, object>
+                {
+                    ["Supplier"] = sa.Supplier?.Name ?? "—",
+                    ["Audit Date"] = sa.AuditDate.ToString("yyyy-MM-dd"),
+                    ["Auditor"] = sa.Auditor?.FullName ?? "—",
+                    ["Score"] = sa.Score, ["Status"] = sa.Status.ToString()
+                }).ToList();
+                break;
         }
-
-        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
-        var bom = new byte[] { 0xEF, 0xBB, 0xBF };
-        var result = new byte[bom.Length + bytes.Length];
-        Buffer.BlockCopy(bom, 0, result, 0, bom.Length);
-        Buffer.BlockCopy(bytes, 0, result, bom.Length, bytes.Length);
-
-        return File(result, "text/csv", fileName);
-    }
-    
-    public IActionResult OnGetExportPdf(string id)
-    {
-        // For now, redirect to a print-friendly page
-        return RedirectToPage("PrintView", new { id });
     }
 
-    public record ReportItem(string Id, string Title, string Description, string Owner, string LastRun, string Status);
-
-    private static string FormatDate(DateTime? date)
-    {
-        return date?.ToString("MMM dd, yyyy") ?? "Not run";
-    }
+    public record ReportCategory(string Id, string Label, ReportTypeItem[] Types);
+    public record ReportTypeItem(string Id, string Label);
 }
 
 

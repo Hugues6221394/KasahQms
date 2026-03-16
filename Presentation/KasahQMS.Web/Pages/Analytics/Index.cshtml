@@ -7,60 +7,155 @@
 <div class="space-y-8">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-            <h1 class="text-2xl font-semibold text-slate-900">Executive analytics</h1>
-            <p class="text-sm text-slate-500">Performance indicators for TMD and departmental managers.</p>
+            <h1 class="text-2xl font-semibold text-slate-900">Analytics Dashboard</h1>
+            <p class="text-sm text-slate-500">
+                @if (Model.IsScopedToDepartment)
+                {
+                    <span>Department: <strong>@Model.ScopedDepartmentName</strong></span>
+                }
+                else
+                {
+                    <span>Organization-wide performance indicators</span>
+                }
+            </p>
         </div>
         <div class="flex gap-3">
-            <button class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Export PDF</button>
-            <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Share snapshot</button>
+            <a href="/Reports" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">View Reports</a>
         </div>
     </div>
 
-    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        @foreach (var kpi in Model.Kpis)
-        {
-            <div class="card p-5">
-                <div class="text-xs uppercase tracking-wide text-slate-500">@kpi.Label</div>
-                <div class="mt-3 text-2xl font-semibold text-slate-900">@kpi.Value</div>
-                <div class="mt-2 text-xs text-slate-500">@kpi.Note</div>
+    <!-- KPI Cards -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div class="card p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-500">Documents</div>
+                    <div class="text-xl font-bold text-slate-900">@Model.TotalDocuments</div>
+                </div>
             </div>
-        }
+            <div class="mt-3 text-xs text-slate-500">Approved rate: <span class="font-semibold text-emerald-600">@Model.ApprovedRate%</span></div>
+        </div>
+        <div class="card p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-500">Open CAPAs</div>
+                    <div class="text-xl font-bold text-slate-900">@Model.OpenCapas</div>
+                </div>
+            </div>
+            <div class="mt-3 text-xs text-slate-500">Avg resolution: <span class="font-semibold text-amber-600">@Model.AvgCapaResolutionDays days</span></div>
+        </div>
+        <div class="card p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-500">Task Completion</div>
+                    <div class="text-xl font-bold text-slate-900">@Model.TaskCompletionRate%</div>
+                </div>
+            </div>
+            <div class="mt-3 h-1.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-indigo-500" style="width:@(Model.TaskCompletionRate)%"></div></div>
+        </div>
+        <div class="card p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-500">Audit Coverage</div>
+                    <div class="text-xl font-bold text-slate-900">@Model.AuditCoveragePercent%</div>
+                </div>
+            </div>
+            <div class="mt-3 text-xs text-slate-500">Findings: <span class="font-semibold text-sky-600">@Model.AuditFindingsCount</span></div>
+        </div>
+        <div class="card p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-500">Avg Risk Score</div>
+                    <div class="text-xl font-bold text-slate-900">@Model.AvgRiskScore</div>
+                </div>
+            </div>
+            <div class="mt-3 text-xs text-slate-500">Training compliance: <span class="font-semibold text-red-600">@Model.TrainingComplianceRate%</span></div>
+        </div>
     </div>
 
+    <!-- Charts Row 1 -->
     <div class="grid gap-6 xl:grid-cols-3">
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900">Document Status</h2>
+            <p class="text-xs text-slate-500 mb-4">Distribution by status</p>
+            <canvas id="docStatusChart" height="220"></canvas>
+        </div>
         <div class="card p-6 xl:col-span-2">
-            <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-slate-900">Compliance trend</h2>
-                <span class="text-xs text-slate-500">Year to date</span>
-            </div>
-            <div class="mt-4">
-                <canvas id="complianceTrendChart" height="120"></canvas>
-            </div>
+            <h2 class="text-lg font-semibold text-slate-900">Monthly Trends</h2>
+            <p class="text-xs text-slate-500 mb-4">Documents &amp; tasks — last 12 months</p>
+            <canvas id="monthlyTrendChart" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid gap-6 xl:grid-cols-2">
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900">CAPA Aging Analysis</h2>
+            <p class="text-xs text-slate-500 mb-4">Open CAPAs by age bracket</p>
+            <canvas id="capaAgingChart" height="180"></canvas>
         </div>
         <div class="card p-6">
-            <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-slate-900">Audit findings</h2>
-                <span class="text-xs text-slate-500">Severity mix</span>
-            </div>
-            <div class="mt-4">
-                <canvas id="findingSeverityChart" height="220"></canvas>
-            </div>
+            <h2 class="text-lg font-semibold text-slate-900">Audit Finding Severity</h2>
+            <p class="text-xs text-slate-500 mb-4">Distribution across severity levels</p>
+            <canvas id="findingSeverityChart" height="180"></canvas>
         </div>
     </div>
 
-    <div class="card p-6">
-        <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-slate-900">Department performance</h2>
-            <span class="text-xs text-slate-500">Quarterly status</span>
+    <!-- Charts Row 3 -->
+    <div class="grid gap-6 xl:grid-cols-2">
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900">Supplier Performance</h2>
+            <p class="text-xs text-slate-500 mb-4">Top suppliers by score</p>
+            <canvas id="supplierChart" height="200"></canvas>
         </div>
-        <div class="mt-4 overflow-hidden rounded-lg border border-slate-200">
+        <div class="card p-6">
+            <h2 class="text-lg font-semibold text-slate-900">Risk Heat Map</h2>
+            <p class="text-xs text-slate-500 mb-4">Likelihood vs Impact (active risks)</p>
+            <div id="riskHeatMap" class="mt-2"></div>
+        </div>
+    </div>
+
+    <!-- Training Compliance Gauge -->
+    <div class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Training Compliance</h2>
+                <p class="text-xs text-slate-500">Overall completion rate</p>
+            </div>
+            <span class="text-3xl font-bold text-brand-600">@Model.TrainingComplianceRate%</span>
+        </div>
+        <div class="w-full h-4 rounded-full bg-slate-100">
+            <div class="h-full rounded-full transition-all duration-500"
+                 style="width:@(Model.TrainingComplianceRate)%; background: linear-gradient(90deg, #059669, #34d399);"></div>
+        </div>
+    </div>
+
+    <!-- Department Performance Table -->
+    <div class="card p-6">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">Department Performance</h2>
+        <div class="overflow-hidden rounded-lg border border-slate-200">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
                     <tr>
                         <th class="px-4 py-3 text-left font-semibold">Department</th>
                         <th class="px-4 py-3 text-left font-semibold">Compliance</th>
                         <th class="px-4 py-3 text-left font-semibold">Open CAPAs</th>
-                        <th class="px-4 py-3 text-left font-semibold">Audit readiness</th>
+                        <th class="px-4 py-3 text-left font-semibold">Audit Readiness</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -70,7 +165,13 @@
                             <td class="px-4 py-3 font-semibold text-slate-800">@dept.Department</td>
                             <td class="px-4 py-3 text-slate-600">@dept.Compliance</td>
                             <td class="px-4 py-3 text-slate-600">@dept.OpenCapa</td>
-                            <td class="px-4 py-3 text-slate-600">@dept.Readiness</td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold
+                                    @(dept.Readiness == "High" ? "bg-emerald-100 text-emerald-700" :
+                                      dept.Readiness == "Medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")">
+                                    @dept.Readiness
+                                </span>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -80,50 +181,88 @@
 </div>
 
 @section Scripts {
-    <script>
-        const complianceTrend = @Html.Raw(Model.ComplianceTrendJson);
-        const findings = @Html.Raw(Model.FindingSeverityJson);
+<script>
+    const chartColors = { green: '#059669', emerald: '#34d399', amber: '#f59e0b', red: '#ef4444', sky: '#0ea5e9', indigo: '#6366f1', slate: '#94a3b8' };
+    const gridOpts = { color: '#e2e8f0' };
+    const tickOpts = { color: '#64748b' };
 
-        const complianceCtx = document.getElementById('complianceTrendChart');
-        if (complianceCtx) {
-            new Chart(complianceCtx, {
-                type: 'line',
-                data: {
-                    labels: complianceTrend.labels,
-                    datasets: [{
-                        label: 'Compliance %',
-                        data: complianceTrend.values,
-                        borderColor: '#22c55e',
-                        backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                        tension: 0.35,
-                        fill: true
-                    }]
-                },
-                options: {
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } },
-                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
-                    }
-                }
-            });
-        }
+    // Document Status (donut)
+    (function() {
+        var d = @Html.Raw(Model.DocStatusChartJson);
+        new Chart(document.getElementById('docStatusChart'), {
+            type: 'doughnut',
+            data: { labels: d.labels, datasets: [{ data: d.values, backgroundColor: ['#94a3b8','#6366f1','#0ea5e9','#059669','#ef4444','#64748b'] }] },
+            options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }, cutout: '60%' }
+        });
+    })();
 
-        const severityCtx = document.getElementById('findingSeverityChart');
-        if (severityCtx) {
-            new Chart(severityCtx, {
-                type: 'polarArea',
-                data: {
-                    labels: findings.labels,
-                    datasets: [{
-                        data: findings.values,
-                        backgroundColor: ['#16a34a', '#4ade80', '#f59e0b', '#ef4444']
-                    }]
-                },
-                options: { plugins: { legend: { position: 'bottom' } } }
-            });
+    // Monthly Trends (line)
+    (function() {
+        var d = @Html.Raw(Model.MonthlyTrendJson);
+        new Chart(document.getElementById('monthlyTrendChart'), {
+            type: 'line',
+            data: {
+                labels: d.labels,
+                datasets: [
+                    { label: 'Documents', data: d.documents, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.1)', tension: 0.35, fill: true },
+                    { label: 'Tasks', data: d.tasks, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', tension: 0.35, fill: true }
+                ]
+            },
+            options: { plugins: { legend: { position: 'top', labels: { boxWidth: 12 } } }, scales: { y: { grid: gridOpts, ticks: tickOpts, beginAtZero: true }, x: { grid: { display: false }, ticks: tickOpts } } }
+        });
+    })();
+
+    // CAPA Aging (bar)
+    (function() {
+        var d = @Html.Raw(Model.CapaAgingJson);
+        new Chart(document.getElementById('capaAgingChart'), {
+            type: 'bar',
+            data: { labels: d.labels, datasets: [{ label: 'Open CAPAs', data: d.values, backgroundColor: ['#059669','#f59e0b','#f97316','#ef4444'], borderRadius: 6 }] },
+            options: { plugins: { legend: { display: false } }, scales: { y: { grid: gridOpts, ticks: tickOpts, beginAtZero: true }, x: { grid: { display: false }, ticks: tickOpts } } }
+        });
+    })();
+
+    // Finding Severity (polar area)
+    (function() {
+        var d = @Html.Raw(Model.FindingSeverityJson);
+        new Chart(document.getElementById('findingSeverityChart'), {
+            type: 'polarArea',
+            data: { labels: d.labels, datasets: [{ data: d.values, backgroundColor: ['#34d399','#f59e0b','#ef4444','#94a3b8'] }] },
+            options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+        });
+    })();
+
+    // Supplier Performance (horizontal bar)
+    (function() {
+        var d = @Html.Raw(Model.SupplierPerformanceJson);
+        new Chart(document.getElementById('supplierChart'), {
+            type: 'bar',
+            data: { labels: d.labels, datasets: [{ label: 'Score', data: d.values, backgroundColor: '#059669', borderRadius: 4 }] },
+            options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: gridOpts, ticks: tickOpts, beginAtZero: true, max: 100 }, y: { grid: { display: false }, ticks: tickOpts } } }
+        });
+    })();
+
+    // Risk Heat Map (HTML grid)
+    (function() {
+        var cells = @Html.Raw(Model.RiskHeatMapJson);
+        var el = document.getElementById('riskHeatMap');
+        var labels = ['Very Low','Low','Medium','High','Very High'];
+        var html = '<div style="display:grid;grid-template-columns:auto repeat(5,1fr);gap:2px;font-size:11px;text-align:center;">';
+        html += '<div></div>';
+        for (var i = 0; i < 5; i++) html += '<div class="text-xs font-medium text-slate-500 pb-1">' + labels[i] + '</div>';
+        for (var l = 4; l >= 0; l--) {
+            html += '<div class="text-xs font-medium text-slate-500 pr-2 flex items-center">' + labels[l] + '</div>';
+            for (var im = 0; im < 5; im++) {
+                var c = cells.find(function(x) { return x.likelihood === l+1 && x.impact === im+1; });
+                var v = c ? c.count : 0;
+                var score = (l+1) * (im+1);
+                var bg = score <= 4 ? '#d1fae5' : score <= 9 ? '#fef3c7' : score <= 15 ? '#fed7aa' : '#fecaca';
+                var tc = score <= 4 ? '#065f46' : score <= 9 ? '#92400e' : score <= 15 ? '#9a3412' : '#991b1b';
+                html += '<div style="background:'+bg+';color:'+tc+';padding:8px 4px;border-radius:6px;font-weight:600;">'+v+'</div>';
+            }
         }
-    </script>
+        html += '</div><div class="flex justify-between text-[10px] text-slate-400 mt-1"><span></span><span>Impact →</span></div><div class="text-[10px] text-slate-400 -mt-1">Likelihood ↑</div>';
+        el.innerHTML = html;
+    })();
+</script>
 }
-
-

@@ -1,0 +1,190 @@
+@page
+@model KasahQMS.Web.Pages.Risk.IndexModel
+@{
+    ViewData["Title"] = "Risk Management";
+}
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">Risk Management</h1>
+            <p class="text-sm text-slate-500">Assess, monitor and mitigate organisational risks.</p>
+        </div>
+        <a href="/Risk/Create" class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+            New Risk Assessment
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">Total</div>
+                <div class="text-2xl font-semibold text-slate-900">@Model.TotalCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            </div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">Critical</div>
+                <div class="text-2xl font-semibold text-rose-700">@Model.CriticalCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">!</div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">High</div>
+                <div class="text-2xl font-semibold text-orange-700">@Model.HighCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center">▲</div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">Medium</div>
+                <div class="text-2xl font-semibold text-amber-700">@Model.MediumCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">●</div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <div class="text-xs text-slate-500 uppercase">Low</div>
+                <div class="text-2xl font-semibold text-emerald-700">@Model.LowCount</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">✓</div>
+        </div>
+    </div>
+
+    <!-- Risk Heat Map -->
+    <div class="card p-6">
+        <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">Risk Heat Map — Impact vs Likelihood</h2>
+        <div class="overflow-x-auto">
+            <table class="mx-auto text-xs">
+                <thead>
+                    <tr>
+                        <th class="p-2"></th>
+                        @for (int impact = 1; impact <= 5; impact++)
+                        {
+                            <th class="p-2 text-center text-slate-500 font-medium w-16">@impact</th>
+                        }
+                    </tr>
+                    <tr>
+                        <th class="p-2"></th>
+                        <th class="p-2 text-center text-slate-400" colspan="5">Impact →</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int likelihood = 5; likelihood >= 1; likelihood--)
+                    {
+                        <tr>
+                            <td class="p-2 text-right text-slate-500 font-medium">
+                                @if (likelihood == 3)
+                                {
+                                    <span class="text-slate-400 mr-1">Likelihood →</span>
+                                }
+                                @likelihood
+                            </td>
+                            @for (int impact = 1; impact <= 5; impact++)
+                            {
+                                var cellClass = KasahQMS.Web.Pages.Risk.IndexModel.GetHeatCellClass(likelihood, impact);
+                                var count = Model.HeatMap[likelihood - 1, impact - 1];
+                                <td class="p-1">
+                                    <div class="w-16 h-12 rounded-lg flex flex-col items-center justify-center @cellClass">
+                                        <span class="font-bold">@(likelihood * impact)</span>
+                                        @if (count > 0)
+                                        {
+                                            <span class="text-[10px] opacity-80">(@count)</span>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card p-4">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="w-40">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <select name="StatusFilter" asp-for="StatusFilter" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200 focus:border-brand-400">
+                    <option value="">All</option>
+                    <option value="Identified">Identified</option>
+                    <option value="Assessed">Assessed</option>
+                    <option value="Mitigated">Mitigated</option>
+                    <option value="Accepted">Accepted</option>
+                    <option value="Closed">Closed</option>
+                </select>
+            </div>
+            <div class="w-44">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                <select name="CategoryFilter" asp-for="CategoryFilter" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200 focus:border-brand-400">
+                    <option value="">All</option>
+                    <option value="Operational">Operational</option>
+                    <option value="Financial">Financial</option>
+                    <option value="Compliance">Compliance</option>
+                    <option value="Strategic">Strategic</option>
+                    <option value="Environmental">Environmental</option>
+                    <option value="Technical">Technical</option>
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                Filter
+            </button>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="card overflow-hidden">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                <tr>
+                    <th class="px-6 py-4 text-left font-semibold">Risk #</th>
+                    <th class="px-6 py-4 text-left font-semibold">Title</th>
+                    <th class="px-6 py-4 text-left font-semibold">Category</th>
+                    <th class="px-6 py-4 text-center font-semibold">L</th>
+                    <th class="px-6 py-4 text-center font-semibold">I</th>
+                    <th class="px-6 py-4 text-center font-semibold">Score</th>
+                    <th class="px-6 py-4 text-left font-semibold">Status</th>
+                    <th class="px-6 py-4 text-left font-semibold">Owner</th>
+                    <th class="px-6 py-4 text-right font-semibold">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+                @if (!Model.Risks.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="px-6 py-8 text-center text-slate-500">No risk assessments found.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var r in Model.Risks)
+                    {
+                        <tr>
+                            <td class="px-6 py-4 font-mono text-xs text-slate-600">@r.RiskNumber</td>
+                            <td class="px-6 py-4 font-semibold text-slate-800">@r.Title</td>
+                            <td class="px-6 py-4 text-slate-600">@r.Category</td>
+                            <td class="px-6 py-4 text-center text-slate-600">@r.Likelihood</td>
+                            <td class="px-6 py-4 text-center text-slate-600">@r.Impact</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @r.ScoreClass">@r.Score</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @r.StatusClass">@r.Status</span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">@r.Owner</td>
+                            <td class="px-6 py-4 text-right">
+                                <a asp-page="/Risk/Details" asp-route-id="@r.Id" class="text-brand-600 hover:text-brand-700 text-sm font-medium">View</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,167 @@
+@page
+@model KasahQMS.Web.Pages.Activity.IndexModel
+@{
+    ViewData["Title"] = "Activity Log";
+}
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">Activity Log</h1>
+            <p class="text-sm text-slate-500">Timeline of all system activities and changes.</p>
+        </div>
+        <div class="text-sm text-slate-500">@Model.TotalCount total entries</div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="card p-5">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
+            <div class="flex-1">
+                <label class="text-sm font-medium text-slate-600">Entity Type</label>
+                <select name="entityTypeFilter" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <option value="">All types</option>
+                    @foreach (var et in Model.AvailableEntityTypes)
+                    {
+                        <option value="@et" selected="@(Model.EntityTypeFilter == et)">@et</option>
+                    }
+                </select>
+            </div>
+            <div class="flex-1">
+                <label class="text-sm font-medium text-slate-600">Action</label>
+                <select name="actionFilter" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <option value="">All actions</option>
+                    @foreach (var a in Model.AvailableActions)
+                    {
+                        <option value="@a" selected="@(Model.ActionFilter == a)">@a</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                Filter
+            </button>
+            @if (!string.IsNullOrEmpty(Model.EntityTypeFilter) || !string.IsNullOrEmpty(Model.ActionFilter))
+            {
+                <a href="/Activity" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                    Clear
+                </a>
+            }
+        </div>
+    </form>
+
+    <!-- Timeline -->
+    <div class="relative">
+        <div class="absolute left-6 top-0 bottom-0 w-px bg-slate-200 hidden lg:block"></div>
+
+        <div class="space-y-1">
+            @foreach (var entry in Model.Entries)
+            {
+                <div class="relative flex gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors group">
+                    <!-- Icon -->
+                    <div class="relative z-10 w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
+                        @(entry.Icon == "plus-circle" ? "bg-emerald-100 text-emerald-600" :
+                          entry.Icon == "pencil" ? "bg-sky-100 text-sky-600" :
+                          entry.Icon == "trash" ? "bg-red-100 text-red-600" :
+                          entry.Icon == "check-circle" ? "bg-green-100 text-green-600" :
+                          entry.Icon == "x-circle" ? "bg-amber-100 text-amber-600" :
+                          entry.Icon == "login" ? "bg-indigo-100 text-indigo-600" :
+                          "bg-slate-100 text-slate-600")">
+                        @if (entry.Icon == "plus-circle")
+                        {
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        }
+                        else if (entry.Icon == "pencil")
+                        {
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        }
+                        else if (entry.Icon == "trash")
+                        {
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        }
+                        else if (entry.Icon == "check-circle")
+                        {
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        }
+                        else if (entry.Icon == "x-circle")
+                        {
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        }
+                        else if (entry.Icon == "login")
+                        {
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                        }
+                        else
+                        {
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        }
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-[10px] font-bold flex items-center justify-center">@entry.UserInitials</span>
+                                <span class="text-sm font-semibold text-slate-800">@entry.UserName</span>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">@entry.Action</span>
+                            </div>
+                            <span class="text-xs text-slate-400 whitespace-nowrap" title="@entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss UTC")">@entry.RelativeTime</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-1">@entry.Description</p>
+                        <div class="flex items-center gap-3 mt-1">
+                            <span class="text-xs text-slate-400">@entry.EntityType</span>
+                            @if (!entry.IsSuccessful)
+                            {
+                                <span class="text-xs text-red-500 font-medium">Failed</span>
+                            }
+                            @if (entry.EntityId.HasValue)
+                            {
+                                var link = entry.EntityType switch
+                                {
+                                    "Document" => $"/Documents/Details/{entry.EntityId}",
+                                    "QmsTask" => $"/Tasks/Details/{entry.EntityId}",
+                                    "Capa" => $"/Capa/Details/{entry.EntityId}",
+                                    "Audit" => $"/Audits/Details/{entry.EntityId}",
+                                    _ => ""
+                                };
+                                if (!string.IsNullOrEmpty(link))
+                                {
+                                    <a href="@link" class="text-xs text-brand-600 hover:text-brand-700 font-medium">View →</a>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (Model.Entries.Count == 0)
+    {
+        <div class="card p-12 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-slate-900">No activity found</h3>
+            <p class="text-slate-500 mt-1">Adjust your filters or check back later.</p>
+        </div>
+    }
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="flex items-center justify-center gap-2">
+            @if (Model.PageNumber > 1)
+            {
+                <a href="?pageNumber=@(Model.PageNumber - 1)&entityTypeFilter=@Model.EntityTypeFilter&actionFilter=@Model.ActionFilter"
+                   class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">← Previous</a>
+            }
+            <span class="text-sm text-slate-500">Page @Model.PageNumber of @Model.TotalPages</span>
+            @if (Model.PageNumber < Model.TotalPages)
+            {
+                <a href="?pageNumber=@(Model.PageNumber + 1)&entityTypeFilter=@Model.EntityTypeFilter&actionFilter=@Model.ActionFilter"
+                   class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Next →</a>
+            }
+        </div>
+    }
+</div>

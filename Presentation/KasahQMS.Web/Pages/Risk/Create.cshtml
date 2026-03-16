@@ -1,0 +1,135 @@
+@page
+@model KasahQMS.Web.Pages.Risk.CreateModel
+@{
+    ViewData["Title"] = "New Risk Assessment";
+}
+
+<div class="mx-auto max-w-2xl space-y-6">
+    <nav class="flex items-center gap-2 text-sm text-slate-500">
+        <a href="/Risk" class="hover:text-slate-900">Risk Management</a>
+        <span>/</span>
+        <span class="text-slate-700">New Assessment</span>
+    </nav>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h1 class="text-xl font-bold text-slate-900 mb-6">Create Risk Assessment</h1>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <form method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+
+            <div>
+                <label for="title" class="block text-sm font-medium text-slate-700 mb-1">Title <span class="text-red-500">*</span></label>
+                <input type="text" id="title" asp-for="Title" required
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    placeholder="Risk title">
+            </div>
+
+            <div>
+                <label for="description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea id="description" asp-for="Description" rows="3"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    placeholder="Describe the risk"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="category" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                    <select id="category" asp-for="Category"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="Operational">Operational</option>
+                        <option value="Financial">Financial</option>
+                        <option value="Compliance">Compliance</option>
+                        <option value="Strategic">Strategic</option>
+                        <option value="Environmental">Environmental</option>
+                        <option value="Technical">Technical</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="ownerId" class="block text-sm font-medium text-slate-700 mb-1">Owner <span class="text-red-500">*</span></label>
+                    <select id="ownerId" asp-for="OwnerId"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="">— Select owner —</option>
+                        @foreach (var u in Model.Users)
+                        {
+                            <option value="@u.Id">@u.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Likelihood & Impact sliders with live score -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Likelihood (1–5)</label>
+                    <input type="range" id="likelihood" asp-for="Likelihood" min="1" max="5" step="1"
+                        class="w-full accent-brand-600" oninput="updateScore()">
+                    <div class="flex justify-between text-xs text-slate-400 mt-1">
+                        <span>Rare</span><span>Unlikely</span><span>Possible</span><span>Likely</span><span>Almost Certain</span>
+                    </div>
+                    <div class="text-center text-sm font-semibold text-slate-700 mt-1">Value: <span id="likelihoodVal">1</span></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Impact (1–5)</label>
+                    <input type="range" id="impact" asp-for="Impact" min="1" max="5" step="1"
+                        class="w-full accent-brand-600" oninput="updateScore()">
+                    <div class="flex justify-between text-xs text-slate-400 mt-1">
+                        <span>Negligible</span><span>Minor</span><span>Moderate</span><span>Major</span><span>Catastrophic</span>
+                    </div>
+                    <div class="text-center text-sm font-semibold text-slate-700 mt-1">Value: <span id="impactVal">1</span></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200">
+                <span class="text-sm font-medium text-slate-700">Risk Score:</span>
+                <span id="riskScore" class="text-2xl font-bold text-slate-900">1</span>
+                <span id="riskLabel" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Low</span>
+            </div>
+
+            <div>
+                <label for="mitigationPlan" class="block text-sm font-medium text-slate-700 mb-1">Mitigation Plan</label>
+                <textarea id="mitigationPlan" asp-for="MitigationPlan" rows="4"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    placeholder="Describe mitigation actions"></textarea>
+            </div>
+
+            <div class="w-full md:w-1/2">
+                <label for="reviewDate" class="block text-sm font-medium text-slate-700 mb-1">Review Date</label>
+                <input type="date" id="reviewDate" asp-for="ReviewDate"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="submit" class="px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700">
+                    Create assessment
+                </button>
+                <a href="/Risk" class="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function updateScore() {
+        var l = parseInt(document.getElementById('likelihood').value);
+        var i = parseInt(document.getElementById('impact').value);
+        var score = l * i;
+        document.getElementById('likelihoodVal').textContent = l;
+        document.getElementById('impactVal').textContent = i;
+        document.getElementById('riskScore').textContent = score;
+        var label = document.getElementById('riskLabel');
+        if (score >= 20) { label.textContent = 'Critical'; label.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700'; }
+        else if (score >= 15) { label.textContent = 'High'; label.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700'; }
+        else if (score >= 8) { label.textContent = 'Medium'; label.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700'; }
+        else { label.textContent = 'Low'; label.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700'; }
+    }
+    document.addEventListener('DOMContentLoaded', updateScore);
+</script>

@@ -163,6 +163,33 @@ public static class Permissions
         public const string Manage = "Stock.Manage";
     }
 
+    public static class Training
+    {
+        public const string View = "Training.View";
+        public const string Create = "Training.Create";
+        public const string Edit = "Training.Edit";
+        public const string ViewAll = "Training.ViewAll";
+    }
+
+    public static class Risk
+    {
+        public const string View = "Risk.View";
+        public const string Create = "Risk.Create";
+        public const string Edit = "Risk.Edit";
+        public const string Delete = "Risk.Delete";
+        public const string ViewAll = "Risk.ViewAll";
+    }
+
+    public static class Suppliers
+    {
+        public const string View = "Suppliers.View";
+        public const string Create = "Suppliers.Create";
+        public const string Edit = "Suppliers.Edit";
+        public const string Delete = "Suppliers.Delete";
+        public const string Audit = "Suppliers.Audit";
+        public const string ViewAll = "Suppliers.ViewAll";
+    }
+
     public static class Analytics
     {
         public const string View = "Analytics.View";
@@ -239,6 +266,17 @@ public static class DefaultRoles
             Permissions.Stock.View,
             Permissions.Stock.Manage,
             Permissions.Analytics.View,
+            Permissions.Risk.View,
+            Permissions.Risk.Create,
+            Permissions.Risk.Edit,
+            Permissions.Risk.Delete,
+            Permissions.Risk.ViewAll,
+            Permissions.Suppliers.View,
+            Permissions.Suppliers.Create,
+            Permissions.Suppliers.Edit,
+            Permissions.Suppliers.Delete,
+            Permissions.Suppliers.Audit,
+            Permissions.Suppliers.ViewAll,
         };
     }
     
@@ -270,6 +308,17 @@ public static class DefaultRoles
             Permissions.Stock.View,
             Permissions.Stock.Manage,
             Permissions.Analytics.View,
+            Permissions.Risk.View,
+            Permissions.Risk.Create,
+            Permissions.Risk.Edit,
+            Permissions.Risk.Delete,
+            Permissions.Risk.ViewAll,
+            Permissions.Suppliers.View,
+            Permissions.Suppliers.Create,
+            Permissions.Suppliers.Edit,
+            Permissions.Suppliers.Delete,
+            Permissions.Suppliers.Audit,
+            Permissions.Suppliers.ViewAll,
         };
     }
     
@@ -319,6 +368,24 @@ public static class DefaultRoles
             // Stock
             Permissions.Stock.View,
             Permissions.Stock.Manage,
+            // Training
+            Permissions.Training.View,
+            Permissions.Training.Create,
+            Permissions.Training.Edit,
+            Permissions.Training.ViewAll,
+            // Risk
+            Permissions.Risk.View,
+            Permissions.Risk.Create,
+            Permissions.Risk.Edit,
+            Permissions.Risk.Delete,
+            Permissions.Risk.ViewAll,
+            // Suppliers
+            Permissions.Suppliers.View,
+            Permissions.Suppliers.Create,
+            Permissions.Suppliers.Edit,
+            Permissions.Suppliers.Delete,
+            Permissions.Suppliers.Audit,
+            Permissions.Suppliers.ViewAll,
             // Analytics
             Permissions.Analytics.View,
         };
@@ -352,6 +419,20 @@ public static class DefaultRoles
             Permissions.Reports.Export,
             Permissions.Organization.View,
             Permissions.Stock.View,
+            Permissions.Training.View,
+            Permissions.Training.Create,
+            Permissions.Training.Edit,
+            Permissions.Training.ViewAll,
+            // Risk
+            Permissions.Risk.View,
+            Permissions.Risk.Create,
+            Permissions.Risk.Edit,
+            Permissions.Risk.ViewAll,
+            // Suppliers
+            Permissions.Suppliers.View,
+            Permissions.Suppliers.Create,
+            Permissions.Suppliers.Edit,
+            Permissions.Suppliers.ViewAll,
             Permissions.Analytics.View,
         };
     }
@@ -379,6 +460,17 @@ public static class DefaultRoles
             Permissions.Reports.View,
             Permissions.Reports.Create,
             Permissions.Organization.View,
+            Permissions.Training.View,
+            Permissions.Training.Create,
+            Permissions.Training.Edit,
+            // Risk
+            Permissions.Risk.View,
+            Permissions.Risk.Create,
+            Permissions.Risk.Edit,
+            // Suppliers
+            Permissions.Suppliers.View,
+            Permissions.Suppliers.Create,
+            Permissions.Suppliers.Edit,
             Permissions.Analytics.View,
         };
     }
@@ -394,6 +486,9 @@ public static class DefaultRoles
             Permissions.Tasks.View,
             Permissions.Tasks.Complete,
             Permissions.Capa.View,
+            Permissions.Training.View,
+            Permissions.Risk.View,
+            Permissions.Suppliers.View,
         };
     }
     
@@ -416,6 +511,13 @@ public static class DefaultRoles
             Permissions.Reports.Export,
             Permissions.AuditLogs.View,
             Permissions.AuditLogs.Export,
+            Permissions.Training.View,
+            Permissions.Training.ViewAll,
+            Permissions.Risk.View,
+            Permissions.Risk.ViewAll,
+            Permissions.Suppliers.View,
+            Permissions.Suppliers.Audit,
+            Permissions.Suppliers.ViewAll,
         };
     }
     
@@ -428,6 +530,9 @@ public static class DefaultRoles
             Permissions.Audits.View,
             Permissions.Capa.View,
             Permissions.Reports.View,
+            Permissions.Training.View,
+            Permissions.Risk.View,
+            Permissions.Suppliers.View,
         };
     }
 }

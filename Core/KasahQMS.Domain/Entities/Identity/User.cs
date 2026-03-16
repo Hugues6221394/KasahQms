@@ -24,6 +24,13 @@ public class User : AuditableEntity
     public DateTime? PasswordChangedAt { get; set; }
     public Guid? OrganizationUnitId { get; set; }
     public Guid? ManagerId { get; set; }
+    public bool TwoFactorEnabled { get; set; }
+    public string? TwoFactorSecret { get; set; }
+
+    /// <summary>
+    /// JSON array of previous password hashes for reuse prevention.
+    /// </summary>
+    public string? PasswordHistory { get; set; }
     
     // Navigation properties
     public virtual OrganizationUnit? OrganizationUnit { get; set; }
