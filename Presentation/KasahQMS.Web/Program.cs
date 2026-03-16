@@ -124,7 +124,10 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Authenticated", policy => policy.RequireAuthenticatedUser());
+});
 
 // ===========================================
 // MVC and Razor Pages
@@ -265,17 +268,25 @@ using (var scope = app.Services.CreateScope())
     
     try
     {
-        // Apply pending migrations (creates DB if needed)
-        var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
-        if (pendingMigrations.Any())
+        // Skip relational migrations for InMemory provider (used in integration tests)
+        if (dbContext.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
         {
-            logger.LogInformation("Applying {Count} pending migrations...", pendingMigrations.Count());
-            await dbContext.Database.MigrateAsync();
-            logger.LogInformation("Migrations applied successfully.");
+            var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+            if (pendingMigrations.Any())
+            {
+                logger.LogInformation("Applying {Count} pending migrations...", pendingMigrations.Count());
+                await dbContext.Database.MigrateAsync();
+                logger.LogInformation("Migrations applied successfully.");
+            }
+            else
+            {
+                logger.LogInformation("Database is up to date.");
+            }
         }
         else
         {
-            logger.LogInformation("Database is up to date.");
+            await dbContext.Database.EnsureCreatedAsync();
+            logger.LogInformation("In-memory database created.");
         }
 
         var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
@@ -425,3 +436,6 @@ app.MapHealthChecks("/health");
 // ===========================================
 
 app.Run();
+
+// Make the implicit Program class accessible to integration tests
+public partial class Program { }
