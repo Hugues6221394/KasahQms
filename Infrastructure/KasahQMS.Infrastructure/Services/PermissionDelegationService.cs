@@ -105,7 +105,7 @@ public class PermissionDelegationService : IPermissionDelegationService
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             var tenantId2 = _currentUserService.TenantId;
-            await _cacheService.RemoveAsync($"user_permissions_{tenantId2}_{subordinateId}", cancellationToken);
+            await _cacheService.RemoveAsync($"user_permissions_v2_{tenantId2}_{subordinateId}", cancellationToken);
 
             _logger.LogInformation(
                 "Permission {Permission} delegated from {DelegatorId} to {SubordinateId}",
@@ -152,7 +152,7 @@ public class PermissionDelegationService : IPermissionDelegationService
             await _delegationRepository.UpdateAsync(delegation, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            await _cacheService.RemoveAsync($"user_permissions_{delegation.TenantId}_{delegation.UserId}", cancellationToken);
+            await _cacheService.RemoveAsync($"user_permissions_v2_{delegation.TenantId}_{delegation.UserId}", cancellationToken);
 
             _logger.LogInformation("Delegation {DelegationId} revoked by {UserId}", delegationId, currentUserId);
 

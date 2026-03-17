@@ -156,6 +156,15 @@ public class CreateModel : PageModel
             return Page();
         }
 
+        if (string.Equals(action, "submit", StringComparison.OrdinalIgnoreCase)
+            && !ApproverId.HasValue
+            && !ApproverDepartmentId.HasValue)
+        {
+            ModelState.AddModelError(nameof(ApproverId), "Select an approver person or department before submitting.");
+            await LoadLookupsAsync();
+            return Page();
+        }
+
         var root = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
         var year = DateTime.UtcNow.Year;
         var uploadsDir = Path.Combine(root, "uploads", "documents", year.ToString());
@@ -344,4 +353,3 @@ public class CreateModel : PageModel
     public record LookupItem(Guid Id, string Name);
     public record ApproverUserOption(Guid Id, string Name, string Department, string Roles);
 }
-

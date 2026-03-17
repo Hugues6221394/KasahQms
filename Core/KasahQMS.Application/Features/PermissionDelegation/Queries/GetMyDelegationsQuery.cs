@@ -6,7 +6,7 @@ using DelegationDto = KasahQMS.Application.Common.Interfaces.Services.Delegation
 
 namespace KasahQMS.Application.Features.PermissionDelegation.Queries;
 
-[Authorize(Permissions = Permissions.Users.ViewAll)]
+[Authorize(Permissions = Permissions.Users.DelegatePermission)]
 public record GetMyDelegationsQuery : IRequest<Result<IEnumerable<DelegationDto>>>;
 
 public class GetMyDelegationsQueryHandler : IRequestHandler<GetMyDelegationsQuery, Result<IEnumerable<DelegationDto>>>

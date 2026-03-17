@@ -347,9 +347,9 @@ public class DetailsModel : PageModel
         return RedirectToPage(new { id, message = "Activity recorded.", success = true });
     }
 
-    public async Task<IActionResult> OnPostApproveAsync(Guid id)
+    public async Task<IActionResult> OnPostApproveAsync(Guid id, string? remarks)
     {
-        var result = await _mediator.Send(new ApproveTaskCommand(id));
+        var result = await _mediator.Send(new ApproveTaskCommand(id, remarks));
         return RedirectToPage(new { id, message = result.IsSuccess ? "Task approved." : result.ErrorMessage, success = result.IsSuccess });
     }
 
@@ -357,6 +357,14 @@ public class DetailsModel : PageModel
     {
         var result = await _mediator.Send(new RejectTaskCommand(id, remarks));
         return RedirectToPage(new { id, message = result.IsSuccess ? "Task rejected." : result.ErrorMessage, success = result.IsSuccess });
+    }
+
+    public async Task<IActionResult> OnPostArchiveAsync(Guid id)
+    {
+        var result = await _mediator.Send(new ArchiveTaskCommand(id));
+        if (result.IsSuccess)
+            return RedirectToPage("/Archives", new { tab = "tasks", message = "Task archived.", success = true });
+        return RedirectToPage(new { id, message = result.ErrorMessage ?? "Archive failed.", success = false });
     }
 
     public List<TaskAttachmentInfo> Attachments { get; set; } = new();

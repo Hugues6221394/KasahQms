@@ -11,6 +11,7 @@ public enum QmsTaskStatus
     Overdue = 3,
     Cancelled = 4,
     AwaitingApproval = 5,
-    Rejected = 6
+    Rejected = 6,
+    Archived = 7
 }
 

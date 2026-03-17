@@ -231,7 +231,7 @@
                         <div>
                             <label for="approverId" class="block text-sm font-medium text-emerald-900 mb-1">Approve by (person)</label>
                             <select id="approverId" name="ApproverId" asp-for="ApproverId" class="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500">
-                                <option value="">— Optional —</option>
+                                <option value="">— Select approver —</option>
                                 @foreach (var u in Model.ApproverUsers)
                                 {
                                     <option value="@u.Id">@u.Name — @u.Department · @u.Roles</option>
@@ -241,7 +241,7 @@
                         <div>
                             <label for="approverDepartmentId" class="block text-sm font-medium text-emerald-900 mb-1">Approve by (department)</label>
                             <select id="approverDepartmentId" name="ApproverDepartmentId" asp-for="ApproverDepartmentId" class="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500">
-                                <option value="">— Optional —</option>
+                                <option value="">— Select department —</option>
                                 @foreach (var d in Model.Departments)
                                 {
                                     <option value="@d.Id">@d.Name</option>
@@ -249,7 +249,7 @@
                             </select>
                         </div>
                     </div>
-                    <p class="mt-2 text-xs text-emerald-600">If you select both, the person is used. Otherwise workflow may determine the approver.</p>
+                    <p class="mt-2 text-xs text-emerald-600">For submit action, selecting approver person or department is mandatory. If both are selected, person is used.</p>
                 </div>
 
                 <!-- Form Actions -->
@@ -377,4 +377,3 @@
         })();
     </script>
 }
-

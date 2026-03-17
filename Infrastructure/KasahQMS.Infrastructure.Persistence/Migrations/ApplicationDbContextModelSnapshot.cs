@@ -1660,6 +1660,95 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.ToTable("user_roles", (string)null);
                 });
 
+            modelBuilder.Entity("KasahQMS.Domain.Entities.News.NewsArticle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastModifiedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("PublishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PublishedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PublishedById");
+
+                    b.ToTable("NewsArticles");
+                });
+
+            modelBuilder.Entity("KasahQMS.Domain.Entities.News.NewsRead", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("NewsArticleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NewsArticleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NewsReads");
+                });
+
             modelBuilder.Entity("KasahQMS.Domain.Entities.Notifications.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2719,6 +2808,15 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ApprovalRemarks")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("AssignedToId")
                         .HasColumnType("uuid");
 
@@ -2775,6 +2873,15 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RejectedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RejectionRemarks")
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("ReportedToUserId")
                         .HasColumnType("uuid");
@@ -3573,6 +3680,36 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("KasahQMS.Domain.Entities.News.NewsArticle", b =>
+                {
+                    b.HasOne("KasahQMS.Domain.Entities.Identity.User", "PublishedBy")
+                        .WithMany()
+                        .HasForeignKey("PublishedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PublishedBy");
+                });
+
+            modelBuilder.Entity("KasahQMS.Domain.Entities.News.NewsRead", b =>
+                {
+                    b.HasOne("KasahQMS.Domain.Entities.News.NewsArticle", "NewsArticle")
+                        .WithMany("ReadBy")
+                        .HasForeignKey("NewsArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("KasahQMS.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NewsArticle");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("KasahQMS.Domain.Entities.Notifications.Notification", b =>
                 {
                     b.HasOne("KasahQMS.Domain.Entities.Identity.User", "User")
@@ -3913,6 +4050,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Navigation("DirectReports");
 
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("KasahQMS.Domain.Entities.News.NewsArticle", b =>
+                {
+                    b.Navigation("ReadBy");
                 });
 
             modelBuilder.Entity("KasahQMS.Domain.Entities.Risk.RiskAssessment", b =>

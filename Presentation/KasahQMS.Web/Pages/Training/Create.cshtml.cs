@@ -37,13 +37,20 @@ public class CreateModel : PageModel
     public List<UserOption> Users { get; set; } = new();
     public string? ErrorMessage { get; set; }
 
-    public async Task OnGetAsync()
+    public async Task<IActionResult> OnGetAsync()
     {
+        if (!await CanCreateTrainingAsync())
+            return RedirectToPage("/Account/AccessDenied");
+            
         await LoadUsersAsync();
+        return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (!await CanCreateTrainingAsync())
+            return RedirectToPage("/Account/AccessDenied");
+            
         if (string.IsNullOrWhiteSpace(Title))
             ModelState.AddModelError(nameof(Title), "Title is required.");
 
@@ -59,6 +66,14 @@ public class CreateModel : PageModel
         var tenantId = _currentUserService.TenantId
             ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
         var currentUserId = _currentUserService.UserId ?? Guid.Empty;
+
+        // Authorization: Ensure user can only create trainings for allowed users
+        if (!await CanCreateForUserAsync(UserId))
+        {
+            ErrorMessage = "You are not authorized to create training for this user.";
+            await LoadUsersAsync();
+            return Page();
+        }
 
         if (!Enum.TryParse<Domain.Enums.TrainingType>(TrainingType, out var tt))
             tt = Domain.Enums.TrainingType.Initial;
@@ -90,12 +105,135 @@ public class CreateModel : PageModel
     {
         var tenantId = _currentUserService.TenantId
             ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+        var currentUserId = _currentUserService.UserId;
 
-        Users = await _dbContext.Users.AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.IsActive)
+        if (currentUserId == null)
+        {
+            Users = new();
+            return;
+        }
+
+        var currentUser = await _dbContext.Users.AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId);
+
+        if (currentUser == null)
+        {
+            Users = new();
+            return;
+        }
+
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isTmdOrDeputy = roles.Any(r =>
+            r.Contains("TMD", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Country Manager", StringComparison.OrdinalIgnoreCase));
+
+        var isManager = !isTmdOrDeputy && roles.Any(r => r.Contains("Manager", StringComparison.OrdinalIgnoreCase));
+
+        var query = _dbContext.Users.AsNoTracking()
+            .Where(u => u.TenantId == tenantId && u.IsActive);
+
+        // TMD/Deputy: can create for all users
+        // Manager: can only create for their direct reports
+        // Staff: cannot create (blocked at OnGetAsync)
+        if (!isTmdOrDeputy && isManager)
+        {
+            // Get manager's subordinates
+            var subordinateIds = await _dbContext.Users
+                .Where(u => u.ManagerId == currentUserId && u.IsActive)
+                .Select(u => u.Id)
+                .ToListAsync();
+            
+            query = query.Where(u => subordinateIds.Contains(u.Id));
+        }
+
+        Users = await query
             .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
             .Select(u => new UserOption(u.Id, u.FirstName + " " + u.LastName))
             .ToListAsync();
+    }
+
+    /// <summary>
+    /// Check if current user can create trainings.
+    /// Staff: cannot create trainings (only view assigned)
+    /// Managers: can create for their subordinates
+    /// TMD/Deputy: can create for anyone
+    /// </summary>
+    private async Task<bool> CanCreateTrainingAsync()
+    {
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId == null) return false;
+
+        var currentUser = await _dbContext.Users.AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId);
+
+        if (currentUser == null) return false;
+
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+
+        // TMD/Deputy can create for everyone
+        var isTmdOrDeputy = roles.Any(r =>
+            r.Contains("TMD", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Country Manager", StringComparison.OrdinalIgnoreCase));
+
+        if (isTmdOrDeputy) return true;
+
+        // Manager can create for subordinates
+        var isManager = roles.Any(r => r.Contains("Manager", StringComparison.OrdinalIgnoreCase));
+        if (isManager)
+        {
+            // Check if they have any subordinates
+            var hasSubordinates = await _dbContext.Users.AnyAsync(u => u.ManagerId == currentUserId && u.IsActive);
+            return hasSubordinates;
+        }
+
+        // Staff cannot create
+        return false;
+    }
+
+    /// <summary>
+    /// Check if current user can create training for specific target user.
+    /// </summary>
+    private async Task<bool> CanCreateForUserAsync(Guid targetUserId)
+    {
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId == null) return false;
+
+        var currentUser = await _dbContext.Users.AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId);
+
+        if (currentUser == null) return false;
+
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+
+        // TMD/Deputy can create for anyone
+        var isTmdOrDeputy = roles.Any(r =>
+            r.Contains("TMD", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Country Manager", StringComparison.OrdinalIgnoreCase));
+
+        if (isTmdOrDeputy) return true;
+
+        // Manager can only create for their direct reports
+        var isManager = roles.Any(r => r.Contains("Manager", StringComparison.OrdinalIgnoreCase));
+        if (isManager)
+        {
+            var isSubordinate = await _dbContext.Users
+                .AnyAsync(u => u.Id == targetUserId && u.ManagerId == currentUserId && u.IsActive);
+            return isSubordinate;
+        }
+
+        return false;
     }
 
     public record UserOption(Guid Id, string Name);

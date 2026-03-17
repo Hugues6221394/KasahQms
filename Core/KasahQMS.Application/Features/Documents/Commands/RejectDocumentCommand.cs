@@ -19,6 +19,7 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationService _notificationService;
+    private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<RejectDocumentCommandHandler> _logger;
 
@@ -27,6 +28,7 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
         INotificationService notificationService,
+        IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         ILogger<RejectDocumentCommandHandler> logger)
     {
@@ -34,6 +36,7 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
         _notificationService = notificationService;
+        _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -65,8 +68,12 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
                     $"Cannot reject document in {document.Status} status."));
             }
 
-            // Check if current user is the assigned approver
-            if (document.CurrentApproverId != userId.Value)
+            var user = await _userRepository.GetByIdWithRolesAsync(userId.Value, cancellationToken);
+            var isExecutiveOverride = user?.Roles?.Any(r =>
+                r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
+
+            // Check if current user is the assigned approver or executive override
+            if (!isExecutiveOverride && document.CurrentApproverId != userId.Value)
             {
                 return Result.Failure(Error.Forbidden);
             }

@@ -20,6 +20,7 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationService _notificationService;
     private readonly IWorkflowService _workflowService;
+    private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ApproveDocumentCommandHandler> _logger;
 
@@ -29,6 +30,7 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
         IAuditLogService auditLogService,
         INotificationService notificationService,
         IWorkflowService workflowService,
+        IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         ILogger<ApproveDocumentCommandHandler> logger)
     {
@@ -37,6 +39,7 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
         _auditLogService = auditLogService;
         _notificationService = notificationService;
         _workflowService = workflowService;
+        _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -67,8 +70,12 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
                 return Result.Failure(Error.Conflict);
             }
 
-            // Check if current user is the assigned approver
-            if (document.CurrentApproverId != userId.Value)
+            var user = await _userRepository.GetByIdWithRolesAsync(userId.Value, cancellationToken);
+            var isExecutiveOverride = user?.Roles?.Any(r =>
+                r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
+
+            // Check if current user is the assigned approver or executive override
+            if (!isExecutiveOverride && document.CurrentApproverId != userId.Value)
             {
                 return Result.Failure(Error.Forbidden);
             }

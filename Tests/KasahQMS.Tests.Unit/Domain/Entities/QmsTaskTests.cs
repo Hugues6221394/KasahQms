@@ -98,11 +98,15 @@ public class QmsTaskTests
     public void Approve_ShouldSetCompleted()
     {
         var task = CreateTask();
-        task.Complete(Guid.NewGuid());
+        var completedById = Guid.NewGuid();
+        task.Complete(completedById);
 
-        task.Approve();
+        var approvedById = Guid.NewGuid();
+        task.Approve(approvedById, "Looks good");
 
         task.Status.Should().Be(QmsTaskStatus.Completed);
+        task.ApprovedById.Should().Be(approvedById);
+        task.ApprovalRemarks.Should().Be("Looks good");
     }
 
     [Fact]
@@ -111,10 +115,12 @@ public class QmsTaskTests
         var task = CreateTask();
         task.Complete(Guid.NewGuid());
 
-        task.Reject("Not adequate");
+        var rejectedById = Guid.NewGuid();
+        task.Reject(rejectedById, "Not adequate");
 
         task.Status.Should().Be(QmsTaskStatus.Rejected);
-        task.ReviewerRemarks.Should().Be("Not adequate");
+        task.RejectionRemarks.Should().Be("Not adequate");
+        task.RejectedById.Should().Be(rejectedById);
     }
 
     [Fact]

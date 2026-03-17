@@ -18,9 +18,12 @@
                 </svg>
                 Restart System Tour
             </button>
-            <a href="/Training/Create" class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-                New Training Record
-            </a>
+            @if (Model.CanCreateTraining)
+            {
+                <a href="/Training/Create" class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                    New Training Record
+                </a>
+            }
         </div>
     </div>
 

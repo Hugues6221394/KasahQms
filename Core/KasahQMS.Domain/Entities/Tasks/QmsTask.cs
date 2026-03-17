@@ -21,6 +21,15 @@ public class QmsTask : AuditableEntity
     public Guid? CompletedById { get; set; }
     public string? CompletionNotes { get; set; }
     public string? ReviewerRemarks { get; set; }
+    
+    // Approval fields
+    public Guid? ApprovedById { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public string? ApprovalRemarks { get; set; }
+    public Guid? RejectedById { get; set; }
+    public DateTime? RejectedAt { get; set; }
+    public string? RejectionRemarks { get; set; }
+    
     public Guid? LinkedDocumentId { get; set; }
     public Guid? LinkedCapaId { get; set; }
     public Guid? LinkedAuditId { get; set; }
@@ -106,15 +115,26 @@ public class QmsTask : AuditableEntity
         CompletionNotes = notes;
     }
 
-    public void Approve()
+    public void Approve(Guid approvedById, string? remarks = null)
     {
         Status = QmsTaskStatus.Completed;
+        ApprovedById = approvedById;
+        ApprovedAt = DateTime.UtcNow;
+        ApprovalRemarks = remarks;
     }
 
-    public void Reject(string remarks)
+    public void Reject(Guid rejectedById, string remarks)
     {
         Status = QmsTaskStatus.Rejected;
-        ReviewerRemarks = remarks;
+        RejectedById = rejectedById;
+        RejectedAt = DateTime.UtcNow;
+        RejectionRemarks = remarks;
+        ReviewerRemarks = remarks; // Keep for backward compatibility
+    }
+    
+    public void Archive()
+    {
+        Status = QmsTaskStatus.Archived;
     }
     
     public void Cancel(string? reason = null)

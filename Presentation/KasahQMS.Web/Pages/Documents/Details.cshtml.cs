@@ -45,6 +45,7 @@ public class DetailsModel : PageModel
     /// Indicates if current user is viewing in read-only mode (auditors)
     /// </summary>
     public bool IsReadOnly { get; set; }
+    public bool IsExecutive { get; set; }
     
     /// <summary>
     /// The user's role context for display purposes
@@ -100,6 +101,7 @@ public class DetailsModel : PageModel
         else UserRoleContext = "Staff";
 
         IsReadOnly = isAuditor;
+        IsExecutive = isTmdOrDeputy;
 
         // Load the document
         var doc = await _dbContext.Documents.AsNoTracking()
@@ -263,7 +265,7 @@ public class DetailsModel : PageModel
     /// </summary>
     public bool CanApproveOrReject => Document != null 
         && !IsReadOnly
-        && _currentUserService.UserId == Document.CurrentApproverId
+        && (IsExecutive || _currentUserService.UserId == Document.CurrentApproverId)
         && (Document.Status == "Submitted" || Document.Status == "InReview");
 
     /// <summary>

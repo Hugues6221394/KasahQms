@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace KasahQMS.Application.Features.Tasks.Commands;
 
 [Authorize(Permissions = Permissions.Tasks.Edit)] // Managers should have edit permission
-public record ApproveTaskCommand(Guid TaskId) : IRequest<Result>;
+public record ApproveTaskCommand(Guid TaskId, string? Remarks = null) : IRequest<Result>;
 
 public class ApproveTaskCommandHandler : IRequestHandler<ApproveTaskCommand, Result>
 {
@@ -57,7 +57,7 @@ public class ApproveTaskCommandHandler : IRequestHandler<ApproveTaskCommand, Res
             if (task.Status != QmsTaskStatus.AwaitingApproval)
                 return Result.Failure(Error.Custom("Task.StatusError", "Only tasks awaiting approval can be approved."));
 
-            task.Approve();
+            task.Approve(userId.Value, request.Remarks);
             await _taskRepository.UpdateAsync(task, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 

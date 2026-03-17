@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace KasahQMS.Application.Features.PermissionDelegation.Commands;
 
-[Authorize(Permissions = Permissions.Users.ViewAll)]
+[Authorize(Permissions = Permissions.Users.DelegatePermission)]
 public record RevokeDelegationCommand(Guid DelegationId) : IRequest<Result>;
 
 public class RevokeDelegationCommandHandler : IRequestHandler<RevokeDelegationCommand, Result>

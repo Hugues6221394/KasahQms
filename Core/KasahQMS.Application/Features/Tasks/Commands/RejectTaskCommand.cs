@@ -59,7 +59,7 @@ public class RejectTaskCommandHandler : IRequestHandler<RejectTaskCommand, Resul
             if (task.Status != QmsTaskStatus.AwaitingApproval)
                 return Result.Failure(Error.Custom("Task.StatusError", "Only tasks awaiting approval can be rejected."));
 
-            task.Reject(request.Remarks);
+            task.Reject(userId.Value, request.Remarks);
             await _taskRepository.UpdateAsync(task, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 

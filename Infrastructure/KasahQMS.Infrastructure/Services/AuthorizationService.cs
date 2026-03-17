@@ -182,7 +182,7 @@ public class AuthorizationService : IAuthorizationService
         if (userId == null) return Enumerable.Empty<string>();
 
         // Include tenantId in cache key to prevent cross-tenant cache collision
-        var cacheKey = $"user_permissions_{tenantId}_{userId}";
+        var cacheKey = $"user_permissions_v2_{tenantId}_{userId}";
         var permissions = await _cacheService.GetOrCreateAsync(
             cacheKey,
             async () => await GetUserPermissionsFromDbAsync(userId.Value, cancellationToken),
@@ -258,6 +258,35 @@ public class AuthorizationService : IAuthorizationService
                     permissions.Add(v);
                 // Hierarchy roles can always delegate permissions to subordinates
                 permissions.Add(KasahQMS.Application.Common.Security.Permissions.Users.DelegatePermission);
+            }
+
+            // Backward-compatible role grants for permissions not represented in Domain.Permission enum yet.
+            var isSystemAdminRole = roleNames.Any(rn =>
+                string.Equals(rn, "System Admin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rn, "SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rn, "Admin", StringComparison.OrdinalIgnoreCase));
+            var isTmdOrDeputyRole = roleNames.Any(rn =>
+                string.Equals(rn, "TMD", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rn, "Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rn, "Country Manager", StringComparison.OrdinalIgnoreCase) ||
+                (rn != null && rn.Contains("Deputy", StringComparison.OrdinalIgnoreCase)));
+
+            // ALL users can view news (read-only)
+            permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.View);
+
+            // TMD/Deputy/Admin can create/edit/delete news
+            if (isSystemAdminRole || isTmdOrDeputyRole)
+            {
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.Create);
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.Edit);
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.Delete);
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.ViewAll);
+            }
+
+            // Only TMD/Deputy (not managers) get Employees by default
+            if (isSystemAdminRole || isTmdOrDeputyRole)
+            {
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Employees.View);
             }
 
             // Add delegated permissions if delegation service is available

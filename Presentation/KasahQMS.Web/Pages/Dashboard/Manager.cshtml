@@ -13,7 +13,7 @@
             <h1 class="mt-3 text-3xl font-bold tracking-tight text-white lg:text-4xl">@Model.DepartmentName Dashboard</h1>
             <p class="mt-2 text-sm text-slate-200">Welcome back, @Model.DisplayName | @Model.CurrentDate</p>
             <div class="mt-6 flex flex-wrap gap-3">
-                <a href="/Tasks?action=create" class="inline-flex items-center rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Create Task</a>
+                <a href="/Tasks/Create" class="inline-flex items-center rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Create Task</a>
                 <a href="/Documents?status=Submitted" class="inline-flex items-center rounded-xl border border-brand-300/40 bg-brand-500/20 px-4 py-2.5 text-sm font-semibold text-brand-100 transition hover:bg-brand-500/30">Review Approvals</a>
             </div>
         </div>
@@ -34,9 +34,9 @@
         <h2 class="text-lg font-semibold text-slate-900">Quick Actions</h2>
         <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <a href="/Documents/Create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Create Document</p><p class="mt-1 text-sm text-slate-500">Publish team guidance</p></a>
-            <a href="/Tasks?action=create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Assign Task</p><p class="mt-1 text-sm text-slate-500">Delegate to team members</p></a>
+            <a href="/Tasks/Create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Assign Task</p><p class="mt-1 text-sm text-slate-500">Delegate to team members</p></a>
             <a href="/Capa" class="card card-hover p-5"><p class="font-semibold text-slate-800">Manage CAPA</p><p class="mt-1 text-sm text-slate-500">Track remediation progress</p></a>
-            <a href="/Risks" class="card card-hover p-5"><p class="font-semibold text-slate-800">Risk Register</p><p class="mt-1 text-sm text-slate-500">Monitor department risk</p></a>
+            <a href="/Risk" class="card card-hover p-5"><p class="font-semibold text-slate-800">Risk Register</p><p class="mt-1 text-sm text-slate-500">Monitor department risk</p></a>
         </div>
     </section>
 

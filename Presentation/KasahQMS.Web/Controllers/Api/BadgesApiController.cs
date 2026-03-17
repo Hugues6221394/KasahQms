@@ -41,6 +41,11 @@ public class BadgesApiController : ControllerBase
             return Unauthorized();
 
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+        var currentUser = await _dbContext.Users.AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == userId.Value);
+        var isExecutive = currentUser?.Roles?.Any(r =>
+            r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
 
         // Unread messages - count threads with unread messages for this user
         var lastSeenMessages = _cache.Get<DateTime?>($"last_seen_messages_{userId}");
@@ -59,9 +64,15 @@ public class BadgesApiController : ControllerBase
         // Documents pending review (current approver is user) or sent to user
         var pendingDocuments = await _dbContext.Documents
             .CountAsync(d => d.TenantId == tenantId &&
-                            ((d.CurrentApproverId == userId.Value && 
-                              (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview)) ||
-                             (d.TargetUserId == userId.Value && d.Status == DocumentStatus.Draft)));
+                            (
+                              (isExecutive && (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview)) ||
+                              (d.CurrentApproverId == userId.Value &&
+                               (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview)) ||
+                              (d.TargetUserId == userId.Value && d.Status == DocumentStatus.Draft) ||
+                              (d.CreatedById == userId.Value &&
+                               d.Status == DocumentStatus.Draft &&
+                               _dbContext.DocumentApprovals.Any(a => a.DocumentId == d.Id && !a.IsApproved))
+                            ));
 
         // Unread notifications
         var unreadNotifications = await _dbContext.Notifications

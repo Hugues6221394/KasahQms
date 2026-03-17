@@ -77,6 +77,10 @@
                         <span class="text-xs text-slate-400">Created @template.CreatedAt</span>
                         <div class="flex gap-2">
                             <a href="/Templates/View/@template.Id" class="text-sm text-brand-600 hover:text-brand-700 font-medium">View</a>
+                            @if (Model.CanCreateTemplate)
+                            {
+                                <a href="/Templates/Edit/@template.Id" class="text-sm text-amber-600 hover:text-amber-700 font-medium">Edit</a>
+                            }
                             @if (Model.UserRoleContext != "Auditor")
                             {
                                 <a href="/Documents/CreateFromTemplate/@template.Id" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">Use Template</a>

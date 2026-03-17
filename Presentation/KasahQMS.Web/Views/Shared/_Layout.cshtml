@@ -1,4 +1,5 @@
 @using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
 @using KasahQMS.Application.Common.Security
 @inject KasahQMS.Application.Common.Interfaces.ICurrentUserService CurrentUserService
 @inject KasahQMS.Application.Common.Security.IAuthorizationService AuthorizationService
@@ -42,6 +43,21 @@
     var canViewTraining = await AuthorizationService.HasPermissionAsync(Permissions.Training.View);
     var canViewRisk = await AuthorizationService.HasPermissionAsync(Permissions.Risk.View);
     var canViewSuppliers = await AuthorizationService.HasPermissionAsync(Permissions.Suppliers.View);
+    var canViewNews = await AuthorizationService.HasPermissionAsync(Permissions.News.View);
+    
+    // Get unread news count for badge
+    int unreadNewsCount = 0;
+    if (canViewNews && userGuid.HasValue)
+    {
+        var dbContext = Context.RequestServices.GetRequiredService<KasahQMS.Infrastructure.Persistence.Data.ApplicationDbContext>();
+        var tenantId = CurrentUserService.TenantId;
+        if (tenantId.HasValue)
+        {
+            var totalNews = await dbContext.NewsArticles.CountAsync(n => n.TenantId == tenantId && n.IsActive);
+            var readNews = await dbContext.NewsReads.CountAsync(nr => nr.UserId == userGuid.Value);
+            unreadNewsCount = totalNews - readNews;
+        }
+    }
     
     // Permission Delegation: senior roles or managers can delegate
     var isSeniorRoleForDelegation = roles.Any(r =>
@@ -63,12 +79,8 @@
 
     var showAdminSection = canManageUsers || canManageRoles || canManageDepartments || canViewAuditLogs || canManageSettings;
 
-    // Employees & Departments pages: accessible to TMD, Deputy, Managers, SysAdmin
-    var canViewEmployees = roles.Any(r => 
-        r == "TMD" || r == "Top Managing Director" ||
-        r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
-        r.Contains("Manager", StringComparison.OrdinalIgnoreCase) ||
-        r == "System Admin");
+    // Employees & Departments pages: use permission-based check to allow delegation
+    var canViewEmployees = await AuthorizationService.HasPermissionAsync(Permissions.Employees.View);
 
     // Check for "Auditor" role specifically for the badge, or derive it.
     // Using role check here for the visual badge only.
@@ -370,6 +382,21 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                     </svg>
                     <span>Competencies</span>
+                </a>
+                }
+                @if (canViewNews)
+                {
+                <a data-nav="/news" href="/News" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                    </svg>
+                    <span>News</span>
+                    @if (unreadNewsCount > 0)
+                    {
+                        <span class="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                            @(unreadNewsCount > 99 ? "99+" : unreadNewsCount.ToString())
+                        </span>
+                    }
                 </a>
                 }
                 @if (canViewRisk)

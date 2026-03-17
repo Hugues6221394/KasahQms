@@ -107,19 +107,28 @@
 
                 @if (r.Status == "Completed")
                 {
-                    <form method="post" asp-page-handler="UpdateCertificate" asp-route-id="@r.Id" class="pt-2 flex gap-2">
-                        @Html.AntiForgeryToken()
-                        <input type="text" asp-for="CertificateNumber" value="@r.CertificateNumber"
-                               placeholder="Certificate number"
-                               class="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
-                        <button type="submit" class="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Update</button>
-                    </form>
+                    @if (Model.CanEdit)
+                    {
+                        <form method="post" asp-page-handler="UpdateCertificate" asp-route-id="@r.Id" class="pt-2 flex gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="text" asp-for="CertificateNumber" value="@r.CertificateNumber"
+                                   placeholder="Certificate number"
+                                   class="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
+                            <button type="submit" class="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Update</button>
+                        </form>
+                    }
+                    else if (!string.IsNullOrEmpty(r.CertificateNumber))
+                    {
+                        <div class="pt-2 text-sm text-slate-600">
+                            Certificate: <span class="font-medium">@r.CertificateNumber</span>
+                        </div>
+                    }
                 }
             </div>
         </div>
 
         <!-- Status Transition Actions -->
-        @if (r.Status != "Completed" && r.Status != "Expired")
+        @if (Model.CanEdit && r.Status != "Completed" && r.Status != "Expired")
         {
             <div class="card p-6 space-y-4">
                 <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Actions</h2>

@@ -138,13 +138,24 @@ public class ManagerModel : PageModel
             .Select(a => new ApprovalItem(a.Title, $"{a.FirstName} {a.LastName}", a.Status))
             .ToList();
 
-        // Recent activity (department only)
+        // Recent activity (department only - exclude login/logout)
         Activity = await _dbContext.AuditLogEntries.AsNoTracking()
             .Where(a => a.TenantId == tenantId && 
                        a.UserId.HasValue && 
-                       visibleUserIds.Contains(a.UserId.Value))
+                       visibleUserIds.Contains(a.UserId.Value) &&
+                       a.Action != "USER_LOGIN" && 
+                       a.Action != "USER_LOGOUT" &&
+                       (a.Action == "DOCUMENT_CREATED" || 
+                        a.Action == "DOCUMENT_SUBMITTED" ||
+                        a.Action == "TASK_CREATED" ||
+                        a.Action == "TASK_COMPLETED" ||
+                        a.Action == "CAPA_CREATED" ||
+                        a.Action == "AUDIT_SCHEDULED" ||
+                        a.EntityType == "Document" ||
+                        a.EntityType == "Task" ||
+                        a.EntityType == "Capa"))
             .OrderByDescending(a => a.Timestamp)
-            .Take(6)
+            .Take(10)
             .Select(a => new ActivityItem(
                 a.Action.Replace("_", " "),
                 a.Description ?? a.EntityType,

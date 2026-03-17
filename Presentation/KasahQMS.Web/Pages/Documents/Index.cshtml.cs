@@ -2,6 +2,8 @@ using KasahQMS.Domain.Enums;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Infrastructure.Persistence.Data;
 using KasahQMS.Web.Services;
+using KasahQMS.Application.Features.Documents.Commands;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -17,17 +19,20 @@ public class IndexModel : PageModel
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IHierarchyService _hierarchyService;
+    private readonly IMediator _mediator;
 
     public IndexModel(
         ILogger<IndexModel> logger, 
         ApplicationDbContext dbContext, 
         ICurrentUserService currentUserService,
-        IHierarchyService hierarchyService)
+        IHierarchyService hierarchyService,
+        IMediator mediator)
     {
         _logger = logger;
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _hierarchyService = hierarchyService;
+        _mediator = mediator;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -58,8 +63,12 @@ public class IndexModel : PageModel
     public string UserRoleContext { get; set; } = "Staff";
 
     public List<DocumentRow> Documents { get; set; } = new();
+    public List<PendingApprovalRow> PendingApprovals { get; set; } = new();
     public List<LookupItem> DocumentTypes { get; set; } = new();
     public List<LookupItem> Categories { get; set; } = new();
+    public bool IsExecutiveUser { get; set; }
+    [BindProperty] public Guid ActionDocumentId { get; set; }
+    [BindProperty] public string? ActionRejectReason { get; set; }
 
     public async Task OnGetAsync()
     {
@@ -108,6 +117,7 @@ public class IndexModel : PageModel
         bool isTmdOrDeputy = roles.Any(r => r is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
         bool isManager = roles.Any(r => r.Contains("Manager"));
         bool isAuditor = roles.Any(r => r == "Auditor");
+        IsExecutiveUser = isTmdOrDeputy;
 
         // Set role context for UI
         if (isAdmin) UserRoleContext = "Admin";
@@ -202,8 +212,73 @@ public class IndexModel : PageModel
                 (d.LastModifiedAt ?? d.CreatedAt).ToString("MMM dd, yyyy")))
             .ToListAsync();
 
+        if (isTmdOrDeputy)
+        {
+            PendingApprovals = await _dbContext.Documents.AsNoTracking()
+                .Where(d => d.TenantId == tenantId &&
+                    (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview))
+                .OrderByDescending(d => d.SubmittedAt ?? d.LastModifiedAt ?? d.CreatedAt)
+                .Take(15)
+                .Select(d => new PendingApprovalRow(
+                    d.Id,
+                    d.Title,
+                    d.DocumentNumber,
+                    d.Status.ToString(),
+                    d.CurrentApproverId,
+                    d.CreatedById,
+                    (d.SubmittedAt ?? d.LastModifiedAt ?? d.CreatedAt).ToString("MMM dd, yyyy HH:mm")))
+                .ToListAsync();
+        }
+
         _logger.LogInformation("Documents page accessed by {UserId} ({RoleContext}) with filters: Search={Search}, Status={Status}, Type={Type}. Showing {Count} documents.", 
             currentUserId, UserRoleContext, SearchTerm, Status, Type, Documents.Count);
+    }
+
+    public async Task<IActionResult> OnPostApproveAsync()
+    {
+        if (!await IsExecutiveAsync())
+        {
+            return Forbid();
+        }
+
+        var result = await _mediator.Send(new ApproveDocumentCommand(ActionDocumentId, "Approved by executive review"));
+        TempData[result.IsSuccess ? "SuccessMessage" : "ErrorMessage"] =
+            result.IsSuccess ? "Document approved successfully." : (result.ErrorMessage ?? "Failed to approve document.");
+        return RedirectToPage(new { SearchTerm, Status, Type, PageNumber });
+    }
+
+    public async Task<IActionResult> OnPostRejectAsync()
+    {
+        if (!await IsExecutiveAsync())
+        {
+            return Forbid();
+        }
+
+        if (string.IsNullOrWhiteSpace(ActionRejectReason))
+        {
+            TempData["ErrorMessage"] = "Rejection reason is required.";
+            return RedirectToPage(new { SearchTerm, Status, Type, PageNumber });
+        }
+
+        var result = await _mediator.Send(new RejectDocumentCommand(ActionDocumentId, ActionRejectReason));
+        TempData[result.IsSuccess ? "SuccessMessage" : "ErrorMessage"] =
+            result.IsSuccess ? "Document rejected successfully." : (result.ErrorMessage ?? "Failed to reject document.");
+        return RedirectToPage(new { SearchTerm, Status, Type, PageNumber });
+    }
+
+    private async Task<bool> IsExecutiveAsync()
+    {
+        if (!_currentUserService.UserId.HasValue)
+        {
+            return false;
+        }
+
+        var currentUser = await _dbContext.Users.AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == _currentUserService.UserId.Value);
+
+        return currentUser?.Roles?.Any(r =>
+            r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
     }
 
     private static string GetStatusClass(DocumentStatus status)
@@ -230,5 +305,13 @@ public class IndexModel : PageModel
         string ModifiedAt);
 
     public record LookupItem(Guid Id, string Name);
+    public record PendingApprovalRow(
+        Guid Id,
+        string Title,
+        string Number,
+        string Status,
+        Guid? CurrentApproverId,
+        Guid CreatedById,
+        string SubmittedAt);
 }
 

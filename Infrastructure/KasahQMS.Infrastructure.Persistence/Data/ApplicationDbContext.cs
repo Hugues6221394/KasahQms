@@ -134,6 +134,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<SupplierAudit> SupplierAudits => Set<SupplierAudit>();
 
+    // News
+    public DbSet<KasahQMS.Domain.Entities.News.NewsArticle> NewsArticles => Set<KasahQMS.Domain.Entities.News.NewsArticle>();
+    public DbSet<KasahQMS.Domain.Entities.News.NewsRead> NewsReads => Set<KasahQMS.Domain.Entities.News.NewsRead>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

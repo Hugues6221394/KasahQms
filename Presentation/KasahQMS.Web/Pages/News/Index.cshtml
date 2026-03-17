@@ -1,0 +1,104 @@
+@page
+@model KasahQMS.Web.Pages.News.IndexModel
+@{
+    ViewData["Title"] = "News & Announcements";
+}
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">News & Announcements</h1>
+            <p class="text-sm text-slate-500">Stay updated with company news and important notices.</p>
+        </div>
+        @if (Model.CanCreate)
+        {
+            <a href="/News/Create" class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Post News
+            </a>
+        }
+    </div>
+
+    @if (Model.UnreadCount > 0)
+    {
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                @Model.UnreadCount
+            </div>
+            <div>
+                <p class="font-medium text-blue-900">You have @Model.UnreadCount new @(Model.UnreadCount == 1 ? "article" : "articles")</p>
+                <p class="text-sm text-blue-700">Click on an article to read and mark as read.</p>
+            </div>
+        </div>
+    }
+
+    <div class="card">
+        @if (Model.Articles.Any())
+        {
+            <div class="divide-y divide-slate-200">
+                @foreach (var article in Model.Articles)
+                {
+                    var canEditThis = Model.CanEdit || article.PublishedById == Model.CurrentUserId;
+                    <div class="p-6 hover:bg-slate-50 transition-colors @(article.IsRead ? "" : "bg-blue-50")">
+                        <div class="flex items-start justify-between gap-4">
+                            <a href="/News/Details?id=@article.Id" class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-2">
+                                    @if (!article.IsRead)
+                                    {
+                                        <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                    }
+                                    <h3 class="text-lg font-semibold text-slate-900">@article.Title</h3>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2 text-sm text-slate-600 mb-2">
+                                    <span class="px-2 py-1 rounded text-xs font-medium @article.TypeClass">
+                                        @article.Type
+                                    </span>
+                                    <span class="px-2 py-1 rounded text-xs font-medium @article.PriorityClass">
+                                        @article.Priority Priority
+                                    </span>
+                                    <span>•</span>
+                                    <span>By @article.PublishedBy</span>
+                                    <span>•</span>
+                                    <span>@article.PublishedAt</span>
+                                </div>
+                            </a>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                @if (canEditThis)
+                                {
+                                    <a href="/News/Edit?id=@article.Id" class="p-2 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </a>
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@article.Id" class="inline" onsubmit="return confirm('Delete this article?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50" title="Delete">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                }
+                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="p-12 text-center">
+                <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                </svg>
+                <p class="text-slate-500 font-medium mb-1">No news articles yet</p>
+                <p class="text-sm text-slate-400">Check back later for updates and announcements.</p>
+            </div>
+        }
+    </div>
+</div>

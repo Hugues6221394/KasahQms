@@ -194,6 +194,24 @@ public static class Permissions
     {
         public const string View = "Analytics.View";
     }
+
+    public static class News
+    {
+        public const string View = "News.View";
+        public const string Create = "News.Create";
+        public const string Edit = "News.Edit";
+        public const string Delete = "News.Delete";
+        public const string ViewAll = "News.ViewAll";
+    }
+
+    public static class Employees
+    {
+        public const string View = "Employees.View";
+        public const string Create = "Employees.Create";
+        public const string Edit = "Employees.Edit";
+        public const string Delete = "Employees.Delete";
+        public const string ViewAll = "Employees.ViewAll";
+    }
     
     public static class System
     {
@@ -277,6 +295,16 @@ public static class DefaultRoles
             Permissions.Suppliers.Delete,
             Permissions.Suppliers.Audit,
             Permissions.Suppliers.ViewAll,
+            Permissions.News.View,
+            Permissions.News.Create,
+            Permissions.News.Edit,
+            Permissions.News.Delete,
+            Permissions.News.ViewAll,
+            Permissions.Employees.View,
+            Permissions.Employees.Create,
+            Permissions.Employees.Edit,
+            Permissions.Employees.Delete,
+            Permissions.Employees.ViewAll,
         };
     }
     
@@ -319,6 +347,16 @@ public static class DefaultRoles
             Permissions.Suppliers.Delete,
             Permissions.Suppliers.Audit,
             Permissions.Suppliers.ViewAll,
+            Permissions.News.View,
+            Permissions.News.Create,
+            Permissions.News.Edit,
+            Permissions.News.Delete,
+            Permissions.News.ViewAll,
+            Permissions.Employees.View,
+            Permissions.Employees.Create,
+            Permissions.Employees.Edit,
+            Permissions.Employees.Delete,
+            Permissions.Employees.ViewAll,
         };
     }
     
@@ -388,6 +426,18 @@ public static class DefaultRoles
             Permissions.Suppliers.ViewAll,
             // Analytics
             Permissions.Analytics.View,
+            // News
+            Permissions.News.View,
+            Permissions.News.Create,
+            Permissions.News.Edit,
+            Permissions.News.Delete,
+            Permissions.News.ViewAll,
+            // Employees
+            Permissions.Employees.View,
+            Permissions.Employees.Create,
+            Permissions.Employees.Edit,
+            Permissions.Employees.Delete,
+            Permissions.Employees.ViewAll,
         };
     }
     
@@ -434,6 +484,17 @@ public static class DefaultRoles
             Permissions.Suppliers.Edit,
             Permissions.Suppliers.ViewAll,
             Permissions.Analytics.View,
+            // News
+            Permissions.News.View,
+            Permissions.News.Create,
+            Permissions.News.Edit,
+            Permissions.News.Delete,
+            Permissions.News.ViewAll,
+            // Employees
+            Permissions.Employees.View,
+            Permissions.Employees.Create,
+            Permissions.Employees.Edit,
+            Permissions.Employees.ViewAll,
         };
     }
     

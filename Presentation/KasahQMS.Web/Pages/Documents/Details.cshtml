@@ -150,6 +150,34 @@ else
                 <p class="text-sm text-slate-500 italic">No attachments.</p>
             }
         </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-3">Approval & Rejection History</h3>
+            @if (Model.ApprovalHistory.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var item in Model.ApprovalHistory)
+                    {
+                        <div class="rounded-lg border border-slate-200 p-3">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-semibold @(item.IsApproved ? "text-emerald-700" : "text-rose-700")">
+                                    @(item.IsApproved ? "Approved" : "Rejected") by @item.ApproverName
+                                </p>
+                                <p class="text-xs text-slate-500">@item.ApprovedAt</p>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(item.Comments))
+                            {
+                                <p class="mt-2 text-sm text-slate-700">@item.Comments</p>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-slate-500">No approval history yet.</p>
+            }
+        </div>
     </div>
 
     @if (Model.CanApproveOrReject)

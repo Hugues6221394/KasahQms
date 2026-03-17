@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using AppAuthService = KasahQMS.Application.Common.Security.IAuthorizationService;
 
 namespace KasahQMS.Web.Pages.Employees;
 
@@ -13,15 +14,18 @@ public class IndexModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly AppAuthService _authorizationService;
     private readonly ILogger<IndexModel> _logger;
 
     public IndexModel(
         ApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
+        AppAuthService authorizationService,
         ILogger<IndexModel> logger)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _authorizationService = authorizationService;
         _logger = logger;
     }
 
@@ -38,30 +42,12 @@ public class IndexModel : PageModel
         if (userId == null || tenantId == null)
             return Unauthorized();
 
-        var currentUser = await _dbContext.Users
-            .AsNoTracking()
-            .Include(u => u.Roles)
-            .FirstOrDefaultAsync(u => u.Id == userId.Value);
-
-        if (currentUser == null)
-            return Unauthorized();
-
-        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
-
-        // Check if user can view employee activity
-        CanView = roles.Any(r =>
-            r.Contains("TMD", StringComparison.OrdinalIgnoreCase) ||
-            r.Contains("Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
-            r.Contains("Managing Director", StringComparison.OrdinalIgnoreCase) ||
-            r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
-            r.Contains("Country Manager", StringComparison.OrdinalIgnoreCase) ||
-            r.Contains("Manager", StringComparison.OrdinalIgnoreCase) ||
-            r.Contains("System Admin", StringComparison.OrdinalIgnoreCase));
+        // Use permission-based check (allows delegation)
+        CanView = await _authorizationService.HasPermissionAsync(Application.Common.Security.Permissions.Employees.View);
 
         if (!CanView)
         {
-            ErrorMessage = "You do not have permission to view employee activity.";
-            return Page();
+            return RedirectToPage("/Account/AccessDenied");
         }
 
         var cutoff = DateTime.UtcNow.AddDays(-7);
