@@ -60,10 +60,10 @@ public class AuditorModel : PageModel
 
         Stats = new List<StatCard>
         {
-            new("Total documents", totalDocuments.ToString(), "System-wide"),
-            new("Approved documents", approvedDocuments.ToString(), "Compliant"),
-            new("Open CAPAs", openCapas.ToString(), "Requires attention"),
-            new("Completed audits", completedAudits.ToString(), "All time")
+            new("Total documents", totalDocuments.ToString(), "System-wide", "/Documents"),
+            new("Approved documents", approvedDocuments.ToString(), "Compliant", "/Documents?status=Approved"),
+            new("Open CAPAs", openCapas.ToString(), "Requires attention", "/Capa"),
+            new("Completed audits", completedAudits.ToString(), "All time", "/Audits")
         };
 
         // Recent documents (read-only)
@@ -106,7 +106,7 @@ public class AuditorModel : PageModel
         }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
     }
 
-    public record StatCard(string Title, string Value, string Subtitle);
+    public record StatCard(string Title, string Value, string Subtitle, string Link);
     public record DocumentItem(string Title, string Number, string Status, string Created);
     public record CapaItem(string Title, string Number, string Status, string Created);
     public record ActivityItem(string Title, string Description, string When);

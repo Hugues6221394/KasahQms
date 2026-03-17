@@ -1,5 +1,6 @@
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Domain.Entities.Identity;
 using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,20 +11,16 @@ using System.ComponentModel.DataAnnotations;
 namespace KasahQMS.Web.Pages.Users;
 
 /// <summary>
-/// Create new user page. Only System Admin can create users.
-/// Per QMS requirements, System Admin is responsible for:
-/// - Creating user accounts
-/// - Assigning roles
-/// - Assigning organization units (departments)
-/// - Setting up reporting hierarchy (ManagerId)
+/// Create new user page. System Admin, TMD, and Deputy can create users.
 /// </summary>
-[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin")]
+[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin,TMD,Deputy,TenantMD,Deputy Director")]
 public class CreateModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<CreateModel> _logger;
 
     public CreateModel(
@@ -31,12 +28,14 @@ public class CreateModel : PageModel
         IPasswordHasher passwordHasher, 
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
+        IEmailService emailService,
         ILogger<CreateModel> logger)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -59,21 +58,24 @@ public class CreateModel : PageModel
     [BindProperty]
     public string? PhoneNumber { get; set; }
 
+    /// <summary>
+    /// If true, skip manual password and send a reset link to user's email.
+    /// </summary>
     [BindProperty]
-    [Required(ErrorMessage = "Password is required")]
-    [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
-    public string Password { get; set; } = "P@ssw0rd!";
+    public bool SendResetLink { get; set; } = false;
+
+    // Nullable so ASP.NET Core doesn't implicitly treat it as [Required]
+    [BindProperty]
+    public string? Password { get; set; }
 
     [BindProperty]
-    [Required(ErrorMessage = "Organization unit (department) is required")]
     public Guid? OrganizationUnitId { get; set; }
 
+    // ManagerId is optional - TMD/top-level users have no manager
     [BindProperty]
-    [Required(ErrorMessage = "Manager is required for hierarchy")]
     public Guid? ManagerId { get; set; }
 
     [BindProperty]
-    [Required(ErrorMessage = "At least one role must be selected")]
     public List<Guid> SelectedRoleIds { get; set; } = new();
 
     public List<LookupItem> Roles { get; set; } = new();
@@ -89,9 +91,25 @@ public class CreateModel : PageModel
     {
         await LoadLookupsAsync();
 
-        // Validate email uniqueness
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
-        
+
+        // If sending reset link, password is not needed — clear any implicit required error
+        if (SendResetLink)
+        {
+            ModelState.Remove(nameof(Password));
+        }
+
+        // Manual password required only if not sending reset link
+        if (!SendResetLink && string.IsNullOrWhiteSpace(Password))
+        {
+            ModelState.AddModelError(nameof(Password), "Password is required when not sending a reset link.");
+        }
+        if (!SendResetLink && !string.IsNullOrWhiteSpace(Password) && Password.Length < 8)
+        {
+            ModelState.AddModelError(nameof(Password), "Password must be at least 8 characters.");
+        }
+
+        // Validate email uniqueness
         var emailExists = await _dbContext.Users.AnyAsync(u => 
             u.TenantId == tenantId && 
             u.Email.ToLower() == Email.ToLower());
@@ -99,25 +117,12 @@ public class CreateModel : PageModel
         if (emailExists)
         {
             ModelState.AddModelError(nameof(Email), "A user with this email already exists.");
-            return Page();
         }
 
         // Validate role selection
         if (!SelectedRoleIds.Any())
         {
             ModelState.AddModelError(nameof(SelectedRoleIds), "At least one role must be selected.");
-            return Page();
-        }
-
-        // Validate manager exists and is not a circular reference
-        if (ManagerId.HasValue)
-        {
-            var manager = await _dbContext.Users.FindAsync(ManagerId.Value);
-            if (manager == null)
-            {
-                ModelState.AddModelError(nameof(ManagerId), "Selected manager does not exist.");
-                return Page();
-            }
         }
 
         if (!ModelState.IsValid)
@@ -129,45 +134,88 @@ public class CreateModel : PageModel
 
         try
         {
-            var hashed = _passwordHasher.Hash(Password);
+            // Use a placeholder hash if we're sending a reset link; user sets real password via the link
+            var passwordHash = SendResetLink
+                ? _passwordHasher.Hash(Guid.NewGuid().ToString()) // random unreachable password
+                : _passwordHasher.Hash(Password);
+
             var user = KasahQMS.Domain.Entities.Identity.User.Create(
-                tenantId, Email, FirstName, LastName, hashed, createdBy);
+                tenantId, Email, FirstName, LastName, passwordHash, createdBy);
             
             user.JobTitle = JobTitle;
             user.PhoneNumber = PhoneNumber;
-            user.RequirePasswordChange = true; // Force password change on first login
+            user.RequirePasswordChange = true; // Always force password change on first login
 
             if (OrganizationUnitId.HasValue)
-            {
                 user.AssignToOrganizationUnit(OrganizationUnitId.Value);
-            }
 
             if (ManagerId.HasValue)
-            {
                 user.SetManager(ManagerId.Value);
-            }
 
+            // Assign roles via explicit join entities (correct many-to-many with explicit join table)
+            var roleIds = SelectedRoleIds.ToHashSet();
             var roles = await _dbContext.Roles
-                .Where(r => SelectedRoleIds.Contains(r.Id))
+                .Where(r => roleIds.Contains(r.Id))
                 .ToListAsync();
-            user.Roles = roles;
 
             _dbContext.Users.Add(user);
+            await _dbContext.SaveChangesAsync(); // Save first to get user.Id
+
+            // Now add UserRole join records
+            foreach (var role in roles)
+            {
+                _dbContext.UserRoles.Add(new UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = role.Id,
+                    AssignedAt = DateTimeOffset.UtcNow,
+                    AssignedBy = createdBy
+                });
+            }
             await _dbContext.SaveChangesAsync();
 
-            // Log user creation
             var roleNames = string.Join(", ", roles.Select(r => r.Name));
+
+            // Send welcome or reset link email
+            if (SendResetLink)
+            {
+                // Generate DB-persisted token (survives server restarts)
+                var rawBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+                var token = Convert.ToBase64String(rawBytes)
+                    .Replace("+", "-").Replace("/", "_").Replace("=", "");
+                user.PasswordResetToken = token;
+                user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(24);
+                await _dbContext.SaveChangesAsync(); // persist token
+
+                var resetLink = $"{Request.Scheme}://{Request.Host}/Account/ResetPassword?token={Uri.EscapeDataString(token)}";
+                await _emailService.SendEmailAsync(
+                    user.Email,
+                    "Welcome to KASAH QMS – Set Your Password",
+                    $"<p>Dear {user.FirstName},</p>" +
+                    $"<p>Your account has been created in <strong>KASAH QMS</strong>.</p>" +
+                    $"<p>Click the link below to set your password and get started:</p>" +
+                    $"<p><a href=\"{resetLink}\" style=\"background:#0c88e8;color:white;padding:10px 22px;border-radius:5px;text-decoration:none;\">Set My Password</a></p>" +
+                    $"<p>This link expires in 1 hour.</p>" +
+                    $"<p>— KASAH QMS Team</p>",
+                    isHtml: true);
+            }
+            else
+            {
+                await _emailService.SendWelcomeEmailAsync(
+                    user.Email, user.FullName, user.Email, Password);
+            }
+
             await _auditLogService.LogAsync(
                 "USER_CREATED",
                 "User",
                 user.Id,
                 $"User '{user.FullName}' ({user.Email}) created with roles: {roleNames}");
 
-            _logger.LogInformation(
-                "User {UserId} created by admin {AdminId}. Roles: {Roles}", 
-                user.Id, createdBy, roleNames);
+            _logger.LogInformation("User {UserId} created by {AdminId}. Roles: {Roles}", user.Id, createdBy, roleNames);
 
-            TempData["Success"] = $"User '{user.FullName}' created successfully. They must change their password on first login.";
+            TempData["Success"] = SendResetLink
+                ? $"User '{user.FullName}' created. A password-setup link was sent to {user.Email}."
+                : $"User '{user.FullName}' created successfully. Share the temporary password with them.";
 
             return RedirectToPage("/Users/Index");
         }
@@ -195,17 +243,11 @@ public class CreateModel : PageModel
             .Select(o => new LookupItem(o.Id, o.Name, o.Description))
             .ToListAsync();
 
-        // Load potential managers (users who can have subordinates)
-        // Typically managers are users with manager roles
         Managers = await _dbContext.Users.AsNoTracking()
             .Where(u => u.TenantId == tenantId && u.IsActive)
-            .Include(u => u.Roles)
             .OrderBy(u => u.FirstName)
             .ThenBy(u => u.LastName)
-            .Select(u => new ManagerLookupItem(
-                u.Id, 
-                u.FullName, 
-                u.Roles != null && u.Roles.Any() ? string.Join(", ", u.Roles.Select(r => r.Name)) : "No Role"))
+            .Select(u => new ManagerLookupItem(u.Id, u.FullName, u.JobTitle ?? ""))
             .ToListAsync();
     }
 

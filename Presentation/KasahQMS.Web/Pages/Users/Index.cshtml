@@ -18,8 +18,15 @@
                 <p class="mt-2 text-sm text-slate-200">Administer access, roles, and reporting lines across the enterprise.</p>
             </div>
             <div class="flex gap-3">
-                <button class="rounded-lg border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20">Import users</button>
-                <a href="/Users/Create" class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100">Add user</a>
+                @if (Model.CanEdit)
+                {
+                    <button class="rounded-lg border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20">Import users</button>
+                    <a href="/Users/Create" class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100">Add user</a>
+                }
+                else
+                {
+                    <span class="rounded-lg bg-white/10 px-4 py-2 text-sm text-slate-200">Read-Only Access</span>
+                }
             </div>
         </div>
     </div>
@@ -61,12 +68,19 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="/Users/Edit?id=@user.Id" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-brand-300 hover:text-brand-700">Edit</a>
-                                    @if(Model.IsSystemAdmin)
+                                    @if (Model.CanEdit)
                                     {
-                                        <form method="post" asp-page-handler="Delete" asp-route-id="@user.Id" onsubmit="return confirm('Are you sure you want to deactivate this user? This action cannot be undone immediately.');" class="inline-block">
-                                            <button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:border-red-300 hover:bg-red-100">Delete</button>
-                                        </form>
+                                        <a href="/Users/Edit?id=@user.Id" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-brand-300 hover:text-brand-700">Edit</a>
+                                        @if(Model.IsSystemAdmin)
+                                        {
+                                            <form method="post" asp-page-handler="Delete" asp-route-id="@user.Id" onsubmit="return confirm('Are you sure you want to deactivate this user? This action cannot be undone immediately.');" class="inline-block">
+                                                <button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:border-red-300 hover:bg-red-100">Delete</button>
+                                            </form>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <a href="/Chat?userId=@user.Id" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-brand-300 hover:text-brand-700">Message</a>
                                     }
                                 </div>
                             </td>

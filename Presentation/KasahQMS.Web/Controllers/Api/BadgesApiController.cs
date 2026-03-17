@@ -5,6 +5,7 @@ using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace KasahQMS.Web.Controllers.Api;
 
@@ -19,12 +20,14 @@ public class BadgesApiController : ControllerBase
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IHierarchyService _hierarchyService;
+    private readonly IMemoryCache _cache;
 
-    public BadgesApiController(ApplicationDbContext dbContext, ICurrentUserService currentUserService, IHierarchyService hierarchyService)
+    public BadgesApiController(ApplicationDbContext dbContext, ICurrentUserService currentUserService, IHierarchyService hierarchyService, IMemoryCache cache)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _hierarchyService = hierarchyService;
+        _cache = cache;
     }
 
     /// <summary>
@@ -40,13 +43,18 @@ public class BadgesApiController : ControllerBase
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
 
         // Unread messages - count threads with unread messages for this user
-        var unreadMessages = await GetUnreadMessagesCountAsync(userId.Value, tenantId);
+        var lastSeenMessages = _cache.Get<DateTime?>($"last_seen_messages_{userId}");
+        var unreadMessages = await GetUnreadMessagesCountAsync(userId.Value, tenantId, lastSeenMessages);
 
-        // Pending tasks assigned to user (open or in progress)
-        var pendingTasks = await _dbContext.QmsTasks
-            .CountAsync(t => t.TenantId == tenantId && 
-                            t.AssignedToId == userId.Value && 
-                            (t.Status == QmsTaskStatus.Open || t.Status == QmsTaskStatus.InProgress));
+        // New tasks: assigned to user (open or in progress), created/updated after last seen tasks
+        var lastSeenTasks = _cache.Get<DateTime?>($"last_seen_tasks_{userId}");
+        var pendingTasksQuery = _dbContext.QmsTasks
+            .Where(t => t.TenantId == tenantId && 
+                        t.AssignedToId == userId.Value && 
+                        (t.Status == QmsTaskStatus.Open || t.Status == QmsTaskStatus.InProgress));
+        var pendingTasks = lastSeenTasks.HasValue
+            ? await pendingTasksQuery.CountAsync(t => t.CreatedAt > lastSeenTasks.Value || t.LastModifiedAt > lastSeenTasks.Value)
+            : await pendingTasksQuery.CountAsync();
 
         // Documents pending review (current approver is user) or sent to user
         var pendingDocuments = await _dbContext.Documents
@@ -148,7 +156,25 @@ public class BadgesApiController : ControllerBase
         return Ok(unreadChats.OrderByDescending(c => c.LastMessageAt).Take(10));
     }
 
-    private async Task<int> GetUnreadMessagesCountAsync(Guid userId, Guid tenantId)
+    /// <summary>
+    /// Mark a badge type as seen, resetting its count.
+    /// </summary>
+    [HttpPost("mark-seen/{type}")]
+    public IActionResult MarkSeen(string type)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        var expiry = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30) };
+        if (type == "tasks")
+            _cache.Set($"last_seen_tasks_{userId}", (DateTime?)DateTime.UtcNow, expiry);
+        else if (type == "messages")
+            _cache.Set($"last_seen_messages_{userId}", (DateTime?)DateTime.UtcNow, expiry);
+
+        return Ok();
+    }
+
+    private async Task<int> GetUnreadMessagesCountAsync(Guid userId, Guid tenantId, DateTime? lastSeen = null)
     {
         // Get threads where user is participant
         var participantThreadIds = await _dbContext.ChatThreadParticipants
@@ -158,11 +184,15 @@ public class BadgesApiController : ControllerBase
             .ToListAsync();
 
         // Count unread messages (from others) in those threads
-        var count = await _dbContext.ChatMessages
-            .CountAsync(m => participantThreadIds.Contains(m.ThreadId) && 
-                            !m.IsDeleted && 
-                            m.SenderId != userId);
+        var query = _dbContext.ChatMessages
+            .Where(m => participantThreadIds.Contains(m.ThreadId) && 
+                        !m.IsDeleted && 
+                        m.SenderId != userId);
 
+        if (lastSeen.HasValue)
+            query = query.Where(m => m.CreatedAt > lastSeen.Value);
+
+        var count = await query.CountAsync();
         return Math.Min(count, 99); // Cap at 99 for display
     }
 }

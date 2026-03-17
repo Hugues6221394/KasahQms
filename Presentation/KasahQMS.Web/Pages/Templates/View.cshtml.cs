@@ -34,6 +34,7 @@ public class ViewModel : PageModel
             {
                 d.Id, d.DocumentNumber, d.Title, d.Description, d.Content,
                 d.Status, d.CreatedAt, d.AuthorizedDepartmentIds,
+                d.FilePath, d.OriginalFileName,
                 DocumentType = d.DocumentType != null ? d.DocumentType.Name : "—"
             })
             .FirstOrDefaultAsync();
@@ -44,7 +45,8 @@ public class ViewModel : PageModel
         Template = new TemplateDetail(
             doc.Id, doc.DocumentNumber, doc.Title, doc.Description,
             doc.DocumentType, doc.Content, doc.Status.ToString(),
-            doc.CreatedAt.ToString("MMM dd, yyyy"), doc.AuthorizedDepartmentIds ?? "");
+            doc.CreatedAt.ToString("MMM dd, yyyy"), doc.AuthorizedDepartmentIds ?? "",
+            doc.FilePath, doc.OriginalFileName);
 
         // Resolve department names
         if (!string.IsNullOrWhiteSpace(doc.AuthorizedDepartmentIds))
@@ -79,5 +81,7 @@ public class ViewModel : PageModel
         string? Content,
         string Status,
         string CreatedAt,
-        string AuthorizedDeptIds);
+        string AuthorizedDeptIds,
+        string? FilePath,
+        string? OriginalFileName);
 }

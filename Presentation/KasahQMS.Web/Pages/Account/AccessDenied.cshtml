@@ -1,0 +1,32 @@
+@page
+@{
+    ViewData["Title"] = "Access Denied";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Access Denied – KASAH QMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-full font-sans antialiased bg-slate-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-md text-center">
+        <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+            <div class="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5.07 19H19a2 2 0 001.75-2.96L13.74 4a2 2 0 00-3.48 0L3.25 16.04A2 2 0 005.07 19z"/>
+                </svg>
+            </div>
+            <h1 class="text-xl font-bold text-slate-900 mb-2">Access Denied</h1>
+            <p class="text-sm text-slate-500 mb-6">You don't have permission to access this page. Contact your administrator to request access.</p>
+            <div class="flex gap-3">
+                <a href="/Dashboard" class="flex-1 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors">Go to Dashboard</a>
+                <a href="javascript:history.back()" class="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">Go Back</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

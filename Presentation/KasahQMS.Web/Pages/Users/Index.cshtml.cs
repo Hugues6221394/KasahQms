@@ -1,39 +1,39 @@
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Application.Common.Security;
 using KasahQMS.Domain.Entities.AuditLog;
 using KasahQMS.Infrastructure.Persistence.Data;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using AppAuthService = KasahQMS.Application.Common.Security.IAuthorizationService;
 
 namespace KasahQMS.Web.Pages.Users;
 
 /// <summary>
-/// User management page. Only System Admin can access this page.
-/// Per QMS requirements, System Admin is responsible for:
-/// - Creating user accounts
-/// - Assigning roles
-/// - Assigning organization units
-/// - Setting up reporting hierarchy (ManagerId)
+/// User management page. System Admin has full access.
+/// TMD, Deputy, Managers, and users with delegated Users.View permission have read access.
 /// </summary>
-[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin")]
+[Microsoft.AspNetCore.Authorization.Authorize]
 public class IndexModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
+    private readonly AppAuthService _authorizationService;
     private readonly ILogger<IndexModel> _logger;
 
     public IndexModel(
         ApplicationDbContext dbContext, 
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
+        AppAuthService authorizationService,
         ILogger<IndexModel> logger)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
+        _authorizationService = authorizationService;
         _logger = logger;
     }
 
@@ -51,10 +51,44 @@ public class IndexModel : PageModel
     public int TotalUsers { get; set; }
     public int ActiveUsers { get; set; }
     public int InactiveUsers { get; set; }
-    public bool IsSystemAdmin { get; set; } = true; // This page requires admin access
+    public bool IsSystemAdmin { get; set; }
+    public bool CanEdit { get; set; }
+    public bool CanView { get; set; }
 
-    public async Task OnGetAsync()
+    public async Task<IActionResult> OnGetAsync()
     {
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId == null)
+            return Unauthorized();
+
+        var currentUser = await _dbContext.Users
+            .AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
+
+        if (currentUser == null)
+            return Unauthorized();
+
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+
+        // Check if System Admin (full access)
+        IsSystemAdmin = roles.Any(r => 
+            r.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
+            r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+
+        // Check view permission: role-based OR delegated Users.View permission
+        var hasViewPermission = await _authorizationService.HasPermissionAsync(Permissions.Users.View);
+        CanView = IsSystemAdmin || hasViewPermission;
+
+        if (!CanView)
+        {
+            return RedirectToPage("/Account/AccessDenied");
+        }
+
+        // Only System Admin can edit
+        CanEdit = IsSystemAdmin;
+
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
 
         // Load departments for filter
@@ -116,10 +150,18 @@ public class IndexModel : PageModel
 
         _logger.LogInformation("User list accessed by admin {UserId}. Showing {Count} users.", 
             _currentUserService.UserId, Users.Count);
+
+        return Page();
     }
 
     public async Task<IActionResult> OnPostDeactivateAsync(Guid id)
     {
+        if (!CanEdit)
+        {
+            TempData["Error"] = "You do not have permission to deactivate users.";
+            return RedirectToPage();
+        }
+
         var currentUserId = _currentUserService.UserId;
         
         var user = await _dbContext.Users.FindAsync(id);
@@ -155,6 +197,12 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostActivateAsync(Guid id)
     {
+        if (!CanEdit)
+        {
+            TempData["Error"] = "You do not have permission to activate users.";
+            return RedirectToPage();
+        }
+
         var currentUserId = _currentUserService.UserId;
         
         var user = await _dbContext.Users.FindAsync(id);
@@ -183,6 +231,12 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostUnlockAsync(Guid id)
     {
+        if (!CanEdit)
+        {
+            TempData["Error"] = "You do not have permission to unlock users.";
+            return RedirectToPage();
+        }
+
         var currentUserId = _currentUserService.UserId;
         
         var user = await _dbContext.Users.FindAsync(id);
@@ -211,6 +265,12 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostResetPasswordAsync(Guid id)
     {
+        if (!CanEdit)
+        {
+            TempData["Error"] = "You do not have permission to reset passwords.";
+            return RedirectToPage();
+        }
+
         var currentUserId = _currentUserService.UserId;
         
         var user = await _dbContext.Users.FindAsync(id);

@@ -1,0 +1,146 @@
+@page
+@model KasahQMS.Web.Pages.Audits.ScheduleModel
+@{
+    ViewData["Title"] = "Audit Schedule";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="py-8">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
+        <section class="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 text-white" style="background-image:linear-gradient(120deg,rgba(2,6,23,.88),rgba(8,145,178,.55)),url('https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1600&q=80');background-size:cover;background-position:center;">
+            <div class="p-6 md:p-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-cyan-100">Compliance</p>
+                    <h1 class="mt-2 text-3xl font-bold">Audit Schedule</h1>
+                    <p class="mt-2 text-cyan-100">View all scheduled and in-progress audits</p>
+                </div>
+                @if (Model.CanManageSchedule)
+                {
+                    <div class="flex gap-3 flex-wrap">
+                        <a href="/Audits" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-white/90 text-slate-900 hover:bg-white">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                            View All Audits
+                        </a>
+                        <a href="/Audits/Create" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-brand-600 text-white hover:bg-brand-700">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Schedule New Audit
+                        </a>
+                    </div>
+                }
+            </div>
+        </section>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-4">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-emerald-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm font-medium text-emerald-800">@Model.SuccessMessage</p>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="rounded-lg bg-red-50 border border-red-200 p-4">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm font-medium text-red-800">@Model.ErrorMessage</p>
+                </div>
+            </div>
+        }
+
+        <div class="card overflow-hidden">
+            @if (Model.Audits.Any())
+            {
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Audit</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Scheduled Start</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Scheduled End</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Auditor</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100">
+                            @foreach (var audit in Model.Audits)
+                            {
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <div class="text-sm font-semibold text-slate-900">@audit.Title</div>
+                                            <div class="text-sm text-slate-500">@audit.AuditNumber</div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium @(audit.Type == "Internal" ? "bg-brand-100 text-brand-800" : audit.Type == "Supplier" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800")">
+                                            @audit.Type
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">
+                                        @audit.ScheduledStart.ToString("MMM dd, yyyy")
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">
+                                        @audit.ScheduledEnd.ToString("MMM dd, yyyy")
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">
+                                        @audit.LeadAuditor
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium @audit.StatusClass">
+                                            @audit.Status
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-3">
+                                            <a href="/Audits/Details/@audit.Id" class="text-brand-600 hover:text-brand-700 text-sm font-medium">View</a>
+                                            @if (Model.CanManageSchedule && audit.Status == "Planned")
+                                            {
+                                                <form method="post" asp-page-handler="Delete" asp-route-id="@audit.Id" class="inline" onsubmit="return confirm('Are you sure you want to delete this audit?');">
+                                                    <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-medium">Delete</button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-200 text-sm text-slate-500">
+                    Showing <span class="font-medium">@Model.Audits.Count</span> scheduled/in-progress audits
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-14">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-slate-900 mb-1">No scheduled audits</h3>
+                    <p class="text-sm text-slate-500 mb-4">There are no planned or in-progress audits at the moment.</p>
+                    @if (Model.CanManageSchedule)
+                    {
+                        <a href="/Audits/Create" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors">
+                            Schedule New Audit
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

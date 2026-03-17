@@ -1,6 +1,6 @@
+using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Infrastructure.Persistence.Data;
-using KasahQMS.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -36,22 +36,36 @@ public class ResetPasswordModel : PageModel
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
-        TokenValid = !string.IsNullOrWhiteSpace(Token);
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            ErrorMessage = "Missing reset token. Please request a new password reset link.";
+            return;
+        }
+
+        // Validate token exists in DB and is not expired
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u =>
+            u.PasswordResetToken == Token &&
+            u.PasswordResetTokenExpiry != null &&
+            u.PasswordResetTokenExpiry > DateTime.UtcNow);
+
+        TokenValid = user != null;
+        if (!TokenValid)
+            ErrorMessage = "This reset link has expired or is invalid. Please request a new one.";
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (string.IsNullOrWhiteSpace(Token))
         {
-            ErrorMessage = "Invalid or missing reset token.";
+            ErrorMessage = "Missing reset token.";
             return Page();
         }
 
-        if (string.IsNullOrWhiteSpace(NewPassword) || NewPassword.Length < 6)
+        if (string.IsNullOrWhiteSpace(NewPassword) || NewPassword.Length < 8)
         {
-            ErrorMessage = "Password must be at least 6 characters.";
+            ErrorMessage = "Password must be at least 8 characters.";
             TokenValid = true;
             return Page();
         }
@@ -63,26 +77,31 @@ public class ResetPasswordModel : PageModel
             return Page();
         }
 
-        var (valid, userId) = PasswordResetTokenStore.ValidateToken(Token);
-        if (!valid || userId == Guid.Empty)
-        {
-            ErrorMessage = "This reset link has expired or is invalid. Please request a new one.";
-            return Page();
-        }
+        // Look up user by DB-persisted token (also re-checks expiry)
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u =>
+            u.PasswordResetToken == Token &&
+            u.PasswordResetTokenExpiry != null &&
+            u.PasswordResetTokenExpiry > DateTime.UtcNow);
 
-        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
-            ErrorMessage = "User not found.";
+            ErrorMessage = "This reset link has expired or is invalid. Please request a new one.";
+            TokenValid = false;
             return Page();
         }
 
+        // Apply new password and clear the token so it cannot be reused
         user.PasswordHash = _passwordHasher.Hash(NewPassword);
         user.PasswordChangedAt = DateTime.UtcNow;
         user.RequirePasswordChange = false;
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+        user.FailedLoginAttempts = 0;
+        user.IsLockedOut = false;
+
         await _dbContext.SaveChangesAsync();
 
-        _logger.LogInformation("Password reset successfully for user {UserId}", userId);
+        _logger.LogInformation("Password reset successfully for user {UserId}", user.Id);
         Success = true;
         return Page();
     }

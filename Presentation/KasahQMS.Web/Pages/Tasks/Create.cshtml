@@ -39,23 +39,38 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="assignedTo" class="block text-sm font-medium text-slate-700 mb-1">Assign to</label>
-                    <select id="assignedTo" name="AssignedToId" asp-for="AssignedToId"
-                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                        <option value="">— Unassigned —</option>
-                        @foreach (var u in Model.Users)
-                        {
-                            <option value="@u.Id">@u.Name — @u.Department · @u.Roles</option>
-                        }
-                    </select>
-                </div>
+                @if (Model.IsManager)
+                {
+                    <div>
+                        <label for="assignedTo" class="block text-sm font-medium text-slate-700 mb-1">Assign to</label>
+                        <select id="assignedTo" name="AssignedToId" asp-for="AssignedToId"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">— Unassigned —</option>
+                            @foreach (var u in Model.Users)
+                            {
+                                <option value="@u.Id">@u.Name — @u.Department · @u.Roles</option>
+                            }
+                        </select>
+                    </div>
+                }
+                else
+                {
+                    <input type="hidden" name="AssignedToId" value="@Model.AssignedToId" />
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Assigned to</label>
+                        <div class="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-600 text-sm">
+                            Myself (self-assigned)
+                        </div>
+                    </div>
+                }
                 <div>
                     <label for="dueDate" class="block text-sm font-medium text-slate-700 mb-1">Due date</label>
                     <input type="date" id="dueDate" name="DueDate" asp-for="DueDate"
                         class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
                 </div>
             </div>
+            @if (Model.IsManager)
+            {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="additionalAssignees" class="block text-sm font-medium text-slate-700 mb-1">Additional assignees (optional)</label>
@@ -83,6 +98,7 @@
                     </div>
                 }
             </div>
+            }
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

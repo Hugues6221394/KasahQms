@@ -42,10 +42,10 @@
     <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         @foreach (var stat in Model.Stats)
         {
-            <div class="card p-6 card-hover">
+            <a href="@stat.Link" class="card p-6 block hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@stat.Title</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-brand-600">@stat.Title</p>
                         <p class="mt-3 text-3xl font-bold text-slate-900">@stat.Value</p>
                         <p class="mt-1 text-sm text-slate-500">@stat.Subtitle</p>
                     </div>
@@ -55,7 +55,7 @@
                         </svg>
                     </div>
                 </div>
-            </div>
+            </a>
         }
     </div>
 

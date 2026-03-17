@@ -1,0 +1,17 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  KasahQMS.Domain -> /Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Core/KasahQMS.Domain/bin/Debug/net8.0/KasahQMS.Domain.dll
+  KasahQMS.Application -> /Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Core/KasahQMS.Application/bin/Debug/net8.0/KasahQMS.Application.dll
+  KasahQMS.Infrastructure.Persistence -> /Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure.Persistence/bin/Debug/net8.0/KasahQMS.Infrastructure.Persistence.dll
+  KasahQMS.Infrastructure -> /Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Infrastructure/KasahQMS.Infrastructure/bin/Debug/net8.0/KasahQMS.Infrastructure.dll
+  KasahQMS.Tests.Unit -> /Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Tests/KasahQMS.Tests.Unit/bin/Debug/net8.0/KasahQMS.Tests.Unit.dll
+  KasahQMS.Api -> /Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Api/bin/Debug/net8.0/KasahQMS.Api.dll
+/Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Users/Index.cshtml.cs(54,38): error CS0161: 'IndexModel.OnGetAsync()': not all code paths return a value [/Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/KasahQMS.Web.csproj]
+
+Build FAILED.
+
+/Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/Pages/Users/Index.cshtml.cs(54,38): error CS0161: 'IndexModel.OnGetAsync()': not all code paths return a value [/Users/test/Documents/TECH PROJECTS/KASAH TECHNOLOGIES/src/Presentation/KasahQMS.Web/KasahQMS.Web.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:36.54

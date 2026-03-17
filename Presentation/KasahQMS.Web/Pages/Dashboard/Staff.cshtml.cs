@@ -42,6 +42,7 @@ public class StaffModel : PageModel
     public List<DocumentItem> MyDocuments { get; set; } = new();
     public List<NotificationItem> Notifications { get; set; } = new();
     public List<TrainingItem> TrainingItems { get; set; } = new();
+    public bool ShowTrainingWelcome { get; set; }
     public int MyDocumentsCount { get; set; }
     public int PendingTasksCount { get; set; }
     public int OverdueTasksCount { get; set; }
@@ -87,10 +88,10 @@ public class StaffModel : PageModel
 
         Stats = new List<StatCard>
         {
-            new("My documents", myDocuments.ToString(), "Created by you", myDocuments),
-            new("Pending tasks", myPendingTasks.ToString(), "Assigned to you", myPendingTasks),
-            new("Overdue tasks", myOverdueTasks.ToString(), "Requires attention", myOverdueTasks),
-            new("Awaiting approval", pendingApprovals.ToString(), "Your submissions", pendingApprovals)
+            new("My documents", myDocuments.ToString(), "Created by you", "/Documents", myDocuments),
+            new("Pending tasks", myPendingTasks.ToString(), "Assigned to you", "/Tasks", myPendingTasks),
+            new("Overdue tasks", myOverdueTasks.ToString(), "Requires attention", "/Tasks?status=Overdue", myOverdueTasks),
+            new("Awaiting approval", pendingApprovals.ToString(), "Your submissions", "/Approvals", pendingApprovals)
         };
 
         // Get my tasks directly from database if query fails (graceful fallback)
@@ -175,11 +176,16 @@ public class StaffModel : PageModel
                     t.ExpiryDate.HasValue ? t.ExpiryDate.Value.ToString("MMM dd, yyyy") : t.ScheduledDate.ToString("MMM dd, yyyy"),
                     t.CompletedDate.HasValue ? "Completed" : "Pending"))
                 .ToListAsync();
+
+            // Check if this is effectively the user's first real session (no training records yet)
+            var hasAnyTraining = await _dbContext.TrainingRecords
+                .AnyAsync(t => t.UserId == currentUser.Id && t.TenantId == tenantId);
+            ShowTrainingWelcome = !hasAnyTraining;
         }
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to load training records"); }
     }
 
-    public record StatCard(string Title, string Value, string Subtitle, int CountTo);
+    public record StatCard(string Title, string Value, string Subtitle, string Link, int CountTo);
     public record TaskItem(string Title, string DueDate, string Status);
     public record ApprovalItem(string Title, string Owner, string Stage);
     public record DocumentItem(string Title, string Number, string Status, string Created);

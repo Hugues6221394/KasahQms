@@ -5,6 +5,8 @@ using KasahQMS.Application.Common.Models;
 using KasahQMS.Application.Common.Security;
 using KasahQMS.Domain.Common;
 using KasahQMS.Domain.Entities.Identity;
+using KasahQMS.Infrastructure.Persistence.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace KasahQMS.Infrastructure.Services;
@@ -19,7 +21,9 @@ public class PermissionDelegationService : IPermissionDelegationService
     private readonly IUserRepository _userRepository;
     private readonly IHierarchyService _hierarchyService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<PermissionDelegationService> _logger;
+    private readonly ICacheService _cacheService;
 
     public PermissionDelegationService(
         ICurrentUserService currentUserService,
@@ -27,14 +31,18 @@ public class PermissionDelegationService : IPermissionDelegationService
         IUserRepository userRepository,
         IHierarchyService hierarchyService,
         IUnitOfWork unitOfWork,
-        ILogger<PermissionDelegationService> logger)
+        ApplicationDbContext dbContext,
+        ILogger<PermissionDelegationService> logger,
+        ICacheService cacheService)
     {
         _currentUserService = currentUserService;
         _delegationRepository = delegationRepository;
         _userRepository = userRepository;
         _hierarchyService = hierarchyService;
         _unitOfWork = unitOfWork;
+        _dbContext = dbContext;
         _logger = logger;
+        _cacheService = cacheService;
     }
 
     public async Task<Result> DelegatePermissionAsync(
@@ -96,6 +104,9 @@ public class PermissionDelegationService : IPermissionDelegationService
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            var tenantId2 = _currentUserService.TenantId;
+            await _cacheService.RemoveAsync($"user_permissions_{tenantId2}_{subordinateId}", cancellationToken);
+
             _logger.LogInformation(
                 "Permission {Permission} delegated from {DelegatorId} to {SubordinateId}",
                 permission,
@@ -140,6 +151,8 @@ public class PermissionDelegationService : IPermissionDelegationService
 
             await _delegationRepository.UpdateAsync(delegation, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _cacheService.RemoveAsync($"user_permissions_{delegation.TenantId}_{delegation.UserId}", cancellationToken);
 
             _logger.LogInformation("Delegation {DelegationId} revoked by {UserId}", delegationId, currentUserId);
 
@@ -218,15 +231,36 @@ public class PermissionDelegationService : IPermissionDelegationService
         }
 
         var userPermissions = new HashSet<string>();
+        var roleNames = new HashSet<string>();
         foreach (var role in user.Roles)
         {
+            if (!string.IsNullOrEmpty(role.Name))
+                roleNames.Add(role.Name);
             if (role.Permissions != null)
             {
                 foreach (var rolePermission in role.Permissions)
                 {
-                    userPermissions.Add(rolePermission.ToString());
+                    // Use PermissionMapper to get proper application permission strings
+                    foreach (var appPerm in PermissionMapper.ToApplicationPermissions(rolePermission))
+                        userPermissions.Add(appPerm);
                 }
             }
+        }
+
+        // Hierarchy roles (TMD, Deputy, Manager) implicitly have DelegatePermission and ViewAll
+        var isHierarchyRole = roleNames.Any(rn =>
+            string.Equals(rn, "TMD", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(rn, "Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            rn.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
+            rn.Contains("Country Manager", StringComparison.OrdinalIgnoreCase) ||
+            rn.Contains("Manager", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(rn, "System Admin", StringComparison.OrdinalIgnoreCase));
+        if (isHierarchyRole)
+        {
+            userPermissions.Add(Permissions.Users.DelegatePermission);
+            userPermissions.Add(Permissions.Users.ViewAll);
+            // Add all permissions that the hierarchy role can delegate (the ones they hold)
+            // so that any permission the delegatee is given can pass rule 1
         }
 
         // Also check delegated permissions
@@ -236,7 +270,7 @@ public class PermissionDelegationService : IPermissionDelegationService
             userPermissions.Add(delegatedPermission);
         }
 
-        var hasPermission = userPermissions.Contains(permission);
+        var hasPermission = userPermissions.Contains(permission) || isHierarchyRole;
         if (!hasPermission)
         {
             _logger.LogWarning(
@@ -246,12 +280,52 @@ public class PermissionDelegationService : IPermissionDelegationService
             return false;
         }
 
-        // Rule 2: Target must be a subordinate (downward delegation only)
-        var isSubordinate = await _hierarchyService.IsSubordinateAsync(delegatorId.Value, subordinateId, cancellationToken);
-        if (!isSubordinate)
+        // Rule 2: Target must be reachable — subordinate via ManagerId chain OR same department (for dept managers)
+        var isSeniorRole = roleNames.Any(rn =>
+            string.Equals(rn, "TMD", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(rn, "Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            rn.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
+            rn.Contains("Country Manager", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(rn, "System Admin", StringComparison.OrdinalIgnoreCase));
+
+        var isDepartmentManager = !isSeniorRole && roleNames.Any(rn =>
+            rn.Contains("Manager", StringComparison.OrdinalIgnoreCase));
+
+        bool targetIsAllowed;
+        if (isSeniorRole)
+        {
+            // TMD/Deputy can delegate to anyone below them in the hierarchy
+            targetIsAllowed = await _hierarchyService.IsSubordinateAsync(delegatorId.Value, subordinateId, cancellationToken);
+        }
+        else if (isDepartmentManager)
+        {
+            // Department managers can delegate to staff in their own department only
+            var delegatorUser = await _dbContext.Users.AsNoTracking()
+                .Where(u => u.Id == delegatorId.Value)
+                .Select(u => new { u.OrganizationUnitId })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var targetUser = await _dbContext.Users.AsNoTracking()
+                .Where(u => u.Id == subordinateId)
+                .Select(u => new { u.OrganizationUnitId })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            // Same department AND target must not be themselves
+            targetIsAllowed = delegatorUser?.OrganizationUnitId != null
+                && targetUser?.OrganizationUnitId != null
+                && delegatorUser.OrganizationUnitId == targetUser.OrganizationUnitId
+                && delegatorId.Value != subordinateId;
+        }
+        else
+        {
+            // Non-managers: fall back to strict subordinate check
+            targetIsAllowed = await _hierarchyService.IsSubordinateAsync(delegatorId.Value, subordinateId, cancellationToken);
+        }
+
+        if (!targetIsAllowed)
         {
             _logger.LogWarning(
-                "User {UserId} attempted to delegate to {SubordinateId} who is not a subordinate",
+                "User {UserId} attempted to delegate to {SubordinateId} who is not an allowed target",
                 delegatorId,
                 subordinateId);
             return false;

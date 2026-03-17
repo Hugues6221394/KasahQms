@@ -58,6 +58,7 @@ public class CreateModel : PageModel
     public List<OrgUnitOption> Departments { get; set; } = new();
     public List<SelectListItem> SuperiorOptions { get; set; } = new();
     public bool CanAssignToDepartment { get; set; }
+    public bool IsManager { get; set; }
     public string? ErrorMessage { get; set; }
 
     public async Task OnGetAsync()
@@ -261,8 +262,9 @@ public class CreateModel : PageModel
         var roles = user?.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
         var isTmdOrDeputy = roles.Any(r => r == "TMD" || r == "Deputy Country Manager" || r == "TopManagingDirector" || r == "Country Manager");
         var isSystemAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin");
-        var isManager = roles.Any(r => r.Contains("Manager", StringComparison.OrdinalIgnoreCase));
+        var isManager = roles.Any(r => r.Contains("Manager", StringComparison.OrdinalIgnoreCase)) || isTmdOrDeputy || isSystemAdmin;
 
+        IsManager = isManager;
         CanAssignToDepartment = isTmdOrDeputy || isSystemAdmin;
 
         // TMD, Deputy, or System Admin can see ALL users and departments

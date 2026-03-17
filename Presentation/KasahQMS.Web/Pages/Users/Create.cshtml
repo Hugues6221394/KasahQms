@@ -10,31 +10,38 @@
         <p class="text-sm text-slate-500">Assign roles, department, and reporting line.</p>
     </div>
 
-    <form method="post" class="card p-6 space-y-6">
+    <form method="post" class="card p-6 space-y-6" id="createUserForm">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="All" class="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700 space-y-1 hidden" id="validationSummary"></div>
+
         <div class="grid gap-4 md:grid-cols-2">
             <div>
-                <label class="form-label" for="firstName">First name</label>
-                <input id="firstName" class="form-input" asp-for="FirstName" />
+                <label class="form-label" for="firstName">First name <span class="text-red-500">*</span></label>
+                <input id="firstName" class="form-input" asp-for="FirstName" placeholder="e.g. John" />
+                <span asp-validation-for="FirstName" class="text-xs text-red-600 mt-1 block"></span>
             </div>
             <div>
-                <label class="form-label" for="lastName">Last name</label>
-                <input id="lastName" class="form-input" asp-for="LastName" />
+                <label class="form-label" for="lastName">Last name <span class="text-red-500">*</span></label>
+                <input id="lastName" class="form-input" asp-for="LastName" placeholder="e.g. Doe" />
+                <span asp-validation-for="LastName" class="text-xs text-red-600 mt-1 block"></span>
             </div>
             <div>
-                <label class="form-label" for="email">Email</label>
-                <input id="email" class="form-input" asp-for="Email" />
+                <label class="form-label" for="email">Email <span class="text-red-500">*</span></label>
+                <input id="email" class="form-input" asp-for="Email" type="email" placeholder="employee@company.com" />
+                <span asp-validation-for="Email" class="text-xs text-red-600 mt-1 block"></span>
             </div>
             <div>
                 <label class="form-label" for="jobTitle">Job title</label>
-                <input id="jobTitle" class="form-input" asp-for="JobTitle" />
+                <input id="jobTitle" class="form-input" asp-for="JobTitle" placeholder="e.g. Quality Engineer" />
             </div>
             <div>
-                <label class="form-label" for="password">Temporary password</label>
-                <input id="password" class="form-input" asp-for="Password" />
+                <label class="form-label" for="phoneNumber">Phone number</label>
+                <input id="phoneNumber" class="form-input" asp-for="PhoneNumber" placeholder="+1 234 567 8900" />
             </div>
             <div>
-                <label class="form-label" for="orgUnit">Organization unit</label>
-                <select id="orgUnit" class="form-input form-select" asp-for="OrganizationUnitId">
+                <label class="form-label" for="orgUnit">Department</label>
+                <select id="orgUnit" class="form-input" asp-for="OrganizationUnitId">
                     <option value="">Select department</option>
                     @foreach (var unit in Model.OrganizationUnits)
                     {
@@ -44,32 +51,91 @@
             </div>
             <div>
                 <label class="form-label" for="manager">Direct manager</label>
-                <select id="manager" class="form-input form-select" asp-for="ManagerId">
+                <select id="manager" class="form-input" asp-for="ManagerId">
                     <option value="">No manager</option>
-                    @foreach (var manager in Model.Managers)
+                    @foreach (var mgr in Model.Managers)
                     {
-                        <option value="@manager.Id">@manager.Name</option>
+                        <option value="@mgr.Id">@mgr.Name @(string.IsNullOrEmpty(mgr.Role) ? "" : $"({mgr.Role})")</option>
                     }
                 </select>
             </div>
         </div>
 
-        <div>
-            <div class="text-sm font-semibold text-slate-700">Assign roles</div>
-            <div class="mt-3 grid gap-2 md:grid-cols-2">
-                @foreach (var role in Model.Roles)
-                {
-                    <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
-                        <input type="checkbox" name="SelectedRoleIds" value="@role.Id" class="h-4 w-4 rounded border-slate-300 text-brand-600" />
-                        <span>@role.Name</span>
-                    </label>
-                }
+        <!-- Password Setup Section -->
+        <div class="border border-slate-200 rounded-xl p-4 space-y-4">
+            <p class="text-sm font-semibold text-slate-700">Password setup</p>
+
+            <!-- Toggle: Send link vs set manually -->
+            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" asp-for="SendResetLink" id="sendResetLinkToggle" class="sr-only peer" />
+                    <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-brand-600 transition-colors"></div>
+                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+                </label>
+                <div>
+                    <p class="text-sm font-medium text-slate-700">Send password setup link by email</p>
+                    <p class="text-xs text-slate-500">The user will receive a secure link to set their own password</p>
+                </div>
+            </div>
+
+            <!-- Manual password field -->
+            <div id="passwordSection">
+                <label class="form-label" for="password">Temporary password <span class="text-red-500">*</span></label>
+                <input id="password" class="form-input" asp-for="Password" type="text" autocomplete="new-password" placeholder="Min 8 characters" />
+                <span asp-validation-for="Password" class="text-xs text-red-600 mt-1 block"></span>
+                <p class="text-xs text-slate-500 mt-1">Share this with the user. They will be required to change it on first login.</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-3">
+        <!-- Roles -->
+        <div>
+            <div class="text-sm font-semibold text-slate-700">Assign roles <span class="text-red-500">*</span></div>
+            @if (!Model.Roles.Any())
+            {
+                <p class="text-sm text-slate-500 mt-2">No roles found. <a href="/Roles/Create" class="text-brand-600 underline">Create roles first.</a></p>
+            }
+            else
+            {
+                <div class="mt-3 grid gap-2 md:grid-cols-2">
+                    @foreach (var role in Model.Roles)
+                    {
+                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 cursor-pointer hover:bg-slate-50">
+                            <input type="checkbox" name="SelectedRoleIds" value="@role.Id" class="h-4 w-4 rounded border-slate-300 text-brand-600" />
+                            <span>@role.Name</span>
+                        </label>
+                    }
+                </div>
+            }
+            <span asp-validation-for="SelectedRoleIds" class="text-xs text-red-600 mt-1 block"></span>
+        </div>
+
+        <div class="flex items-center gap-3 pt-2">
             <button type="submit" class="btn btn-primary">Create user</button>
             <a href="/Users" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
+
+<script>
+(function () {
+    var toggle = document.getElementById('sendResetLinkToggle');
+    var passwordSection = document.getElementById('passwordSection');
+
+    function update() {
+        if (toggle.checked) {
+            passwordSection.style.display = 'none';
+        } else {
+            passwordSection.style.display = '';
+        }
+    }
+
+    toggle.addEventListener('change', update);
+    update(); // run on page load
+
+    // Show validation summary if it has content
+    var summary = document.getElementById('validationSummary');
+    if (summary && summary.querySelector('ul, li, span')) {
+        summary.classList.remove('hidden');
+    }
+})();
+</script>

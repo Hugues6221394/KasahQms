@@ -61,6 +61,7 @@ public class LoginModel : PageModel
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         await LoadSampleCredentialsAsync();
+        ModelState.Remove(nameof(RememberMe)); // prevent "on" parse error on re-render
 
         if (!ModelState.IsValid)
         {
@@ -151,8 +152,8 @@ public class LoginModel : PageModel
                     await _dbContext.SaveChangesAsync();
                 }
 
-                // Store session token in cookie for current-session detection
-                Response.Cookies.Append("KasahQmsAuth", tokenHash, new CookieOptions
+                // Store session token in separate cookie for current-session detection
+                Response.Cookies.Append("KasahQmsSession", tokenHash, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = Request.IsHttps,

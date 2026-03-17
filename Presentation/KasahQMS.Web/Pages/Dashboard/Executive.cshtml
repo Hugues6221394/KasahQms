@@ -22,11 +22,11 @@
     <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         @foreach (var stat in Model.Stats)
         {
-            <article class="card p-6">
-                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">@stat.Title</p>
+            <a href="@stat.Link" class="card p-6 block hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 group-hover:text-brand-600">@stat.Title</p>
                 <p class="mt-3 text-3xl font-bold text-slate-900" data-count-to="@stat.CountTo">0</p>
                 <p class="mt-1 text-sm text-slate-500">@stat.Subtitle</p>
-            </article>
+            </a>
         }
     </section>
 
@@ -115,6 +115,33 @@
         </div>
     </section>
 </div>
+
+@if (Model.ShowTrainingWelcome)
+{
+    <div id="training-welcome-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Welcome to KASAH QMS!</h2>
+                    <p class="text-sm text-slate-500">Mandatory onboarding training awaits</p>
+                </div>
+            </div>
+            <p class="text-slate-600 text-sm mb-6">
+                As a new team member, you are required to complete the <strong>system onboarding trainings</strong>. 
+                These cover quality management fundamentals, system usage, and compliance procedures.
+            </p>
+            <div class="flex gap-3">
+                <a href="/Training" class="btn btn-primary flex-1 text-center">Go to Training</a>
+                <button onclick="document.getElementById('training-welcome-modal').remove()" class="btn btn-secondary flex-1">Remind Me Later</button>
+            </div>
+        </div>
+    </div>
+}
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

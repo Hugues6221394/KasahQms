@@ -33,10 +33,12 @@ public class EmailService : IEmailService
             var smtpSettings = _configuration.GetSection("Smtp");
             var host = smtpSettings["Host"];
 
-            // If SMTP is not configured, fallback to logging
+            // If SMTP is not configured, fallback to logging the full email content
             if (string.IsNullOrEmpty(host))
             {
-                _logger.LogWarning("SMTP Host is not configured. Email will not be sent. To: {To}, Subject: {Subject}", to, subject);
+                _logger.LogInformation(
+                    "[DEV MODE - NO SMTP] Email not sent.\n  To: {To}\n  Subject: {Subject}\n  Body: {Body}",
+                    to, subject, body);
                 return;
             }
 
@@ -44,6 +46,7 @@ public class EmailService : IEmailService
             var username = smtpSettings["Username"];
             var password = smtpSettings["Password"];
             var from = smtpSettings["From"] ?? "noreply@kasahqms.com";
+            var fromName = smtpSettings["FromName"] ?? from;
             var enableSsl = bool.TryParse(smtpSettings["EnableSsl"], out var ssl) ? ssl : true;
 
             using var client = new SmtpClient(host, port)
@@ -54,7 +57,7 @@ public class EmailService : IEmailService
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress(from),
+                From = new MailAddress(from, fromName),
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = isHtml

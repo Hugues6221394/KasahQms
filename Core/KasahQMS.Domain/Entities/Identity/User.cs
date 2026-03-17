@@ -28,6 +28,12 @@ public class User : AuditableEntity
     public string? TwoFactorSecret { get; set; }
 
     /// <summary>
+    /// Secure random token for password reset, stored in DB (survives server restarts).
+    /// </summary>
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+
+    /// <summary>
     /// JSON array of previous password hashes for reuse prevention.
     /// </summary>
     public string? PasswordHistory { get; set; }

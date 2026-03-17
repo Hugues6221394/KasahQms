@@ -242,6 +242,11 @@ public class AuthorizationService : IAuthorizationService
                 string.Equals(rn, "Country Manager", StringComparison.OrdinalIgnoreCase) ||
                 (rn != null && rn.Contains("Deputy", StringComparison.OrdinalIgnoreCase)) ||
                 string.Equals(rn, "Department Manager", StringComparison.OrdinalIgnoreCase));
+            if (isHierarchyRole)
+            {
+                // Hierarchy roles can always delegate permissions to subordinates
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Users.DelegatePermission);
+            }
             if (isHierarchyRole && allRolePermissions.Count > 0)
             {
                 var hasDocumentRead = allRolePermissions.Any(p => (p & Permission.DocumentRead) != 0);
@@ -251,6 +256,8 @@ public class AuthorizationService : IAuthorizationService
                 var hasUserRead = allRolePermissions.Any(p => (p & Permission.UserRead) != 0);
                 foreach (var v in PermissionMapper.ViewAllForHierarchyRoles(hasDocumentRead, hasTaskRead, hasAuditRead, hasCapaRead, hasUserRead))
                     permissions.Add(v);
+                // Hierarchy roles can always delegate permissions to subordinates
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Users.DelegatePermission);
             }
 
             // Add delegated permissions if delegation service is available

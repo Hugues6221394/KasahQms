@@ -277,8 +277,14 @@
 
     // Immediately refresh badges when landing on specific pages
     document.addEventListener('DOMContentLoaded', function () {
-        var refreshPaths = ['/Tasks', '/Chat', '/Documents', '/Notifications', '/Messages'];
-        if (refreshPaths.some(function(p) { return location.pathname.startsWith(p); })) {
+        var path = location.pathname;
+        if (path.startsWith('/Tasks')) {
+            fetch('/api/BadgesApi/mark-seen/tasks', { method: 'POST', headers: { 'RequestVerificationToken': document.querySelector('meta[name="__RequestVerificationToken"]')?.content || '' } });
+            setTimeout(window.qmsRefreshBadges, 500);
+        } else if (path.startsWith('/Chat') || path.startsWith('/Messages')) {
+            fetch('/api/BadgesApi/mark-seen/messages', { method: 'POST', headers: { 'RequestVerificationToken': document.querySelector('meta[name="__RequestVerificationToken"]')?.content || '' } });
+            setTimeout(window.qmsRefreshBadges, 500);
+        } else if (path.startsWith('/Documents') || path.startsWith('/Notifications')) {
             setTimeout(window.qmsRefreshBadges, 1500);
         }
     });

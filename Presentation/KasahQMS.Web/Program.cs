@@ -22,6 +22,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Service Registration
 // ===========================================
 
+// Persist Data Protection keys so cookies survive app restarts
+builder.Services.AddDataProtection();
+
+// In-memory cache for badge tracking
+builder.Services.AddMemoryCache();
+
 // Add services from Clean Architecture layers
 builder.Services.AddApplicationLayer();
 builder.Services.AddPersistenceServices(builder.Configuration);
@@ -101,11 +107,11 @@ builder.Services.AddAuthentication(options =>
 .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
 {
     options.LoginPath = "/Account/Login";
-    options.AccessDeniedPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
     options.Cookie.Name = "KasahQmsAuth";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.SlidingExpiration = true;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 })
@@ -156,6 +162,9 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/");
     options.Conventions.AllowAnonymousToPage("/Account/Login");
     options.Conventions.AllowAnonymousToPage("/Account/Logout");
+    options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
+    options.Conventions.AllowAnonymousToPage("/Account/ResetPassword");
+    options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
     options.Conventions.AllowAnonymousToPage("/Privacy/Index");
     options.Conventions.AllowAnonymousToPage("/Terms/Index");
     options.Conventions.AllowAnonymousToPage("/Support/Index");

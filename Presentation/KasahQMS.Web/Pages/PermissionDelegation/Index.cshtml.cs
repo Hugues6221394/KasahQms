@@ -64,10 +64,26 @@ public class IndexModel : PageModel
             return;
         }
 
-        // Check if user can delegate (has ViewAll permission)
+        // Check if user can delegate (has ViewAll permission OR is a senior role)
         var canDelegate = await _authorizationService.HasPermissionAsync(
             "Users.ViewAll", 
             CancellationToken.None);
+
+        if (!canDelegate)
+        {
+            // Also allow TMD, Deputy, Department Manager by checking their role claim
+            var userRoles = User.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value)
+                .ToList();
+            
+            canDelegate = userRoles.Any(r => 
+                r.Contains("TMD", StringComparison.OrdinalIgnoreCase) || 
+                r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) || 
+                r.Contains("Country Manager", StringComparison.OrdinalIgnoreCase) ||
+                r.Contains("Manager", StringComparison.OrdinalIgnoreCase) || 
+                r.Contains("System Admin", StringComparison.OrdinalIgnoreCase));
+        }
 
         if (canDelegate)
         {
@@ -79,19 +95,79 @@ public class IndexModel : PageModel
                 MyDelegations = myDelegationsResult.Value.ToList();
             }
 
-            // Get subordinates
-            var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(userId.Value, recursive: true);
-            var subordinates = await _dbContext.Users
-                .Where(u => subordinateIds.Contains(u.Id))
-                .Select(u => new SubordinateItem(u.Id, u.FullName, u.Email ?? "N/A"))
-                .ToListAsync();
+            // Get subordinates / delegateable targets
+            // Department managers see staff from their own department only
+            // TMD/Deputy/SysAdmin see all subordinates via hierarchy
+            var userRolesForSubordCheck = User.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value).ToList();
+
+            var isSeniorRole = userRolesForSubordCheck.Any(r =>
+                r.Contains("TMD", StringComparison.OrdinalIgnoreCase) ||
+                r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
+                r.Contains("Country Manager", StringComparison.OrdinalIgnoreCase) ||
+                r.Contains("System Admin", StringComparison.OrdinalIgnoreCase));
+
+            var isDeptManager = !isSeniorRole && userRolesForSubordCheck.Any(r =>
+                r.Contains("Manager", StringComparison.OrdinalIgnoreCase));
+
+            List<SubordinateItem> subordinates;
+            if (isDeptManager)
+            {
+                // Load staff from the same department (OrganizationUnitId)
+                var managerOrgUnitId = await _dbContext.Users
+                    .Where(u => u.Id == userId.Value)
+                    .Select(u => u.OrganizationUnitId)
+                    .FirstOrDefaultAsync();
+
+                if (managerOrgUnitId.HasValue)
+                {
+                    subordinates = await _dbContext.Users
+                        .Where(u => u.OrganizationUnitId == managerOrgUnitId && u.Id != userId.Value && u.IsActive)
+                        .Select(u => new SubordinateItem(u.Id, u.FullName, u.Email ?? "N/A"))
+                        .ToListAsync();
+                }
+                else
+                {
+                    // Fallback to ManagerId chain
+                    var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(userId.Value, recursive: true);
+                    subordinates = await _dbContext.Users
+                        .Where(u => subordinateIds.Contains(u.Id))
+                        .Select(u => new SubordinateItem(u.Id, u.FullName, u.Email ?? "N/A"))
+                        .ToListAsync();
+                }
+            }
+            else
+            {
+                // TMD/Deputy/SysAdmin: use hierarchy subordinate chain
+                var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(userId.Value, recursive: true);
+                subordinates = await _dbContext.Users
+                    .Where(u => subordinateIds.Contains(u.Id))
+                    .Select(u => new SubordinateItem(u.Id, u.FullName, u.Email ?? "N/A"))
+                    .ToListAsync();
+
+                // System Admin may have no formal hierarchy subordinates — show all active users
+                if (!subordinates.Any())
+                {
+                    var tenantId = _currentUserService.TenantId;
+                    subordinates = await _dbContext.Users
+                        .Where(u => u.TenantId == tenantId && u.IsActive && u.Id != userId.Value)
+                        .OrderBy(u => u.FirstName)
+                        .Select(u => new SubordinateItem(u.Id, u.FullName, u.Email ?? "N/A"))
+                        .ToListAsync();
+                }
+            }
 
             Subordinates = subordinates;
 
             // Get available permissions (permissions the user has)
             var userPermissions = await _authorizationService.GetUserPermissionsAsync();
+            var isSysAdminForPerms = User.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value)
+                .Any(r => r.Contains("System Admin", StringComparison.OrdinalIgnoreCase));
+
             AvailablePermissions = userPermissions
-                .Where(p => !p.EndsWith(".ViewAll")) // Exclude ViewAll as it's too broad
                 .Select(p => new PermissionItem(p, p))
                 .OrderBy(p => p.Value)
                 .ToList();

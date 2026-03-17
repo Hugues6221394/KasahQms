@@ -57,6 +57,7 @@ public class ExecutiveModel : PageModel
     public string DocumentsTrendJson { get; set; } = "{}";
     public string CapaStatusJson { get; set; } = "{}";
     public string DepartmentBreakdownJson { get; set; } = "{}";
+    public bool ShowTrainingWelcome { get; set; }
 
     public async Task OnGetAsync()
     {
@@ -82,22 +83,30 @@ public class ExecutiveModel : PageModel
         var openCapas = await _dbContext.Capas.CountAsync(c =>
             c.TenantId == tenantId && c.Status != CapaStatus.Closed && c.Status != CapaStatus.EffectivenessVerified);
         var pendingApprovals = await _dbContext.Documents.CountAsync(d =>
-            d.TenantId == tenantId && (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview));
+            d.TenantId == tenantId &&
+            d.CurrentApproverId == _currentUserService.UserId &&
+            (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview));
+
+        // Also count subordinate tasks awaiting approval
+        var pendingTaskApprovals = await _dbContext.QmsTasks.CountAsync(t =>
+            t.TenantId == tenantId &&
+            t.Status == QmsTaskStatus.AwaitingApproval &&
+            (visibleUserIds.Contains(t.CreatedById) || (t.AssignedToId.HasValue && visibleUserIds.Contains(t.AssignedToId.Value))));
         var upcomingAudits = await _dbContext.Audits.CountAsync(a =>
             a.TenantId == tenantId && a.PlannedStartDate <= DateTime.UtcNow.AddDays(30) &&
             a.Status != AuditStatus.Closed);
 
         Stats = new List<StatCard>
         {
-            new("Active documents", activeDocuments.ToString(), "System-wide", activeDocuments),
-            new("Open CAPAs", openCapas.ToString(), "Requires follow-up", openCapas),
-            new("Pending approvals", pendingApprovals.ToString(), "Awaiting leadership", pendingApprovals),
-            new("Audits scheduled", upcomingAudits.ToString(), "Next 30 days", upcomingAudits)
+            new("Active documents", activeDocuments.ToString(), "System-wide", "/Documents", activeDocuments),
+            new("Open CAPAs", openCapas.ToString(), "Requires follow-up", "/Capa", openCapas),
+            new("Pending approvals", (pendingApprovals + pendingTaskApprovals).ToString(), "Awaiting your review", "/Approvals", pendingApprovals + pendingTaskApprovals),
+            new("Audits scheduled", upcomingAudits.ToString(), "Next 30 days", "/Audits/Schedule", upcomingAudits)
         };
 
         ActiveDocumentsCount = activeDocuments;
         OpenCapasCount = openCapas;
-        PendingApprovalsCount = pendingApprovals;
+        PendingApprovalsCount = pendingApprovals + pendingTaskApprovals;
         UpcomingAuditsCount = upcomingAudits;
 
         // Get tasks using refactored query (includes hierarchy)
@@ -181,6 +190,14 @@ public class ExecutiveModel : PageModel
         DocumentsTrendJson = await BuildDocumentTrendAsync(tenantId);
         CapaStatusJson = await BuildCapaStatusAsync(tenantId);
         DepartmentBreakdownJson = await BuildDepartmentBreakdownAsync(tenantId);
+
+        // Check if this is effectively the user's first real session (no training records yet)
+        if (currentUser != null)
+        {
+            var hasAnyTraining = await _dbContext.TrainingRecords
+                .AnyAsync(t => t.UserId == currentUser.Id && t.TenantId == tenantId);
+            ShowTrainingWelcome = !hasAnyTraining;
+        }
     }
 
     private static string SerializeChart(IEnumerable<string> labels, IEnumerable<int> values)
@@ -192,7 +209,7 @@ public class ExecutiveModel : PageModel
         }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
     }
 
-    public record StatCard(string Title, string Value, string Subtitle, int CountTo);
+    public record StatCard(string Title, string Value, string Subtitle, string Link, int CountTo);
     public record TaskItem(string Title, string DueDate, string Status);
     public record ApprovalItem(string Title, string Owner, string Stage);
     public record ActivityItem(string Title, string Description, string When);
