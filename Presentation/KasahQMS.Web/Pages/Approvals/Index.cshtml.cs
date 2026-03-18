@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace KasahQMS.Web.Pages.Approvals;
 
@@ -61,7 +62,7 @@ public class IndexModel : PageModel
             .AsNoTracking()
             .Include(d => d.CreatedBy)
             .Where(d => d.TenantId == tenantId && 
-                        d.Status == DocumentStatus.Submitted && 
+                        (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview) && 
                         d.CurrentApproverId == userId.Value)
             .OrderByDescending(d => d.SubmittedAt)
             .Select(d => new ApprovalItem
@@ -75,23 +76,55 @@ public class IndexModel : PageModel
             })
             .ToListAsync();
 
-        PendingTrainings = await _dbContext.TrainingRecords
+        var trainingCandidates = await _dbContext.TrainingRecords
             .AsNoTracking()
             .Include(t => t.User)
             .Where(t => t.TenantId == tenantId &&
                         t.CreatedById == userId.Value &&
                         t.Status == TrainingStatus.Completed)
             .OrderByDescending(t => t.CompletedDate)
+            .Select(t => new
+            {
+                t.Id,
+                Number = t.TrainingType.ToString(),
+                t.Title,
+                SubmittedBy = t.User != null ? t.User.FullName : "Unknown",
+                SubmittedAt = t.CompletedDate ?? t.LastModifiedAt ?? t.CreatedAt,
+                t.Notes
+            })
+            .ToListAsync();
+
+        PendingTrainings = trainingCandidates
+            .Where(t => IsPendingTrainingApproval(t.Notes))
             .Select(t => new ApprovalItem
             {
                 Id = t.Id,
-                Number = t.TrainingType.ToString(),
+                Number = t.Number,
                 Title = t.Title,
-                SubmmitedBy = t.User != null ? t.User.FullName : "Unknown",
-                SubmittedAt = t.CompletedDate ?? t.LastModifiedAt ?? t.CreatedAt,
+                SubmmitedBy = t.SubmittedBy,
+                SubmittedAt = t.SubmittedAt,
                 Type = "Training"
             })
-            .ToListAsync();
+            .ToList();
+    }
+
+    private static bool IsPendingTrainingApproval(string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes)) return true;
+        try
+        {
+            using var doc = JsonDocument.Parse(notes);
+            var root = doc.RootElement;
+            var hasDecision = root.TryGetProperty("CreatorDecision", out var decision) &&
+                              !string.IsNullOrWhiteSpace(decision.GetString());
+            var isArchived = root.TryGetProperty("IsArchived", out var archived) &&
+                             archived.ValueKind == JsonValueKind.True;
+            return !hasDecision && !isArchived;
+        }
+        catch (JsonException)
+        {
+            return true;
+        }
     }
 
     public class ApprovalItem

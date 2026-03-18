@@ -7,7 +7,7 @@
 <div class="space-y-6">
     <div class="rounded-2xl border border-slate-200 bg-white p-6">
         <h1 class="text-3xl font-semibold text-slate-900">Pending Approvals</h1>
-        <p class="mt-1 text-sm text-slate-500">Review and action submissions from your subordinates and assigned documents.</p>
+        <p class="mt-1 text-sm text-slate-500">Review and action submissions for tasks, documents, and trainings.</p>
     </div>
 
     @if (!Model.PendingTasks.Any() && !Model.PendingDocuments.Any() && !Model.PendingTrainings.Any())
@@ -19,7 +19,7 @@
                 </svg>
             </div>
             <h3 class="text-lg font-semibold text-slate-900">All caught up!</h3>
-            <p class="mx-auto mt-1 max-w-sm text-slate-500">There are no pending tasks or documents awaiting your approval at this time.</p>
+            <p class="mx-auto mt-1 max-w-sm text-slate-500">There are no pending tasks, documents, or trainings awaiting your approval at this time.</p>
         </div>
     }
     else

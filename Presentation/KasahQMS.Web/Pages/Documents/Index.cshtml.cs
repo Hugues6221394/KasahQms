@@ -187,7 +187,7 @@ public class IndexModel : PageModel
         {
             if (string.Equals(Status, "Rejected", StringComparison.OrdinalIgnoreCase))
             {
-                query = query.Where(d => d.Approvals.Any(a => !a.IsApproved));
+                query = query.Where(d => d.Approvals!.Any(a => !a.IsApproved));
             }
             else if (Enum.TryParse<DocumentStatus>(Status, out var status))
             {
@@ -218,6 +218,7 @@ public class IndexModel : PageModel
                 d.CurrentVersion,
                 ModifiedAt = d.LastModifiedAt ?? d.CreatedAt,
                 LatestApproval = d.Approvals
+                    !
                     .OrderByDescending(a => a.ApprovedAt)
                     .Select(a => new { a.IsApproved, a.Comments, a.ApprovedAt })
                     .FirstOrDefault()

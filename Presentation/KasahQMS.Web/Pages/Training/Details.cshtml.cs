@@ -54,6 +54,9 @@ public class DetailsModel : PageModel
     public bool CanRateTrainer { get; set; }
     public bool CanViewTraineeRating { get; set; }
     public bool CanRespondToAssessment { get; set; }
+    public bool CanArchiveTraining { get; set; }
+    public bool CanRestoreTraining { get; set; }
+    public bool CanPermanentDeleteTraining { get; set; }
     public bool CanManageCertificateFile { get; set; }
     public bool CanApproveCompletion { get; set; }
     public string? TrainingChatUrl { get; set; }
@@ -321,6 +324,85 @@ public class DetailsModel : PageModel
         return RedirectToPage("./Index", new { message = "Training record deleted.", success = true });
     }
 
+    public async Task<IActionResult> OnPostArchiveTrainingAsync(Guid id)
+    {
+        var record = await GetRecordEntity(id);
+        if (record == null) return NotFound();
+        if (!await CanAccessTrainingAsync(record))
+            return RedirectToPage("/Account/AccessDenied");
+
+        var isTmdOrDeputy = await IsCurrentUserTmdOrDeputyAsync(_currentUserService.UserId);
+        var meta = ParseNotes(record.Notes);
+        if (!CanArchiveTrainingValue(record, _currentUserService.UserId, isTmdOrDeputy, meta))
+            return RedirectToPage("/Account/AccessDenied");
+
+        meta.IsArchived = true;
+        meta.ArchivedAt = DateTime.UtcNow;
+        meta.ArchivedById = _currentUserService.UserId;
+        record.Notes = JsonSerializer.Serialize(meta);
+        record.LastModifiedById = _currentUserService.UserId;
+        record.LastModifiedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Archived",
+            "Training was archived.",
+            _currentUserService.UserId);
+
+        return RedirectToPage(new { id, message = "Training archived successfully.", success = true });
+    }
+
+    public async Task<IActionResult> OnPostRestoreTrainingAsync(Guid id)
+    {
+        var record = await GetRecordEntity(id);
+        if (record == null) return NotFound();
+        if (!await CanAccessTrainingAsync(record))
+            return RedirectToPage("/Account/AccessDenied");
+
+        var isTmdOrDeputy = await IsCurrentUserTmdOrDeputyAsync(_currentUserService.UserId);
+        var meta = ParseNotes(record.Notes);
+        if (!CanRestoreTrainingValue(record, _currentUserService.UserId, isTmdOrDeputy, meta))
+            return RedirectToPage("/Account/AccessDenied");
+
+        meta.IsArchived = false;
+        meta.ArchivedAt = null;
+        meta.ArchivedById = null;
+        record.Notes = JsonSerializer.Serialize(meta);
+        record.LastModifiedById = _currentUserService.UserId;
+        record.LastModifiedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Restored",
+            "Training was restored from archive.",
+            _currentUserService.UserId);
+
+        return RedirectToPage(new { id, message = "Training restored successfully.", success = true });
+    }
+
+    public async Task<IActionResult> OnPostPermanentDeleteTrainingAsync(Guid id)
+    {
+        var record = await GetRecordEntity(id);
+        if (record == null) return NotFound();
+        if (!await CanAccessTrainingAsync(record))
+            return RedirectToPage("/Account/AccessDenied");
+
+        var isTmdOrDeputy = await IsCurrentUserTmdOrDeputyAsync(_currentUserService.UserId);
+        var meta = ParseNotes(record.Notes);
+        if (!CanPermanentDeleteTrainingValue(record, _currentUserService.UserId, isTmdOrDeputy, meta))
+            return RedirectToPage("/Account/AccessDenied");
+
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Deleted",
+            "An archived training was permanently deleted.",
+            _currentUserService.UserId);
+        _dbContext.TrainingRecords.Remove(record);
+        await _dbContext.SaveChangesAsync();
+
+        return RedirectToPage("./Index", new { message = "Training permanently deleted.", success = true });
+    }
+
     public async Task<IActionResult> OnPostSaveAssessmentAsync(Guid id)
     {
         var record = await GetRecordEntity(id);
@@ -571,6 +653,7 @@ public class DetailsModel : PageModel
             meta.TraineeAssessmentResponse,
             meta.CreatorDecision,
             meta.CreatorDecisionComment,
+            meta.IsArchived,
             t.CreatedAt.ToString("MMM dd, yyyy HH:mm"),
             t.UserId,
             t.TrainerId,
@@ -607,6 +690,11 @@ public class DetailsModel : PageModel
         CanRateTrainer = CanRateTrainerValue(record, currentUserId);
         CanViewTraineeRating = CanViewTraineeRatingValue(record, currentUserId);
         CanRespondToAssessment = CanRespondToAssessmentValue(record, currentUserId);
+        var meta = ParseNotes(record.Notes);
+        var isTmdOrDeputy = await IsCurrentUserTmdOrDeputyAsync(currentUserId);
+        CanArchiveTraining = CanArchiveTrainingValue(record, currentUserId, isTmdOrDeputy, meta);
+        CanRestoreTraining = CanRestoreTrainingValue(record, currentUserId, isTmdOrDeputy, meta);
+        CanPermanentDeleteTraining = CanPermanentDeleteTrainingValue(record, currentUserId, isTmdOrDeputy, meta);
         CanManageCertificateFile = CanManageCertificateFileValue(record, currentUserId);
         CanApproveCompletion = CanApproveCompletionValue(record, currentUserId);
         TrainingChatUrl = GetTrainingChatUrl(record, currentUserId);
@@ -620,7 +708,6 @@ public class DetailsModel : PageModel
             EditScheduledDate = record.ScheduledDate;
             EditTrainerId = record.TrainerId;
             EditPassingScore = record.PassingScore;
-            var meta = ParseNotes(record.Notes);
             TraineeRating = meta.TraineeRating;
             TraineeFeedback = meta.TraineeFeedback;
             TraineeAssessmentResponse = meta.TraineeAssessmentResponse;
@@ -679,6 +766,15 @@ public class DetailsModel : PageModel
     private bool CanRespondToAssessmentValue(TrainingRecord record, Guid? currentUserId)
         => (record.Status == TrainingStatus.InProgress || record.Status == TrainingStatus.Completed) && IsTrainee(record, currentUserId);
 
+    private bool CanArchiveTrainingValue(TrainingRecord record, Guid? currentUserId, bool isTmdOrDeputy, TrainingWorkflowMeta meta)
+        => record.Status == TrainingStatus.Completed && !meta.IsArchived && (IsCreator(record, currentUserId) || isTmdOrDeputy);
+
+    private bool CanRestoreTrainingValue(TrainingRecord record, Guid? currentUserId, bool isTmdOrDeputy, TrainingWorkflowMeta meta)
+        => meta.IsArchived && (IsCreator(record, currentUserId) || isTmdOrDeputy);
+
+    private bool CanPermanentDeleteTrainingValue(TrainingRecord record, Guid? currentUserId, bool isTmdOrDeputy, TrainingWorkflowMeta meta)
+        => meta.IsArchived && (IsCreator(record, currentUserId) || isTmdOrDeputy);
+
     private bool CanManageCertificateFileValue(TrainingRecord record, Guid? currentUserId)
         => record.Status == TrainingStatus.Completed && (IsCreator(record, currentUserId) || IsTrainer(record, currentUserId));
 
@@ -691,6 +787,22 @@ public class DetailsModel : PageModel
         if (record.UserId == currentUserId && record.TrainerId.HasValue) return $"/Chat?userId={record.TrainerId.Value}";
         if (record.TrainerId == currentUserId) return $"/Chat?userId={record.UserId}";
         return null;
+    }
+
+    private async Task<bool> IsCurrentUserTmdOrDeputyAsync(Guid? currentUserId)
+    {
+        if (!currentUserId.HasValue) return false;
+        var currentUser = await _dbContext.Users.AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
+        if (currentUser == null) return false;
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        return roles.Any(r =>
+            r.Contains("TMD", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Managing Director", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Country Manager", StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<bool> CanAccessTrainingAsync(TrainingRecord record)
@@ -738,7 +850,7 @@ public class DetailsModel : PageModel
         string? CompletedDate, string? ExpiryDate, int? Score, int? PassingScore,
         string? CertificateNumber, string? Notes, string? CertificateFilePath, string? CertificateFileName,
         string? TrainerRemarks, int? TraineeRating, string? TraineeFeedback, string? TraineeAssessmentResponse,
-        string? CreatorDecision, string? CreatorDecisionComment, string CreatedAt, Guid UserId,
+        string? CreatorDecision, string? CreatorDecisionComment, bool IsArchived, string CreatedAt, Guid UserId,
         Guid? TrainerId, Guid CreatedById, bool IsScheduled);
 
     public record CompetencyRow(
@@ -830,5 +942,8 @@ public class DetailsModel : PageModel
         public string? CreatorDecision { get; set; }
         public string? CreatorDecisionComment { get; set; }
         public DateTime? CreatorDecisionAt { get; set; }
+        public bool IsArchived { get; set; }
+        public DateTime? ArchivedAt { get; set; }
+        public Guid? ArchivedById { get; set; }
     }
 }

@@ -576,6 +576,15 @@
                     </svg>
                 </button>
 
+                <button type="button"
+                        onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '/Dashboard'; }"
+                        class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back
+                </button>
+
                 <!-- Global Search -->
                 <div class="app-global-search relative hidden sm:block">
                     <input type="search" placeholder="Search documents, tasks, audits..."

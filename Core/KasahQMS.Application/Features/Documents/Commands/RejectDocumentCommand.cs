@@ -19,6 +19,7 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<RejectDocumentCommandHandler> _logger;
@@ -28,6 +29,7 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
         INotificationService notificationService,
+        IEmailService emailService,
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         ILogger<RejectDocumentCommandHandler> logger)
@@ -36,6 +38,7 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
         _notificationService = notificationService;
+        _emailService = emailService;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -97,6 +100,20 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
                 NotificationType.DocumentRejection,
                 document.Id,
                 cancellationToken);
+
+            var owner = await _userRepository.GetByIdWithRolesAsync(document.CreatedById, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(owner?.Email))
+            {
+                await _emailService.SendEmailAsync(
+                    owner.Email!,
+                    $"Document Rejected: {document.Title}",
+                    $@"<p>Hello {owner.FullName},</p>
+                       <p>Your document <strong>{document.Title}</strong> was rejected.</p>
+                       <p><strong>Reason:</strong> {request.Reason}</p>
+                       <p>Please review and resubmit in the Documents section.</p>",
+                    true,
+                    cancellationToken);
+            }
 
             _logger.LogInformation("Document {DocumentId} rejected by user {UserId}", document.Id, userId);
 

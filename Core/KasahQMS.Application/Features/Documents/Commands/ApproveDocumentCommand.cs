@@ -19,6 +19,7 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly IWorkflowService _workflowService;
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -29,6 +30,7 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
         INotificationService notificationService,
+        IEmailService emailService,
         IWorkflowService workflowService,
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
@@ -38,6 +40,7 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
         _notificationService = notificationService;
+        _emailService = emailService;
         _workflowService = workflowService;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
@@ -151,6 +154,18 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
                     NotificationType.DocumentApproval,
                     document.Id,
                     cancellationToken);
+
+                var owner = await _userRepository.GetByIdWithRolesAsync(document.CreatedById, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(owner?.Email))
+                {
+                    await _emailService.SendEmailAsync(
+                        owner.Email!,
+                        $"Document Approved: {document.Title}",
+                        $@"<p>Hello {owner.FullName},</p>
+                           <p>Your document <strong>{document.Title}</strong> has been fully approved and is now effective.</p>",
+                        true,
+                        cancellationToken);
+                }
             }
 
             await _documentRepository.UpdateAsync(document, cancellationToken);

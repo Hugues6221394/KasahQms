@@ -33,7 +33,13 @@
                     <p class="text-sm text-slate-500 mt-1">@r.Description</p>
                     <p class="text-xs text-slate-500 mt-2">Role-based workflow: trainer assesses trainee; trainee rates trainer after completion.</p>
                 </div>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @r.StatusClass">@r.Status</span>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @r.StatusClass">@r.Status</span>
+                    @if (r.IsArchived)
+                    {
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">Archived</span>
+                    }
+                </div>
             </div>
         </div>
 
@@ -240,6 +246,36 @@
                         <form method="post" asp-page-handler="Expire" asp-route-id="@r.Id">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">Mark Expired</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (Model.CanArchiveTraining || Model.CanRestoreTraining || Model.CanPermanentDeleteTraining)
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Archive Management</h2>
+                <div class="flex flex-wrap gap-3">
+                    @if (Model.CanArchiveTraining)
+                    {
+                        <form method="post" asp-page-handler="ArchiveTraining" asp-route-id="@r.Id" onsubmit="return confirm('Archive this completed training?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700">Archive Training</button>
+                        </form>
+                    }
+                    @if (Model.CanRestoreTraining)
+                    {
+                        <form method="post" asp-page-handler="RestoreTraining" asp-route-id="@r.Id">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">Restore Training</button>
+                        </form>
+                    }
+                    @if (Model.CanPermanentDeleteTraining)
+                    {
+                        <form method="post" asp-page-handler="PermanentDeleteTraining" asp-route-id="@r.Id" onsubmit="return confirm('Permanently delete this archived training? This action cannot be undone.');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">Permanent Delete</button>
                         </form>
                     }
                 </div>

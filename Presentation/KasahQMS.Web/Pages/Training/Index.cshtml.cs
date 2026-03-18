@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace KasahQMS.Web.Pages.Training;
 
@@ -37,10 +38,17 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public DateTime? DateTo { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? SearchTerm { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public bool ShowArchived { get; set; }
+
     public int TotalCount { get; set; }
     public int CompletedCount { get; set; }
     public int InProgressCount { get; set; }
     public int ExpiredCount { get; set; }
+    public int ArchivedCount { get; set; }
     public bool CanCreateTraining { get; set; }
 
     public List<TrainingRow> Records { get; set; } = new();
@@ -116,25 +124,69 @@ public class IndexModel : PageModel
         if (DateTo.HasValue)
             query = query.Where(t => t.ScheduledDate <= DateTo.Value);
 
-        TotalCount = await query.CountAsync();
-        CompletedCount = await query.CountAsync(t => t.Status == TrainingStatus.Completed);
-        InProgressCount = await query.CountAsync(t => t.Status == TrainingStatus.InProgress);
-        ExpiredCount = await query.CountAsync(t => t.Status == TrainingStatus.Expired);
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            var term = SearchTerm.Trim();
+            query = query.Where(t =>
+                t.Title.Contains(term) ||
+                (t.User != null && ((t.User.FirstName + " " + t.User.LastName).Contains(term))));
+        }
 
-        Records = await query
+        var recordsData = await query
             .OrderByDescending(t => t.ScheduledDate)
+            .Select(t => new
+            {
+                t.Id,
+                t.Title,
+                Employee = t.User != null ? t.User.FirstName + " " + t.User.LastName : "—",
+                Type = t.TrainingType,
+                Status = t.Status,
+                t.ScheduledDate,
+                t.CompletedDate,
+                t.Score,
+                t.Notes
+            })
+            .ToListAsync();
+
+        var projected = recordsData
+            .Select(t => new
+            {
+                t.Id,
+                t.Title,
+                t.Employee,
+                t.Type,
+                t.Status,
+                t.ScheduledDate,
+                t.CompletedDate,
+                t.Score,
+                IsArchived = IsArchivedFromNotes(t.Notes)
+            })
+            .ToList();
+
+        ArchivedCount = projected.Count(t => t.IsArchived);
+        var visibleRecords = ShowArchived
+            ? projected.Where(t => t.IsArchived).ToList()
+            : projected.Where(t => !t.IsArchived).ToList();
+
+        TotalCount = visibleRecords.Count;
+        CompletedCount = visibleRecords.Count(t => t.Status == TrainingStatus.Completed);
+        InProgressCount = visibleRecords.Count(t => t.Status == TrainingStatus.InProgress);
+        ExpiredCount = visibleRecords.Count(t => t.Status == TrainingStatus.Expired);
+
+        Records = visibleRecords
             .Select(t => new TrainingRow(
                 t.Id,
                 t.Title,
-                t.User != null ? t.User.FirstName + " " + t.User.LastName : "—",
-                t.TrainingType.ToString(),
-                GetTypeBadgeClass(t.TrainingType),
+                t.Employee,
+                t.Type.ToString(),
+                GetTypeBadgeClass(t.Type),
                 t.Status.ToString(),
                 GetStatusBadgeClass(t.Status),
                 t.ScheduledDate.ToString("MMM dd, yyyy"),
                 t.CompletedDate.HasValue ? t.CompletedDate.Value.ToString("MMM dd, yyyy") : "—",
-                t.Score))
-            .ToListAsync();
+                t.Score,
+                t.IsArchived))
+            .ToList();
 
         // Set CanCreateTraining flag
         CanCreateTraining = isTmdOrDeputy || (isManager && await _dbContext.Users.AnyAsync(u => u.ManagerId == currentUserId && u.IsActive));
@@ -159,6 +211,21 @@ public class IndexModel : PageModel
         _ => "bg-slate-100 text-slate-600"
     };
 
+    private static bool IsArchivedFromNotes(string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes)) return false;
+        try
+        {
+            using var doc = JsonDocument.Parse(notes);
+            return doc.RootElement.TryGetProperty("IsArchived", out var archived) &&
+                   archived.ValueKind == JsonValueKind.True;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
     public record TrainingRow(
         Guid Id,
         string Title,
@@ -169,5 +236,6 @@ public class IndexModel : PageModel
         string StatusClass,
         string ScheduledDate,
         string CompletionDate,
-        int? Score);
+        int? Score,
+        bool IsArchived);
 }
