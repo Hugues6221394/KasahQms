@@ -107,8 +107,8 @@ public class EditModel : PageModel
         audit.Title = Title.Trim();
         audit.Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim();
         audit.AuditType = AuditType;
-        audit.PlannedStartDate = PlannedStartDate;
-        audit.PlannedEndDate = PlannedEndDate;
+        audit.PlannedStartDate = NormalizeToUtcDate(PlannedStartDate);
+        audit.PlannedEndDate = NormalizeToUtcDate(PlannedEndDate);
         audit.LeadAuditorId = LeadAuditorId;
         audit.Scope = string.IsNullOrWhiteSpace(Scope) ? null : Scope.Trim();
         audit.Objectives = string.IsNullOrWhiteSpace(Objectives) ? null : Objectives.Trim();
@@ -178,4 +178,10 @@ public class EditModel : PageModel
     }
 
     public record AuditorItem(Guid Id, string Name);
+
+    private static DateTime NormalizeToUtcDate(DateTime value)
+    {
+        var date = value.Date;
+        return DateTime.SpecifyKind(date, DateTimeKind.Utc);
+    }
 }

@@ -182,7 +182,7 @@ public class AuthorizationService : IAuthorizationService
         if (userId == null) return Enumerable.Empty<string>();
 
         // Include tenantId in cache key to prevent cross-tenant cache collision
-        var cacheKey = $"user_permissions_v2_{tenantId}_{userId}";
+        var cacheKey = $"user_permissions_v3_{tenantId}_{userId}";
         var permissions = await _cacheService.GetOrCreateAsync(
             cacheKey,
             async () => await GetUserPermissionsFromDbAsync(userId.Value, cancellationToken),
@@ -235,13 +235,23 @@ public class AuthorizationService : IAuthorizationService
                 }
             }
 
+            static string NormalizeRoleName(string? roleName)
+            {
+                return new string((roleName ?? string.Empty).Where(char.IsLetterOrDigit).ToArray())
+                    .ToLowerInvariant();
+            }
+
+            var normalizedRoles = roleNames.Select(NormalizeRoleName).ToHashSet();
+            var hasDeputyRole = normalizedRoles.Any(r => r.Contains("deputy"));
+            var hasTmdRole = normalizedRoles.Contains("tmd") || normalizedRoles.Contains("topmanagingdirector");
+            var hasCountryManagerRole = normalizedRoles.Contains("countrymanager");
+            var hasDepartmentManagerRole = normalizedRoles.Contains("departmentmanager");
+
             // Hierarchy roles (TMD, Deputy, Department Manager): add ViewAll for Read permissions
-            var isHierarchyRole = roleNames.Any(rn =>
-                string.Equals(rn, "TMD", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(rn, "Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(rn, "Country Manager", StringComparison.OrdinalIgnoreCase) ||
-                (rn != null && rn.Contains("Deputy", StringComparison.OrdinalIgnoreCase)) ||
-                string.Equals(rn, "Department Manager", StringComparison.OrdinalIgnoreCase));
+            var isHierarchyRole = hasTmdRole ||
+                                  hasCountryManagerRole ||
+                                  hasDeputyRole ||
+                                  hasDepartmentManagerRole;
             if (isHierarchyRole)
             {
                 // Hierarchy roles can always delegate permissions to subordinates
@@ -264,12 +274,11 @@ public class AuthorizationService : IAuthorizationService
             var isSystemAdminRole = roleNames.Any(rn =>
                 string.Equals(rn, "System Admin", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(rn, "SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(rn, "Admin", StringComparison.OrdinalIgnoreCase));
-            var isTmdOrDeputyRole = roleNames.Any(rn =>
-                string.Equals(rn, "TMD", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(rn, "Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(rn, "Country Manager", StringComparison.OrdinalIgnoreCase) ||
-                (rn != null && rn.Contains("Deputy", StringComparison.OrdinalIgnoreCase)));
+                string.Equals(rn, "Admin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rn, "TenantAdmin", StringComparison.OrdinalIgnoreCase));
+            var isTmdOrDeputyRole = hasTmdRole ||
+                                    hasCountryManagerRole ||
+                                    hasDeputyRole;
 
             // ALL users can view news (read-only)
             permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.View);
@@ -281,6 +290,7 @@ public class AuthorizationService : IAuthorizationService
                 permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.Edit);
                 permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.Delete);
                 permissions.Add(KasahQMS.Application.Common.Security.Permissions.News.ViewAll);
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Users.DelegatePermission);
             }
 
             // Only TMD/Deputy (not managers) get Employees by default
