@@ -2,10 +2,12 @@ using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace KasahQMS.Web.Pages.Account;
 
+[EnableRateLimiting("auth")]
 public class ForgotPasswordModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
@@ -61,9 +63,11 @@ public class ForgotPasswordModel : PageModel
 
                 var resetLink = $"{Request.Scheme}://{Request.Host}/Account/ResetPassword?token={Uri.EscapeDataString(token)}";
 
-                // Always log the link so it's accessible even when email fails
-                _logger.LogInformation(
-                    "[PASSWORD RESET] Link for {Email}: {ResetLink}", user.Email, resetLink);
+                if (_env.IsDevelopment())
+                {
+                    _logger.LogInformation(
+                        "[PASSWORD RESET][DEV] Link for {Email}: {ResetLink}", user.Email, resetLink);
+                }
 
                 await _emailService.SendEmailAsync(
                     user.Email,

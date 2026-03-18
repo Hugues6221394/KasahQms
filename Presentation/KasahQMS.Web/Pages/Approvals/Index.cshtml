@@ -10,7 +10,7 @@
         <p class="mt-1 text-sm text-slate-500">Review and action submissions from your subordinates and assigned documents.</p>
     </div>
 
-    @if (!Model.PendingTasks.Any() && !Model.PendingDocuments.Any())
+    @if (!Model.PendingTasks.Any() && !Model.PendingDocuments.Any() && !Model.PendingTrainings.Any())
     {
         <div class="rounded-2xl border border-slate-200 bg-white p-12 text-center">
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-50">
@@ -76,6 +76,36 @@
                                 </div>
                             </div>
                             <a href="/Documents/Details/@item.Id" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">Review</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (Model.PendingTrainings.Any())
+        {
+            <div class="space-y-4">
+                <h2 class="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                    <svg class="h-5 w-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    </svg>
+                    Pending Trainings (@Model.PendingTrainings.Count)
+                </h2>
+                <div class="grid gap-4">
+                    @foreach (var item in Model.PendingTrainings)
+                    {
+                        <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 transition-all hover:shadow-soft">
+                            <div class="flex items-center gap-4">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                                    <span class="text-xs font-bold">TRN</span>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-900">@item.Title</div>
+                                    <div class="text-xs text-slate-500">Submitted by <span class="font-medium text-slate-700">@item.SubmmitedBy</span> - @item.SubmittedAt.ToString("MMM dd, yyyy HH:mm")</div>
+                                </div>
+                            </div>
+                            <a href="/Training/Details/@item.Id" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">Review</a>
                         </div>
                     }
                 </div>

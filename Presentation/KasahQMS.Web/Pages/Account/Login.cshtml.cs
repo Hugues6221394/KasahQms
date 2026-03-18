@@ -7,10 +7,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace KasahQMS.Web.Pages.Account;
 
+[EnableRateLimiting("auth")]
 public class LoginModel : PageModel
 {
     private readonly ILogger<LoginModel> _logger;
@@ -19,6 +21,7 @@ public class LoginModel : PageModel
     private readonly DashboardRoutingService _dashboardRoutingService;
     private readonly IAuditLoggingService _auditLoggingService;
     private readonly ISessionService _sessionService;
+    private readonly IWebHostEnvironment _environment;
 
     public LoginModel(
         ILogger<LoginModel> logger,
@@ -26,7 +29,8 @@ public class LoginModel : PageModel
         IPasswordHasher passwordHasher,
         DashboardRoutingService dashboardRoutingService,
         IAuditLoggingService auditLoggingService,
-        ISessionService sessionService)
+        ISessionService sessionService,
+        IWebHostEnvironment environment)
     {
         _logger = logger;
         _dbContext = dbContext;
@@ -34,6 +38,7 @@ public class LoginModel : PageModel
         _dashboardRoutingService = dashboardRoutingService;
         _auditLoggingService = auditLoggingService;
         _sessionService = sessionService;
+        _environment = environment;
     }
 
     [BindProperty]
@@ -96,6 +101,25 @@ public class LoginModel : PageModel
                 return Page();
             }
 
+            if (user.TwoFactorEnabled)
+            {
+                if (string.IsNullOrWhiteSpace(user.TwoFactorSecret))
+                {
+                    await _auditLoggingService.LogActionAsync("LOGIN_2FA_MISCONFIGURED", "User", user.Id, "2FA enabled but secret missing", false);
+                    ErrorMessage = "Two-factor authentication is enabled but not configured correctly. Contact your system administrator.";
+                    return Page();
+                }
+
+                TempData["2fa_user_id"] = user.Id.ToString();
+                TempData["2fa_remember_me"] = RememberMe.ToString();
+                if (!string.IsNullOrWhiteSpace(returnUrl))
+                {
+                    TempData["2fa_return_url"] = returnUrl;
+                }
+
+                return RedirectToPage("/Account/TwoFactorChallenge", new { returnUrl });
+            }
+
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -126,10 +150,7 @@ public class LoginModel : PageModel
                 principal,
                 new AuthenticationProperties
                 {
-                    IsPersistent = RememberMe,
-                    ExpiresUtc = RememberMe
-                        ? DateTimeOffset.UtcNow.AddDays(30)
-                        : DateTimeOffset.UtcNow.AddHours(8)
+                    IsPersistent = RememberMe
                 });
 
             // Create session record with device/browser info
@@ -156,9 +177,9 @@ public class LoginModel : PageModel
                 Response.Cookies.Append("KasahQmsSession", tokenHash, new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = Request.IsHttps,
-                    SameSite = SameSiteMode.Lax,
-                    Expires = RememberMe ? DateTimeOffset.UtcNow.AddDays(30) : DateTimeOffset.UtcNow.AddHours(8)
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(30)
                 });
             }
             catch (Exception ex)
@@ -198,6 +219,13 @@ public class LoginModel : PageModel
 
     private async Task LoadSampleCredentialsAsync()
     {
+        if (!_environment.IsDevelopment())
+        {
+            SampleCredentials = new List<SampleCredential>();
+            PasswordHint = null;
+            return;
+        }
+
         var tenantId = await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
         if (tenantId == Guid.Empty)
         {
@@ -227,5 +255,3 @@ public class LoginModel : PageModel
 }
 
 public record SampleCredential(string Role, string Email, string Password);
-
-

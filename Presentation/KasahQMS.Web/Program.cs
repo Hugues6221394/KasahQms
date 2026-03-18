@@ -18,6 +18,7 @@ using KasahQMS.Web.Middleware;
 
 
 var builder = WebApplication.CreateBuilder(args);
+LoadDotEnv(builder.Configuration, builder.Environment.ContentRootPath);
 
 // ===========================================
 // Service Registration
@@ -112,8 +113,8 @@ builder.Services.AddAuthentication(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.Cookie.Name = "KasahQmsAuth";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
     options.SlidingExpiration = true;
     options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
 })
@@ -163,6 +164,7 @@ builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
     options.Conventions.AllowAnonymousToPage("/Account/Login");
+    options.Conventions.AllowAnonymousToPage("/Account/TwoFactorChallenge");
     options.Conventions.AllowAnonymousToPage("/Account/Logout");
     options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
     options.Conventions.AllowAnonymousToPage("/Account/ResetPassword");
@@ -447,6 +449,67 @@ app.MapHealthChecks("/health");
 // ===========================================
 
 app.Run();
+
+static void LoadDotEnv(ConfigurationManager configuration, string contentRootPath)
+{
+    var current = new DirectoryInfo(contentRootPath);
+    string? envPath = null;
+
+    while (current is not null)
+    {
+        var candidate = Path.Combine(current.FullName, ".env");
+        if (File.Exists(candidate))
+        {
+            envPath = candidate;
+            break;
+        }
+
+        current = current.Parent;
+    }
+
+    if (envPath is null)
+    {
+        return;
+    }
+
+    var parsed = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+    foreach (var rawLine in File.ReadAllLines(envPath))
+    {
+        var line = rawLine.Trim();
+        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#", StringComparison.Ordinal))
+        {
+            continue;
+        }
+
+        var equalsIndex = line.IndexOf('=');
+        if (equalsIndex <= 0)
+        {
+            continue;
+        }
+
+        var key = line[..equalsIndex].Trim();
+        var value = line[(equalsIndex + 1)..].Trim().Trim('"');
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            continue;
+        }
+
+        parsed[key] = value;
+        parsed[key.Replace("__", ":", StringComparison.Ordinal)] = value;
+
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key)))
+        {
+            Environment.SetEnvironmentVariable(key, value);
+        }
+    }
+
+    if (parsed.Count > 0)
+    {
+        configuration.AddInMemoryCollection(parsed!);
+    }
+}
 
 // Make the implicit Program class accessible to integration tests
 public partial class Program { }

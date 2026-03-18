@@ -47,6 +47,10 @@ public class CompetenciesModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId == null)
+            return RedirectToPage("/Account/Login");
+
         if (NewUserId == Guid.Empty)
             ModelState.AddModelError(nameof(NewUserId), "Employee is required.");
         if (string.IsNullOrWhiteSpace(NewCompetencyArea))
@@ -60,7 +64,11 @@ public class CompetenciesModel : PageModel
 
         var tenantId = _currentUserService.TenantId
             ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
-        var currentUserId = _currentUserService.UserId ?? Guid.Empty;
+        DateTime? nextAssessmentDateUtc = NewNextAssessmentDate.HasValue
+            ? (NewNextAssessmentDate.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(NewNextAssessmentDate.Value, DateTimeKind.Utc)
+                : NewNextAssessmentDate.Value.ToUniversalTime())
+            : null;
 
         if (!Enum.TryParse<CompetencyLevel>(NewLevel, out var level))
             level = CompetencyLevel.Novice;
@@ -69,22 +77,22 @@ public class CompetenciesModel : PageModel
         {
             Id = Guid.NewGuid(),
             UserId = NewUserId,
-            AssessorId = currentUserId,
+            AssessorId = currentUserId.Value,
             CompetencyArea = NewCompetencyArea,
             Level = level,
             AssessedAt = DateTime.UtcNow,
-            NextAssessmentDate = NewNextAssessmentDate,
+            NextAssessmentDate = nextAssessmentDateUtc,
             Notes = NewNotes,
             IsActive = true,
             TenantId = tenantId,
-            CreatedById = currentUserId,
+            CreatedById = currentUserId.Value,
             CreatedAt = DateTime.UtcNow
         };
 
         _dbContext.CompetencyAssessments.Add(assessment);
         await _dbContext.SaveChangesAsync();
 
-        _logger.LogInformation("Competency assessment {Id} created by {UserId}", assessment.Id, currentUserId);
+        _logger.LogInformation("Competency assessment {Id} created by {UserId}", assessment.Id, currentUserId.Value);
         return RedirectToPage(new { message = "Assessment created.", success = true });
     }
 

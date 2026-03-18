@@ -4,7 +4,7 @@
     ViewData["Title"] = "Training Details";
 }
 
-<div class="mx-auto max-w-4xl space-y-6">
+<div class="mx-auto max-w-5xl space-y-6">
     <nav class="flex items-center gap-2 text-sm text-slate-500">
         <a href="/Training" class="hover:text-slate-900">Training</a>
         <span>/</span>
@@ -26,70 +26,42 @@
     {
         var r = Model.Record;
 
-        <!-- Header -->
         <div class="card p-6">
             <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
                     <h1 class="text-xl font-bold text-slate-900">@r.Title</h1>
                     <p class="text-sm text-slate-500 mt-1">@r.Description</p>
+                    <p class="text-xs text-slate-500 mt-2">Role-based workflow: trainer assesses trainee; trainee rates trainer after completion.</p>
                 </div>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @r.StatusClass">@r.Status</span>
             </div>
         </div>
 
-        <!-- Details Grid -->
         <div class="grid gap-6 md:grid-cols-2">
             <div class="card p-6 space-y-4">
                 <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Training Info</h2>
                 <dl class="space-y-3 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-slate-500">Type</dt>
-                        <dd class="font-medium text-slate-800">@r.Type</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-slate-500">Employee</dt>
-                        <dd class="font-medium text-slate-800">@r.Employee</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-slate-500">Trainer</dt>
-                        <dd class="font-medium text-slate-800">@r.Trainer</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-slate-500">Scheduled</dt>
-                        <dd class="font-medium text-slate-800">@r.ScheduledDate</dd>
-                    </div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Type</dt><dd class="font-medium text-slate-800">@r.Type</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Employee</dt><dd class="font-medium text-slate-800">@r.Employee</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Trainer</dt><dd class="font-medium text-slate-800">@r.Trainer</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Scheduled</dt><dd class="font-medium text-slate-800">@r.ScheduledDate</dd></div>
                     @if (r.CompletedDate != null)
                     {
-                        <div class="flex justify-between">
-                            <dt class="text-slate-500">Completed</dt>
-                            <dd class="font-medium text-slate-800">@r.CompletedDate</dd>
-                        </div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Completed</dt><dd class="font-medium text-slate-800">@r.CompletedDate</dd></div>
                     }
                     @if (r.ExpiryDate != null)
                     {
-                        <div class="flex justify-between">
-                            <dt class="text-slate-500">Expired</dt>
-                            <dd class="font-medium text-slate-800">@r.ExpiryDate</dd>
-                        </div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Expired</dt><dd class="font-medium text-slate-800">@r.ExpiryDate</dd></div>
                     }
-                    <div class="flex justify-between">
-                        <dt class="text-slate-500">Created</dt>
-                        <dd class="font-medium text-slate-800">@r.CreatedAt</dd>
-                    </div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Created</dt><dd class="font-medium text-slate-800">@r.CreatedAt</dd></div>
                 </dl>
             </div>
 
             <div class="card p-6 space-y-4">
                 <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Score & Certificate</h2>
                 <dl class="space-y-3 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-slate-500">Score</dt>
-                        <dd class="font-medium text-slate-800">@(r.Score.HasValue ? $"{r.Score}%" : "—")</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-slate-500">Passing Score</dt>
-                        <dd class="font-medium text-slate-800">@(r.PassingScore.HasValue ? $"{r.PassingScore}%" : "—")</dd>
-                    </div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Score</dt><dd class="font-medium text-slate-800">@(r.Score.HasValue ? (r.Score.Value.ToString() + "%") : "—")</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Passing Score</dt><dd class="font-medium text-slate-800">@(r.PassingScore.HasValue ? (r.PassingScore.Value.ToString() + "%") : "—")</dd></div>
                     @if (r.Score.HasValue && r.PassingScore.HasValue)
                     {
                         <div class="flex justify-between">
@@ -99,83 +71,230 @@
                             </dd>
                         </div>
                     }
-                    <div class="flex justify-between">
-                        <dt class="text-slate-500">Certificate #</dt>
-                        <dd class="font-medium text-slate-800">@(r.CertificateNumber ?? "—")</dd>
-                    </div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Certificate #</dt><dd class="font-medium text-slate-800">@(r.CertificateNumber ?? "—")</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Trainer Remarks</dt><dd class="font-medium text-slate-800">@(r.TrainerRemarks ?? "—")</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Trainee Rating</dt><dd class="font-medium text-slate-800">@(r.TraineeRating.HasValue ? $"{r.TraineeRating}/5" : "—")</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Creator Decision</dt><dd class="font-medium text-slate-800">@(r.CreatorDecision ?? "Pending")</dd></div>
                 </dl>
 
-                @if (r.Status == "Completed")
+                @if (Model.CanUpdateCertificate && r.Status == "Completed")
                 {
-                    @if (Model.CanEdit)
+                    <form method="post" asp-page-handler="UpdateCertificate" asp-route-id="@r.Id" class="pt-2 flex gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="text" asp-for="CertificateNumber" value="@r.CertificateNumber"
+                               placeholder="Certificate number"
+                               class="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
+                        <button type="submit" class="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Update</button>
+                    </form>
+                }
+                @if (!string.IsNullOrWhiteSpace(r.CertificateFilePath))
+                {
+                    <div class="pt-2 text-sm">
+                        <a href="@r.CertificateFilePath" target="_blank" class="text-brand-600 hover:text-brand-700 underline">Preview certificate</a>
+                        <a href="@r.CertificateFilePath" download="@r.CertificateFileName" class="ml-4 text-brand-600 hover:text-brand-700 underline">Download</a>
+                    </div>
+                }
+                @if (Model.CanManageCertificateFile)
+                {
+                    <form method="post" asp-page-handler="UploadCertificate" asp-route-id="@r.Id" enctype="multipart/form-data" class="pt-2 flex flex-wrap items-end gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="file" asp-for="CertificateFile" accept=".pdf,.png,.jpg,.jpeg" class="text-sm" />
+                        <button type="submit" class="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Upload/Replace File</button>
+                    </form>
+                    @if (!string.IsNullOrWhiteSpace(r.CertificateFilePath))
                     {
-                        <form method="post" asp-page-handler="UpdateCertificate" asp-route-id="@r.Id" class="pt-2 flex gap-2">
+                        <form method="post" asp-page-handler="DeleteCertificate" asp-route-id="@r.Id" class="pt-2">
                             @Html.AntiForgeryToken()
-                            <input type="text" asp-for="CertificateNumber" value="@r.CertificateNumber"
-                                   placeholder="Certificate number"
-                                   class="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200">
-                            <button type="submit" class="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Update</button>
+                            <button type="submit" class="px-3 py-1.5 text-sm bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 font-medium">Delete Certificate File</button>
                         </form>
-                    }
-                    else if (!string.IsNullOrEmpty(r.CertificateNumber))
-                    {
-                        <div class="pt-2 text-sm text-slate-600">
-                            Certificate: <span class="font-medium">@r.CertificateNumber</span>
-                        </div>
                     }
                 }
             </div>
         </div>
 
-        <!-- Status Transition Actions -->
-        @if (Model.CanEdit && r.Status != "Completed" && r.Status != "Expired")
+        @if (Model.CanManageScheduledCrud && r.IsScheduled)
         {
             <div class="card p-6 space-y-4">
-                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Actions</h2>
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Creator Full CRUD (Scheduled)</h2>
+                <form method="post" asp-page-handler="UpdateScheduled" asp-route-id="@r.Id" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                            <input asp-for="EditTitle" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                            <select asp-for="EditTrainingType" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                <option value="Initial">Initial</option>
+                                <option value="Refresher">Refresher</option>
+                                <option value="Certification">Certification</option>
+                                <option value="OnTheJob">On-the-Job</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Trainee</label>
+                            <select asp-for="EditUserId" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                <option value="">— Select trainee —</option>
+                                @foreach (var u in Model.Users)
+                                {
+                                    <option value="@u.Id">@u.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Trainer</label>
+                            <select asp-for="EditTrainerId" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                <option value="">— None —</option>
+                                @foreach (var u in Model.Users)
+                                {
+                                    <option value="@u.Id">@u.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Scheduled Date</label>
+                            <input type="date" asp-for="EditScheduledDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Passing Score</label>
+                            <input type="number" asp-for="EditPassingScore" min="0" max="100" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <textarea asp-for="EditDescription" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg"></textarea>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">Update Scheduled Record</button>
+                    </div>
+                </form>
+                <form method="post" asp-page-handler="Delete" asp-route-id="@r.Id" onsubmit="return confirm('Delete this scheduled training record?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">Delete Scheduled Record</button>
+                </form>
+            </div>
+        }
+
+        @if (Model.CanStartTraining || Model.CanCompleteTraining || Model.CanExpireTraining)
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Execution Actions</h2>
+                @if (!string.IsNullOrWhiteSpace(Model.TrainingChatUrl))
+                {
+                    <a href="@Model.TrainingChatUrl" class="inline-block rounded-lg border border-brand-200 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50">Message about this training</a>
+                }
                 <div class="flex flex-wrap gap-3">
-                    @if (r.Status == "Scheduled")
+                    @if (Model.CanStartTraining)
                     {
                         <form method="post" asp-page-handler="Start" asp-route-id="@r.Id">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
-                                Mark In Progress
-                            </button>
+                            <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">Mark In Progress</button>
                         </form>
                     }
 
-                    @if (r.Status is "Scheduled" or "InProgress")
+                    @if (Model.CanCompleteTraining)
                     {
                         <form method="post" asp-page-handler="Complete" asp-route-id="@r.Id" class="flex items-end gap-2">
                             @Html.AntiForgeryToken()
                             <div>
                                 <label class="block text-xs text-slate-500 mb-1">Score (%)</label>
-                                <input type="number" asp-for="CompletionScore" min="0" max="100"
-                                       class="w-20 px-2 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200"
-                                       placeholder="Score">
+                                <input type="number" asp-for="CompletionScore" min="0" max="100" class="w-24 px-2 py-2 text-sm border border-slate-300 rounded-lg" placeholder="Score">
                             </div>
                             <div>
                                 <label class="block text-xs text-slate-500 mb-1">Certificate #</label>
-                                <input type="text" asp-for="CertificateNumber"
-                                       class="w-40 px-2 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-200"
-                                       placeholder="Optional">
+                                <input type="text" asp-for="CertificateNumber" class="w-44 px-2 py-2 text-sm border border-slate-300 rounded-lg" placeholder="Optional">
                             </div>
-                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">
-                                Complete
-                            </button>
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">Complete & Report</button>
                         </form>
                     }
 
-                    <form method="post" asp-page-handler="Expire" asp-route-id="@r.Id">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">
-                            Mark Expired
-                        </button>
-                    </form>
+                    @if (Model.CanExpireTraining)
+                    {
+                        <form method="post" asp-page-handler="Expire" asp-route-id="@r.Id">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">Mark Expired</button>
+                        </form>
+                    }
                 </div>
             </div>
         }
 
-        <!-- Related Competency Assessments -->
+        @if (Model.CanSaveAssessment)
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Submit Assessment</h2>
+                <form method="post" asp-page-handler="SaveAssessment" asp-route-id="@r.Id" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Assessment Area</label>
+                            <input asp-for="AssessmentArea" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="e.g. SOP Compliance" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Level</label>
+                            <select asp-for="AssessmentLevel" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                <option value="Novice">Novice</option>
+                                <option value="Beginner">Beginner</option>
+                                <option value="Competent">Competent</option>
+                                <option value="Proficient">Proficient</option>
+                                <option value="Expert">Expert</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Next Assessment Date</label>
+                            <input type="date" asp-for="AssessmentNextDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                        <textarea asp-for="AssessmentNotes" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="Observations and evidence"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Trainer Remarks to Trainee</label>
+                        <textarea asp-for="TrainerRemarks" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="Guidance and remarks for current training"></textarea>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700">Save Assessment</button>
+                </form>
+            </div>
+        }
+
+        @if (Model.CanRateTrainer)
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Rate Trainer (After Completion)</h2>
+                <form method="post" asp-page-handler="RateTrainer" asp-route-id="@r.Id" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Rating</label>
+                        <input type="number" asp-for="TraineeRating" min="1" max="5" class="w-24 px-3 py-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Feedback</label>
+                        <textarea asp-for="TraineeFeedback" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg"></textarea>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">Submit Rating</button>
+                </form>
+            </div>
+        }
+
+        @if (Model.CanApproveCompletion)
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Creator Approval Decision</h2>
+                <form method="post" asp-page-handler="Approve" asp-route-id="@r.Id" class="flex flex-wrap items-end gap-2">
+                    @Html.AntiForgeryToken()
+                    <input type="text" asp-for="ApprovalComment" placeholder="Comment (optional)" class="w-80 px-3 py-2 text-sm border border-slate-300 rounded-lg" />
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">Approve</button>
+                </form>
+                <form method="post" asp-page-handler="Reject" asp-route-id="@r.Id" class="flex flex-wrap items-end gap-2">
+                    @Html.AntiForgeryToken()
+                    <input type="text" asp-for="ApprovalComment" placeholder="Reason/comment (recommended)" class="w-80 px-3 py-2 text-sm border border-slate-300 rounded-lg" />
+                    <button type="submit" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">Reject</button>
+                </form>
+            </div>
+        }
+
         <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                 <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Competency Assessments for @r.Employee</h2>

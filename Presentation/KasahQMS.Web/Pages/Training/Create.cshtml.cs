@@ -1,4 +1,6 @@
 using KasahQMS.Application.Common.Interfaces;
+using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Domain.Entities.Notifications;
 using KasahQMS.Domain.Entities.Training;
 using KasahQMS.Domain.Enums;
 using KasahQMS.Infrastructure.Persistence.Data;
@@ -14,15 +16,21 @@ public class CreateModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<CreateModel> _logger;
 
     public CreateModel(
         ApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
+        INotificationService notificationService,
+        IEmailService emailService,
         ILogger<CreateModel> logger)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _notificationService = notificationService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -78,6 +86,10 @@ public class CreateModel : PageModel
         if (!Enum.TryParse<Domain.Enums.TrainingType>(TrainingType, out var tt))
             tt = Domain.Enums.TrainingType.Initial;
 
+        var scheduledDateUtc = ScheduledDate.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(ScheduledDate, DateTimeKind.Utc)
+            : ScheduledDate.ToUniversalTime();
+
         var record = new TrainingRecord
         {
             Id = Guid.NewGuid(),
@@ -85,7 +97,7 @@ public class CreateModel : PageModel
             Description = Description,
             TrainingType = tt,
             UserId = UserId,
-            ScheduledDate = ScheduledDate,
+            ScheduledDate = scheduledDateUtc,
             TrainerId = TrainerId,
             PassingScore = PassingScore,
             Status = TrainingStatus.Scheduled,
@@ -96,6 +108,46 @@ public class CreateModel : PageModel
 
         _dbContext.TrainingRecords.Add(record);
         await _dbContext.SaveChangesAsync();
+
+        var creator = await _dbContext.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == currentUserId);
+        var creatorName = creator?.FullName ?? "QMS System";
+
+        var recipients = new List<Guid> { UserId };
+        if (TrainerId.HasValue && TrainerId.Value != Guid.Empty && TrainerId.Value != UserId)
+        {
+            recipients.Add(TrainerId.Value);
+        }
+
+        foreach (var recipientId in recipients.Distinct())
+        {
+            var isTrainerRecipient = TrainerId.HasValue && recipientId == TrainerId.Value;
+            var roleText = isTrainerRecipient ? "trainer" : "trainee";
+
+            await _notificationService.SendAsync(
+                recipientId,
+                "New Training Scheduled",
+                $"You have a new training scheduled as {roleText}: {Title}. Complete it and submit it for creator approval.",
+                NotificationType.System,
+                record.Id);
+
+            var recipientUser = await _dbContext.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == recipientId);
+
+            if (!string.IsNullOrWhiteSpace(recipientUser?.Email))
+            {
+                await _emailService.SendEmailAsync(
+                    recipientUser.Email!,
+                    $"Training Scheduled: {Title}",
+                    $@"<p>Hello {recipientUser.FullName},</p>
+                       <p>A new training has been scheduled for you as <strong>{roleText}</strong>.</p>
+                       <p><strong>Training:</strong> {Title}<br/>
+                          <strong>Scheduled Date:</strong> {scheduledDateUtc:MMMM dd, yyyy}<br/>
+                          <strong>Created By:</strong> {creatorName}</p>
+                       <p>Please open the Training Hub in KASAH QMS to start and complete the training, then report completion for creator approval.</p>",
+                    true);
+            }
+        }
 
         _logger.LogInformation("Training record {Id} created by {UserId}", record.Id, currentUserId);
         return RedirectToPage("./Index");

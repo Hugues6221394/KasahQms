@@ -115,7 +115,10 @@
         container.innerHTML = notifications.map(function(n) {
             var relatedLink = '';
             if (n.relatedEntityId) {
-                var href = (n.relatedEntityType === 'Task') ? '/Tasks/Details/' + n.relatedEntityId : '/Documents/Details/' + n.relatedEntityId;
+                var type = String(n.relatedEntityType || '');
+                var href = '/Documents/Details/' + n.relatedEntityId;
+                if (type === 'Task') href = '/Tasks/Details/' + n.relatedEntityId;
+                else if (type === 'Training') href = '/Training/Details/' + n.relatedEntityId;
                 relatedLink = '<div class="mt-2"><a href="' + esc(href) + '" onclick="event.stopPropagation()" class="text-xs font-medium text-brand-600 hover:text-brand-700 underline">View Related ' + esc(n.relatedEntityType) + '</a></div>';
             }
             var rowBg = n.isRead ? 'opacity-75' : 'bg-slate-50/50';

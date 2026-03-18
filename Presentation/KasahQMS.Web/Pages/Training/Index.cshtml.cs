@@ -88,19 +88,19 @@ public class IndexModel : PageModel
         // TMD/Deputy: can see all trainings
         if (!isTmdOrDeputy && !isManager)
         {
-            // Staff - only their own records
-            query = query.Where(t => t.UserId == currentUserId);
+            // Staff - records where they are trainee or assigned trainer
+            query = query.Where(t => t.UserId == currentUserId || t.TrainerId == currentUserId);
         }
         else if (isManager && !isTmdOrDeputy)
         {
-            // Manager - subordinates + self
+            // Manager - subordinates + self (as trainee) + records where manager is assigned trainer
             var subordinateIds = await _dbContext.Users
                 .Where(u => u.ManagerId == currentUserId && u.IsActive)
                 .Select(u => u.Id)
                 .ToListAsync();
             
             subordinateIds.Add(currentUserId.Value);
-            query = query.Where(t => subordinateIds.Contains(t.UserId));
+            query = query.Where(t => subordinateIds.Contains(t.UserId) || t.TrainerId == currentUserId);
         }
         // TMD/Deputy: no filter (see all)
 

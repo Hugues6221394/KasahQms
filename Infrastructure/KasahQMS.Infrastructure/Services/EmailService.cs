@@ -28,51 +28,59 @@ public class EmailService : IEmailService
         bool isHtml = true,
         CancellationToken cancellationToken = default)
     {
-        try
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            var smtpSettings = _configuration.GetSection("Smtp");
-            var host = smtpSettings["Host"];
-
-            // If SMTP is not configured, fallback to logging the full email content
-            if (string.IsNullOrEmpty(host))
+            try
             {
-                _logger.LogInformation(
-                    "[DEV MODE - NO SMTP] Email not sent.\n  To: {To}\n  Subject: {Subject}\n  Body: {Body}",
-                    to, subject, body);
+                var smtpSettings = _configuration.GetSection("Smtp");
+                var host = smtpSettings["Host"];
+
+                // If SMTP is not configured, fallback to metadata logging only
+                if (string.IsNullOrEmpty(host))
+                {
+                    _logger.LogWarning(
+                        "[NO SMTP CONFIGURED] Email not sent. To: {To}, Subject: {Subject}",
+                        to, subject);
+                    return;
+                }
+
+                var port = int.TryParse(smtpSettings["Port"], out var p) ? p : 587;
+                var username = smtpSettings["Username"];
+                var password = smtpSettings["Password"];
+                var from = smtpSettings["From"] ?? "noreply@kasahqms.com";
+                var fromName = smtpSettings["FromName"] ?? from;
+                var enableSsl = bool.TryParse(smtpSettings["EnableSsl"], out var ssl) ? ssl : true;
+
+                using var client = new SmtpClient(host, port)
+                {
+                    EnableSsl = enableSsl,
+                    Credentials = new NetworkCredential(username, password)
+                };
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(from, fromName),
+                    Subject = subject,
+                    Body = body,
+                    IsBodyHtml = isHtml
+                };
+                mailMessage.To.Add(to);
+
+                await client.SendMailAsync(mailMessage, cancellationToken);
+                _logger.LogInformation("Email sent successfully to {To} on attempt {Attempt}", to, attempt);
                 return;
             }
-
-            var port = int.TryParse(smtpSettings["Port"], out var p) ? p : 587;
-            var username = smtpSettings["Username"];
-            var password = smtpSettings["Password"];
-            var from = smtpSettings["From"] ?? "noreply@kasahqms.com";
-            var fromName = smtpSettings["FromName"] ?? from;
-            var enableSsl = bool.TryParse(smtpSettings["EnableSsl"], out var ssl) ? ssl : true;
-
-            using var client = new SmtpClient(host, port)
+            catch (Exception ex) when (attempt < maxAttempts)
             {
-                EnableSsl = enableSsl,
-                Credentials = new NetworkCredential(username, password)
-            };
-
-            var mailMessage = new MailMessage
+                _logger.LogWarning(ex, "Email send attempt {Attempt} failed for {To}. Retrying...", attempt, to);
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 2), cancellationToken);
+            }
+            catch (Exception ex)
             {
-                From = new MailAddress(from, fromName),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = isHtml
-            };
-            mailMessage.To.Add(to);
-
-            await client.SendMailAsync(mailMessage, cancellationToken);
-
-            _logger.LogInformation("Email sent successfully to {To}", to);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send email to {To}", to);
-            // We don't throw here to avoid breaking the user flow, but strictly log the error.
-            // In a strict environment, we might want to throw or queue for retry.
+                _logger.LogCritical(ex, "Email failed after {Attempts} attempts to {To}", maxAttempts, to);
+                return;
+            }
         }
     }
 

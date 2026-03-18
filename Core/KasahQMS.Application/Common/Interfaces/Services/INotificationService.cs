@@ -13,7 +13,8 @@ public interface INotificationService
         string message,
         NotificationType type,
         Guid? relatedEntityId = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? relatedEntityType = null);
 
     Task MarkAsReadAsync(Guid notificationId, CancellationToken cancellationToken = default);
     

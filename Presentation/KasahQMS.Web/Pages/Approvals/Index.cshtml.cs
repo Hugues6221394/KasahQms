@@ -25,6 +25,7 @@ public class IndexModel : PageModel
 
     public List<ApprovalItem> PendingTasks { get; set; } = new();
     public List<ApprovalItem> PendingDocuments { get; set; } = new();
+    public List<ApprovalItem> PendingTrainings { get; set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -71,6 +72,24 @@ public class IndexModel : PageModel
                 SubmmitedBy = d.CreatedBy != null ? d.CreatedBy.FullName : "Unknown",
                 SubmittedAt = d.SubmittedAt ?? d.CreatedAt,
                 Type = "Document"
+            })
+            .ToListAsync();
+
+        PendingTrainings = await _dbContext.TrainingRecords
+            .AsNoTracking()
+            .Include(t => t.User)
+            .Where(t => t.TenantId == tenantId &&
+                        t.CreatedById == userId.Value &&
+                        t.Status == TrainingStatus.Completed)
+            .OrderByDescending(t => t.CompletedDate)
+            .Select(t => new ApprovalItem
+            {
+                Id = t.Id,
+                Number = t.TrainingType.ToString(),
+                Title = t.Title,
+                SubmmitedBy = t.User != null ? t.User.FullName : "Unknown",
+                SubmittedAt = t.CompletedDate ?? t.LastModifiedAt ?? t.CreatedAt,
+                Type = "Training"
             })
             .ToListAsync();
     }

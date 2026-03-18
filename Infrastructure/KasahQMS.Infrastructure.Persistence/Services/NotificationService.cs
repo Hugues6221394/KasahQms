@@ -31,7 +31,8 @@ public class NotificationService : INotificationService
         string message,
         NotificationType type,
         Guid? relatedEntityId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? relatedEntityType = null)
     {
         try
         {
@@ -41,7 +42,7 @@ public class NotificationService : INotificationService
                 message,
                 type,
                 relatedEntityId,
-                type.ToString());
+                relatedEntityType ?? type.ToString());
 
             _dbContext.Set<Notification>().Add(notification);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -83,4 +84,3 @@ public class NotificationService : INotificationService
             .CountAsync(n => n.UserId == userId && !n.IsRead, cancellationToken);
     }
 }
-

@@ -61,6 +61,17 @@ public class BadgesApiController : ControllerBase
             ? await pendingTasksQuery.CountAsync(t => t.CreatedAt > lastSeenTasks.Value || t.LastModifiedAt > lastSeenTasks.Value)
             : await pendingTasksQuery.CountAsync();
 
+        // New scheduled trainings for trainee or trainer
+        var lastSeenTraining = _cache.Get<DateTime?>($"last_seen_training_{userId}");
+        var trainingQuery = _dbContext.TrainingRecords
+            .Where(t => t.TenantId == tenantId &&
+                        t.Status == TrainingStatus.Scheduled &&
+                        (t.UserId == userId.Value || t.TrainerId == userId.Value));
+        var pendingTraining = lastSeenTraining.HasValue
+            ? await trainingQuery.CountAsync(t => t.CreatedAt > lastSeenTraining.Value ||
+                                                  (t.LastModifiedAt.HasValue && t.LastModifiedAt.Value > lastSeenTraining.Value))
+            : await trainingQuery.CountAsync();
+
         // Documents pending review (current approver is user) or sent to user
         var pendingDocuments = await _dbContext.Documents
             .CountAsync(d => d.TenantId == tenantId &&
@@ -87,7 +98,7 @@ public class BadgesApiController : ControllerBase
                             (subordinateIdsList.Contains(t.CreatedById) || 
                              (t.AssignedToId.HasValue && subordinateIdsList.Contains(t.AssignedToId.Value))));
 
-        return Ok(new BadgeCounts(unreadMessages, pendingTasks, pendingDocuments, unreadNotifications, pendingApprovals));
+        return Ok(new BadgeCounts(unreadMessages, pendingTasks, pendingDocuments, unreadNotifications, pendingApprovals, pendingTraining));
     }
 
     /// <summary>
@@ -181,6 +192,8 @@ public class BadgesApiController : ControllerBase
             _cache.Set($"last_seen_tasks_{userId}", (DateTime?)DateTime.UtcNow, expiry);
         else if (type == "messages")
             _cache.Set($"last_seen_messages_{userId}", (DateTime?)DateTime.UtcNow, expiry);
+        else if (type == "training")
+            _cache.Set($"last_seen_training_{userId}", (DateTime?)DateTime.UtcNow, expiry);
 
         return Ok();
     }
@@ -208,5 +221,5 @@ public class BadgesApiController : ControllerBase
     }
 }
 
-public record BadgeCounts(int UnreadMessages, int PendingTasks, int PendingDocuments, int UnreadNotifications, int PendingApprovals);
+public record BadgeCounts(int UnreadMessages, int PendingTasks, int PendingDocuments, int UnreadNotifications, int PendingApprovals, int PendingTraining);
 public record UnreadChatInfo(Guid ThreadId, string Name, string Type, string LastMessage, DateTime LastMessageAt, Guid SenderId);
