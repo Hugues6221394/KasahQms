@@ -9,6 +9,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using DelegationDto = KasahQMS.Application.Common.Interfaces.Services.DelegationDto;
 
 namespace KasahQMS.Web.Pages.PermissionDelegation;
@@ -165,9 +166,17 @@ public class IndexModel : PageModel
             var isSysAdminForPerms = User.Claims
                 .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
                 .Select(c => c.Value)
-                .Any(r => r.Contains("System Admin", StringComparison.OrdinalIgnoreCase));
+                .Any(r =>
+                    r.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
+                    r.Contains("SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
+                    r.Contains("Tenant Admin", StringComparison.OrdinalIgnoreCase) ||
+                    r.Contains("TenantAdmin", StringComparison.OrdinalIgnoreCase));
 
-            AvailablePermissions = userPermissions
+            var permissionsForDelegation = isSysAdminForPerms
+                ? GetAllPermissionConstants()
+                : userPermissions;
+
+            AvailablePermissions = permissionsForDelegation
                 .Select(p => new PermissionItem(p, p))
                 .OrderBy(p => p.Value)
                 .ToList();
@@ -250,5 +259,17 @@ public class IndexModel : PageModel
 
     public record SubordinateItem(Guid Id, string Name, string Email);
     public record PermissionItem(string Label, string Value);
+
+    private static IEnumerable<string> GetAllPermissionConstants()
+    {
+        return typeof(Permissions)
+            .GetNestedTypes(BindingFlags.Public)
+            .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
+            .Where(f => f.FieldType == typeof(string) && f.IsLiteral && !f.IsInitOnly)
+            .Select(f => f.GetRawConstantValue()?.ToString())
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Cast<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+    }
 }
 
