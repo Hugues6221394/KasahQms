@@ -104,9 +104,8 @@ public class PermissionDelegationService : IPermissionDelegationService
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var tenantId2 = _currentUserService.TenantId;
-            await _cacheService.RemoveAsync($"user_permissions_v2_{tenantId2}_{subordinateId}", cancellationToken);
-            await _cacheService.RemoveAsync($"user_permissions_v3_{tenantId2}_{subordinateId}", cancellationToken);
+            await _cacheService.RemoveAsync($"user_permissions_v2_{tenantId.Value}_{subordinateId}", cancellationToken);
+            await _cacheService.RemoveAsync($"user_permissions_v3_{tenantId.Value}_{subordinateId}", cancellationToken);
 
             _logger.LogInformation(
                 "Permission {Permission} delegated from {DelegatorId} to {SubordinateId}",

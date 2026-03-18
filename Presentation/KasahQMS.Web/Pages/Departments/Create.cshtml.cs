@@ -1,11 +1,13 @@
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Application.Common.Security;
 using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using AppAuthorizationService = KasahQMS.Application.Common.Security.IAuthorizationService;
 
 namespace KasahQMS.Web.Pages.Departments;
 
@@ -13,22 +15,25 @@ namespace KasahQMS.Web.Pages.Departments;
 /// Create new Organization Unit (Department) page. Only System Admin can create departments.
 /// Per QMS requirements, System Admin creates Organization Units (e.g., Rwanda, Legal Department, Finance Department).
 /// </summary>
-[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin")]
+[Microsoft.AspNetCore.Authorization.Authorize]
 public class CreateModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly AppAuthorizationService _authorizationService;
     private readonly IAuditLogService _auditLogService;
     private readonly ILogger<CreateModel> _logger;
 
     public CreateModel(
         ApplicationDbContext dbContext, 
         ICurrentUserService currentUserService,
+        AppAuthorizationService authorizationService,
         IAuditLogService auditLogService,
         ILogger<CreateModel> logger)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _authorizationService = authorizationService;
         _auditLogService = auditLogService;
         _logger = logger;
     }
@@ -52,13 +57,20 @@ public class CreateModel : PageModel
 
     public List<LookupItem> ParentUnits { get; set; } = new();
 
-    public async Task OnGetAsync()
+    public async Task<IActionResult> OnGetAsync()
     {
+        if (!await _authorizationService.HasPermissionAsync(Permissions.Organization.Create))
+            return Forbid();
+
         await LoadParentsAsync();
+        return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (!await _authorizationService.HasPermissionAsync(Permissions.Organization.Create))
+            return Forbid();
+
         await LoadParentsAsync();
 
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();

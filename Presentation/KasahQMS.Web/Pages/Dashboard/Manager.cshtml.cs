@@ -56,6 +56,7 @@ public class ManagerModel : PageModel
     public string CurrentDate { get; set; } = "";
     public string DocumentsTrendJson { get; set; } = "{}";
     public string TaskStatusJson { get; set; } = "{}";
+    public bool ShowTrainingWelcome { get; set; }
 
     public async Task OnGetAsync()
     {
@@ -215,6 +216,10 @@ public class ManagerModel : PageModel
 
         DocumentsTrendJson = await BuildDocumentTrendAsync(tenantId, visibleUserIds);
         TaskStatusJson = await BuildTaskStatusAsync(tenantId, visibleUserIds);
+
+        var hasAnyTraining = await _dbContext.TrainingRecords
+            .AnyAsync(t => t.UserId == currentUser.Id && t.TenantId == tenantId);
+        ShowTrainingWelcome = !hasAnyTraining;
     }
 
     private static string SerializeChart(IEnumerable<string> labels, IEnumerable<int> values)

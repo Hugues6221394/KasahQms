@@ -14,6 +14,7 @@
             <p class="mt-2 text-sm text-slate-200">@Model.CurrentDate</p>
             <div class="mt-6 flex flex-wrap gap-3">
                 <a href="/Users" class="inline-flex items-center rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Manage Users</a>
+                <a href="/Departments" class="inline-flex items-center rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Manage Departments</a>
                 <a href="/AuditLogs" class="inline-flex items-center rounded-xl border border-brand-300/40 bg-brand-500/20 px-4 py-2.5 text-sm font-semibold text-brand-100 transition hover:bg-brand-500/30">Audit Logs</a>
             </div>
         </div>
@@ -45,6 +46,7 @@
     <section>
         <h2 class="text-lg font-semibold text-slate-900">Quick Actions</h2>
         <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <a href="/Departments" class="card card-hover p-5"><p class="font-semibold text-slate-800">Manage Org Units</p><p class="mt-1 text-sm text-slate-500">Create, edit, or delete departments</p></a>
             <a href="/Documents/Create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Create Document</p><p class="mt-1 text-sm text-slate-500">Start new policy artifact</p></a>
             <a href="/Tasks?action=create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Assign Task</p><p class="mt-1 text-sm text-slate-500">Delegate corrective work</p></a>
             <a href="/Audits/Create" class="card card-hover p-5"><p class="font-semibold text-slate-800">Schedule Audit</p><p class="mt-1 text-sm text-slate-500">Plan internal or external audit</p></a>

@@ -1,30 +1,35 @@
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Application.Common.Security;
 using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using AppAuthorizationService = KasahQMS.Application.Common.Security.IAuthorizationService;
 
 namespace KasahQMS.Web.Pages.Departments;
 
-[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin")]
+[Microsoft.AspNetCore.Authorization.Authorize]
 public class EditModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly AppAuthorizationService _authorizationService;
     private readonly IAuditLogService _auditLogService;
     private readonly ILogger<EditModel> _logger;
 
     public EditModel(
         ApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
+        AppAuthorizationService authorizationService,
         IAuditLogService auditLogService,
         ILogger<EditModel> logger)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _authorizationService = authorizationService;
         _auditLogService = auditLogService;
         _logger = logger;
     }
@@ -56,6 +61,9 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
+        if (!await _authorizationService.HasPermissionAsync(Permissions.Organization.Edit))
+            return Forbid();
+
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
         var department = await _dbContext.OrganizationUnits
             .AsNoTracking()
@@ -74,6 +82,9 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (!await _authorizationService.HasPermissionAsync(Permissions.Organization.Edit))
+            return Forbid();
+
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
         var department = await _dbContext.OrganizationUnits
             .FirstOrDefaultAsync(o => o.Id == Id && o.TenantId == tenantId);

@@ -1,10 +1,12 @@
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Application.Common.Security;
 using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using AppAuthorizationService = KasahQMS.Application.Common.Security.IAuthorizationService;
 
 namespace KasahQMS.Web.Pages.Departments;
 
@@ -12,22 +14,25 @@ namespace KasahQMS.Web.Pages.Departments;
 /// Organization Unit (Department) management page.
 /// System Admin: full CRUD. TMD/Deputy: read-only.
 /// </summary>
-[Authorize]
+[Microsoft.AspNetCore.Authorization.Authorize]
 public class IndexModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly AppAuthorizationService _authorizationService;
     private readonly IAuditLogService _auditLogService;
     private readonly ILogger<IndexModel> _logger;
 
     public IndexModel(
         ApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
+        AppAuthorizationService authorizationService,
         IAuditLogService auditLogService,
         ILogger<IndexModel> logger)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _authorizationService = authorizationService;
         _auditLogService = auditLogService;
         _logger = logger;
     }
@@ -42,7 +47,7 @@ public class IndexModel : PageModel
     {
         var currentUser = await GetCurrentUserWithRolesAsync();
         if (currentUser == null) return Unauthorized();
-        (CanViewDepartments, CanManageDepartments) = ResolveDepartmentAccess(currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>());
+        (CanViewDepartments, CanManageDepartments) = await ResolveDepartmentAccessAsync();
         if (!CanViewDepartments) return Forbid();
 
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
@@ -94,7 +99,7 @@ public class IndexModel : PageModel
     {
         var currentUser = await GetCurrentUserWithRolesAsync();
         if (currentUser == null) return Unauthorized();
-        (_, CanManageDepartments) = ResolveDepartmentAccess(currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>());
+        (_, CanManageDepartments) = await ResolveDepartmentAccessAsync();
         if (!CanManageDepartments) return Forbid();
 
         var department = await _dbContext.OrganizationUnits.FindAsync(id);
@@ -125,7 +130,7 @@ public class IndexModel : PageModel
     {
         var currentUser = await GetCurrentUserWithRolesAsync();
         if (currentUser == null) return Unauthorized();
-        (_, CanManageDepartments) = ResolveDepartmentAccess(currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>());
+        (_, CanManageDepartments) = await ResolveDepartmentAccessAsync();
         if (!CanManageDepartments) return Forbid();
 
         var department = await _dbContext.OrganizationUnits.FindAsync(id);
@@ -156,7 +161,7 @@ public class IndexModel : PageModel
     {
         var currentUser = await GetCurrentUserWithRolesAsync();
         if (currentUser == null) return Unauthorized();
-        (_, CanManageDepartments) = ResolveDepartmentAccess(currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>());
+        (_, CanManageDepartments) = await ResolveDepartmentAccessAsync();
         if (!CanManageDepartments) return Forbid();
 
         var department = await _dbContext.OrganizationUnits.FindAsync(id);
@@ -201,21 +206,26 @@ public class IndexModel : PageModel
             .FirstOrDefaultAsync(u => u.Id == _currentUserService.UserId.Value);
     }
 
-    private static (bool CanView, bool CanManage) ResolveDepartmentAccess(List<string> roles)
+    private async Task<(bool CanView, bool CanManage)> ResolveDepartmentAccessAsync()
     {
-        var isSystemAdmin = roles.Any(r =>
-            string.Equals(r, "System Admin", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(r, "SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(r, "TenantAdmin", StringComparison.OrdinalIgnoreCase));
+        var canView = await _authorizationService.HasAnyPermissionAsync(new[]
+        {
+            Permissions.Organization.View,
+            Permissions.Organization.Create,
+            Permissions.Organization.Edit,
+            Permissions.Organization.Delete,
+            Permissions.Organization.ManageHierarchy
+        });
 
-        var isTmdOrDeputy = roles.Any(r =>
-            string.Equals(r, "TMD", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(r, "Top Managing Director", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(r, "Country Manager", StringComparison.OrdinalIgnoreCase) ||
-            r.Contains("Deputy", StringComparison.OrdinalIgnoreCase));
+        var canManage = await _authorizationService.HasAnyPermissionAsync(new[]
+        {
+            Permissions.Organization.Create,
+            Permissions.Organization.Edit,
+            Permissions.Organization.Delete,
+            Permissions.Organization.ManageHierarchy
+        });
 
-        return (isSystemAdmin || isTmdOrDeputy, isSystemAdmin);
+        return (canView, canManage);
     }
 
     public record DepartmentRow(
@@ -229,4 +239,3 @@ public class IndexModel : PageModel
         bool IsActive,
         string Status);
 }
-
