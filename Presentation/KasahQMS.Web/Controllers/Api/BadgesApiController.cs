@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System.Text.Json;
 
 namespace KasahQMS.Web.Controllers.Api;
 
@@ -100,13 +101,17 @@ public class BadgesApiController : ControllerBase
 
         var pendingDocumentApprovals = await _dbContext.Documents
             .CountAsync(d => d.TenantId == tenantId &&
-                            d.Status == DocumentStatus.Submitted &&
+                            (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview) &&
                             d.CurrentApproverId == userId.Value);
 
-        var pendingTrainingApprovals = await _dbContext.TrainingRecords
-            .CountAsync(t => t.TenantId == tenantId &&
-                            t.Status == TrainingStatus.Completed &&
-                            t.CreatedById == userId.Value);
+        var pendingTrainingCandidates = await _dbContext.TrainingRecords
+            .AsNoTracking()
+            .Where(t => t.TenantId == tenantId &&
+                        t.Status == TrainingStatus.Completed &&
+                        t.CreatedById == userId.Value)
+            .Select(t => t.Notes)
+            .ToListAsync();
+        var pendingTrainingApprovals = pendingTrainingCandidates.Count(IsPendingTrainingApproval);
 
         var pendingApprovals = pendingTaskApprovals + pendingDocumentApprovals + pendingTrainingApprovals;
 
@@ -230,6 +235,25 @@ public class BadgesApiController : ControllerBase
 
         var count = await query.CountAsync();
         return Math.Min(count, 99); // Cap at 99 for display
+    }
+
+    private static bool IsPendingTrainingApproval(string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes)) return true;
+        try
+        {
+            using var doc = JsonDocument.Parse(notes);
+            var root = doc.RootElement;
+            var hasDecision = root.TryGetProperty("CreatorDecision", out var decision) &&
+                              !string.IsNullOrWhiteSpace(decision.GetString());
+            var isArchived = root.TryGetProperty("IsArchived", out var archived) &&
+                             archived.ValueKind == JsonValueKind.True;
+            return !hasDecision && !isArchived;
+        }
+        catch (JsonException)
+        {
+            return true;
+        }
     }
 }
 
