@@ -235,13 +235,25 @@ builder.Services.AddRateLimiter(options =>
         limiterOptions.QueueLimit = 10;
     });
 
-    // Strict limit for authentication endpoints (brute-force protection)
-    options.AddFixedWindowLimiter("auth", limiterOptions =>
+    // Authentication limiter:
+    // - keep strict limits on POST (credential/code submissions)
+    // - allow higher volume on GET so redirects/navigation don't lock out the flow
+    options.AddPolicy("auth", context =>
     {
-        limiterOptions.PermitLimit = 5;
-        limiterOptions.Window = TimeSpan.FromMinutes(1);
-        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        limiterOptions.QueueLimit = 0;
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var method = context.Request.Method;
+        var path = context.Request.Path.ToString().ToLowerInvariant();
+        var isPost = HttpMethods.IsPost(method);
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"{ip}:{path}:{method}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = isPost ? 5 : 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
     });
 
     // Sliding window for document uploads
