@@ -126,4 +126,43 @@
             </table>
         </div>
     </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-slate-900">Recent User Logins</h2>
+            <span class="text-xs text-slate-400">Last 30 logins</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100">
+                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Time</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">IP Address</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Device</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    @if (Model.RecentUserLogins.Any())
+                    {
+                        @foreach (var login in Model.RecentUserLogins)
+                        {
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4 text-xs text-slate-500 whitespace-nowrap">@login.Timestamp</td>
+                                <td class="px-6 py-4 text-sm font-medium text-slate-900">@login.UserName</td>
+                                <td class="px-6 py-4 text-sm text-slate-600">@(!string.IsNullOrWhiteSpace(login.IpAddress) ? login.IpAddress : "—")</td>
+                                <td class="px-6 py-4 text-sm text-slate-500 truncate max-w-xs">@(!string.IsNullOrWhiteSpace(login.DeviceInfo) ? login.DeviceInfo : "—")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">No login activity found yet.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>

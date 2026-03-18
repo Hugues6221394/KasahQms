@@ -20,6 +20,7 @@ public class IndexModel : PageModel
 
     public List<ActivityLogViewModel> RecentActivities { get; set; } = new();
     public List<LoginHourViewModel> LoginByHour { get; set; } = new();
+    public List<UserLoginViewModel> RecentUserLogins { get; set; } = new();
     public int ActiveUsersCount { get; set; }
 
     public async Task OnGetAsync()
@@ -83,6 +84,25 @@ public class IndexModel : PageModel
             .Select(a => a.UserId)
             .Distinct()
             .CountAsync();
+
+        // 4. Recent user login stream (explicit per-user login visibility)
+        RecentUserLogins = await _dbContext.UserLoginActivities
+            .AsNoTracking()
+            .Where(a => a.TenantId == tenantId && a.EventType == "Login")
+            .OrderByDescending(a => a.Timestamp)
+            .Take(30)
+            .Join(
+                _dbContext.Users.AsNoTracking(),
+                a => a.UserId,
+                u => u.Id,
+                (a, u) => new UserLoginViewModel
+                {
+                    Timestamp = a.Timestamp.ToString("MMM dd, yyyy HH:mm"),
+                    UserName = u.FullName,
+                    IpAddress = a.IpAddress,
+                    DeviceInfo = a.DeviceInfo
+                })
+            .ToListAsync();
     }
 
     public class ActivityLogViewModel
@@ -99,5 +119,13 @@ public class IndexModel : PageModel
     {
         public int Hour { get; set; }
         public int Count { get; set; }
+    }
+
+    public class UserLoginViewModel
+    {
+        public string Timestamp { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string? IpAddress { get; set; }
+        public string? DeviceInfo { get; set; }
     }
 }
