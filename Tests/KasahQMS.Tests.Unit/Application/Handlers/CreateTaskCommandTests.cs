@@ -14,9 +14,11 @@ public class CreateTaskCommandTests
 {
     private readonly Mock<ITaskRepository> _taskRepositoryMock;
     private readonly Mock<ITaskAssignmentRepository> _taskAssignmentRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
     private readonly Mock<IAuditLogService> _auditLogServiceMock;
     private readonly Mock<INotificationService> _notificationServiceMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<ILogger<CreateTaskCommandHandler>> _loggerMock;
     private readonly CreateTaskCommandHandler _handler;
@@ -28,9 +30,11 @@ public class CreateTaskCommandTests
     {
         _taskRepositoryMock = new Mock<ITaskRepository>();
         _taskAssignmentRepositoryMock = new Mock<ITaskAssignmentRepository>();
+        _userRepositoryMock = new Mock<IUserRepository>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();
         _auditLogServiceMock = new Mock<IAuditLogService>();
         _notificationServiceMock = new Mock<INotificationService>();
+        _emailServiceMock = new Mock<IEmailService>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _loggerMock = new Mock<ILogger<CreateTaskCommandHandler>>();
 
@@ -40,9 +44,11 @@ public class CreateTaskCommandTests
         _handler = new CreateTaskCommandHandler(
             _taskRepositoryMock.Object,
             _taskAssignmentRepositoryMock.Object,
+            _userRepositoryMock.Object,
             _currentUserServiceMock.Object,
             _auditLogServiceMock.Object,
             _notificationServiceMock.Object,
+            _emailServiceMock.Object,
             _unitOfWorkMock.Object,
             _loggerMock.Object);
     }

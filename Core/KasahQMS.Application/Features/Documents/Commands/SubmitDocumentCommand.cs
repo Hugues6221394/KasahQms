@@ -25,6 +25,7 @@ public class SubmitDocumentCommandHandler : IRequestHandler<SubmitDocumentComman
     private readonly IAuditLogService _auditLogService;
     private readonly IWorkflowService _workflowService;
     private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<SubmitDocumentCommandHandler> _logger;
 
@@ -38,6 +39,7 @@ public class SubmitDocumentCommandHandler : IRequestHandler<SubmitDocumentComman
         IAuditLogService auditLogService,
         IWorkflowService workflowService,
         INotificationService notificationService,
+        IEmailService emailService,
         IUnitOfWork unitOfWork,
         ILogger<SubmitDocumentCommandHandler> logger)
     {
@@ -48,6 +50,7 @@ public class SubmitDocumentCommandHandler : IRequestHandler<SubmitDocumentComman
         _auditLogService = auditLogService;
         _workflowService = workflowService;
         _notificationService = notificationService;
+        _emailService = emailService;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -120,6 +123,19 @@ public class SubmitDocumentCommandHandler : IRequestHandler<SubmitDocumentComman
                     NotificationType.DocumentApproval,
                     document.Id,
                     cancellationToken);
+
+                var approver = await _userRepository.GetByIdWithRolesAsync(nextApproverId.Value, cancellationToken);
+                var submitter = await _userRepository.GetByIdWithRolesAsync(userId.Value, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(approver?.Email))
+                {
+                    await _emailService.SendDocumentApprovalRequestEmailAsync(
+                        approver.Email!,
+                        approver.FullName,
+                        document.Title,
+                        document.DocumentNumber,
+                        submitter?.FullName ?? "A colleague",
+                        cancellationToken);
+                }
             }
 
             // Auto-create task for tender requisitions (as per user flow)

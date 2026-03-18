@@ -28,26 +28,32 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
 {
     private readonly ITaskRepository _taskRepository;
     private readonly ITaskAssignmentRepository _taskAssignmentRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CreateTaskCommandHandler> _logger;
 
     public CreateTaskCommandHandler(
         ITaskRepository taskRepository,
         ITaskAssignmentRepository taskAssignmentRepository,
+        IUserRepository userRepository,
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
         INotificationService notificationService,
+        IEmailService emailService,
         IUnitOfWork unitOfWork,
         ILogger<CreateTaskCommandHandler> logger)
     {
         _taskRepository = taskRepository;
         _taskAssignmentRepository = taskAssignmentRepository;
+        _userRepository = userRepository;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
         _notificationService = notificationService;
+        _emailService = emailService;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -125,6 +131,9 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
                 $"Task '{request.Title}' created",
                 cancellationToken);
 
+            var assignedByUser = await _userRepository.GetByIdWithRolesAsync(userId.Value, cancellationToken);
+            var assignedByName = assignedByUser?.FullName ?? "QMS System";
+
             foreach (var assigneeId in assigneeIds)
             {
                 await _notificationService.SendAsync(
@@ -134,6 +143,30 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
                     NotificationType.TaskAssignment,
                     task.Id,
                     cancellationToken);
+
+                var assigneeUser = await _userRepository.GetByIdWithRolesAsync(assigneeId, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(assigneeUser?.Email))
+                {
+                    if (request.DueDate.HasValue)
+                    {
+                        await _emailService.SendTaskAssignmentEmailAsync(
+                            assigneeUser.Email!,
+                            assigneeUser.FullName,
+                            request.Title,
+                            request.DueDate.Value,
+                            assignedByName,
+                            cancellationToken);
+                    }
+                    else
+                    {
+                        await _emailService.SendEmailAsync(
+                            assigneeUser.Email!,
+                            $"New Task Assigned: {request.Title}",
+                            $"<p>Hello {assigneeUser.FullName},</p><p>You have been assigned a new task: <strong>{request.Title}</strong>.</p><p><strong>Assigned By:</strong> {assignedByName}</p><p>Please log in to KASAH QMS to review and complete it.</p>",
+                            true,
+                            cancellationToken);
+                    }
+                }
             }
 
             _logger.LogInformation("Task {TaskId} created by user {UserId}", task.Id, userId);

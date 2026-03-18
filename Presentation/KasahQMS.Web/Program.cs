@@ -3,6 +3,7 @@ using KasahQMS.Application;
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Infrastructure;
 using KasahQMS.Infrastructure.Persistence;
+using KasahQMS.Infrastructure.BackgroundJobs;
 using KasahQMS.Infrastructure.Persistence.Data;
 using KasahQMS.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -65,6 +66,7 @@ builder.Services.AddScoped<IStockService, StockService>();
 // SignalR
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IPushNotificationSender, SignalRPushNotificationSender>();
+builder.Services.AddHostedService<TaskOverdueCheckJob>();
 
 // ===========================================
 // Authentication Configuration

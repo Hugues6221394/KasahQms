@@ -1,10 +1,13 @@
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Repositories;
 using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Domain.Entities.Notifications;
 using KasahQMS.Domain.Enums;
+using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace KasahQMS.Infrastructure.BackgroundJobs;
 
@@ -50,21 +53,56 @@ public class TaskOverdueCheckJob : BackgroundService
     private async Task CheckOverdueTasksAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var taskRepository = scope.ServiceProvider.GetRequiredService<ITaskRepository>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
         var dateTimeService = scope.ServiceProvider.GetRequiredService<IDateTimeService>();
 
         _logger.LogDebug("Checking for overdue tasks...");
 
-        // Get all tenants and check each one
-        // In production, you would iterate through active tenants
-        // For now, this is a simplified version
-
         var now = dateTimeService.UtcNow;
+        var overdueTasks = await dbContext.QmsTasks
+            .Include(t => t.AssignedTo)
+            .Where(t => t.AssignedToId.HasValue &&
+                        t.DueDate.HasValue &&
+                        t.DueDate < now &&
+                        t.Status != QmsTaskStatus.Completed &&
+                        t.Status != QmsTaskStatus.Cancelled &&
+                        t.Status != QmsTaskStatus.Overdue)
+            .ToListAsync(cancellationToken);
 
-        // This would need to be implemented per-tenant
-        // For demonstration, we'll log the operation
-        _logger.LogInformation("Task overdue check completed at {Time}", now);
+        if (!overdueTasks.Any())
+        {
+            _logger.LogDebug("No newly overdue tasks found at {Time}", now);
+            return;
+        }
+
+        foreach (var task in overdueTasks)
+        {
+            task.MarkOverdue();
+
+            await notificationService.SendAsync(
+                task.AssignedToId!.Value,
+                "Task Overdue",
+                $"Task '{task.Title}' is overdue and needs urgent attention.",
+                NotificationType.TaskOverdue,
+                task.Id,
+                cancellationToken);
+
+            var email = task.AssignedTo?.Email;
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                await emailService.SendEmailAsync(
+                    email!,
+                    $"Overdue Task Alert: {task.Title}",
+                    $"<p>Hello {task.AssignedTo!.FullName},</p><p>Your task <strong>{task.Title}</strong> is now overdue.</p><p><strong>Due Date:</strong> {task.DueDate:MMMM dd, yyyy}</p><p>Please log in to KASAH QMS and take immediate action.</p>",
+                    true,
+                    cancellationToken);
+            }
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Task overdue check completed at {Time}. Marked {Count} task(s) as overdue.", now, overdueTasks.Count);
     }
 }
 
