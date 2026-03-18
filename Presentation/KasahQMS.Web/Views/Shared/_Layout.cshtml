@@ -855,7 +855,7 @@
         var href = '/Notifications';
         if (n.relatedEntityId) {
           if (relType === 'taskassignment' || relType === 'task') href = '/Tasks/Details/' + n.relatedEntityId;
-          else if (relType === 'documentsubmitted' || relType === 'document') href = '/Documents/Details/' + n.relatedEntityId;
+          else if (relType.startsWith('document') || relType === 'document') href = '/Documents/Details/' + n.relatedEntityId;
           else if (relType === 'training') href = '/Training/Details/' + n.relatedEntityId;
         }
         var time = n.createdAt ? new Date(n.createdAt).toLocaleString() : '';

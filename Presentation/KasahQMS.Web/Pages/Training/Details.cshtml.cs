@@ -111,6 +111,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Updated",
+            "Training was marked as In Progress.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Training marked as In Progress.", success = true });
     }
@@ -130,34 +135,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
-
-        if (record.CreatedById != Guid.Empty && record.CreatedById != _currentUserService.UserId)
-        {
-            var actor = await _dbContext.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == _currentUserService.UserId);
-            var actorName = actor?.FullName ?? "A team member";
-
-            await _notificationService.SendAsync(
-                record.CreatedById,
-                "Training Completed - Approval Requested",
-                $"{actorName} completed training '{record.Title}' and reported it for your approval.",
-                NotificationType.System,
-                record.Id,
-                relatedEntityType: "Training");
-
-            var creator = await _dbContext.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == record.CreatedById);
-            if (!string.IsNullOrWhiteSpace(creator?.Email))
-            {
-                await _emailService.SendEmailAsync(
-                    creator.Email!,
-                    $"Training Completion Approval Needed: {record.Title}",
-                    $@"<p>Hello {creator.FullName},</p>
-                       <p>{actorName} has completed training <strong>{record.Title}</strong> and reported it for your approval.</p>
-                       <p>Please review it in the Training Hub.</p>",
-                    true);
-            }
-        }
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Completed",
+            "Training was completed and submitted for approval.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Training completed and reported for approval.", success = true });
     }
@@ -202,6 +184,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Certificate Updated",
+            "A certificate file was uploaded or replaced for this training.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Certificate uploaded successfully.", success = true });
     }
@@ -229,6 +216,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Certificate Updated",
+            "The certificate file was removed from this training.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Certificate removed.", success = true });
     }
@@ -262,6 +254,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Updated",
+            "Certificate number was updated for this training.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Certificate number updated.", success = true });
     }
@@ -332,11 +329,30 @@ public class DetailsModel : PageModel
         if (!await CanAccessTrainingAsync(record) || !CanSaveAssessmentValue(record, _currentUserService.UserId))
             return RedirectToPage("/Account/AccessDenied");
 
-        if (string.IsNullOrWhiteSpace(AssessmentArea))
-            ModelState.AddModelError(nameof(AssessmentArea), "Assessment area is required.");
+        var assessmentArea = string.IsNullOrWhiteSpace(AssessmentArea)
+            ? Request.Form[nameof(AssessmentArea)].ToString()
+            : AssessmentArea;
 
-        if (!ModelState.IsValid)
+        if (string.IsNullOrWhiteSpace(assessmentArea))
         {
+            // Allow trainers/creators to post remarks-only updates without creating a competency row.
+            if (!string.IsNullOrWhiteSpace(TrainerRemarks))
+            {
+                var remarksOnlyMeta = ParseNotes(record.Notes);
+                remarksOnlyMeta.TrainerRemarks = TrainerRemarks;
+                remarksOnlyMeta.TrainerAssessmentSubmittedAt = DateTime.UtcNow;
+                record.Notes = JsonSerializer.Serialize(remarksOnlyMeta);
+                record.LastModifiedById = _currentUserService.UserId;
+                record.LastModifiedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+                await NotifyTrainingStakeholdersAsync(
+                    record,
+                    "Training Assessment Updated",
+                    "Trainer remarks were updated for this training.",
+                    _currentUserService.UserId);
+                return RedirectToPage(new { id, message = "Trainer remarks saved successfully.", success = true });
+            }
+
             await LoadRecordAsync(id);
             await SetCapabilitiesAndDefaultsAsync(record, false);
             ActionMessage = "Assessment area is required.";
@@ -360,7 +376,7 @@ public class DetailsModel : PageModel
             Id = Guid.NewGuid(),
             UserId = record.UserId,
             AssessorId = assessorId,
-            CompetencyArea = AssessmentArea.Trim(),
+            CompetencyArea = assessmentArea.Trim(),
             Level = level,
             AssessedAt = DateTime.UtcNow,
             NextAssessmentDate = nextDateUtc,
@@ -375,20 +391,14 @@ public class DetailsModel : PageModel
         meta.TrainerRemarks = TrainerRemarks;
         meta.TrainerAssessmentSubmittedAt = DateTime.UtcNow;
         record.Notes = JsonSerializer.Serialize(meta);
+        record.LastModifiedById = _currentUserService.UserId;
+        record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
-
-        if (record.CreatedById != Guid.Empty && record.CreatedById != assessorId)
-        {
-            var assessor = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == assessorId);
-            var assessorName = assessor?.FullName ?? "Assessor";
-            await _notificationService.SendAsync(
-                record.CreatedById,
-                "Training Assessment Submitted",
-                $"{assessorName} submitted an assessment for training '{record.Title}'.",
-                NotificationType.System,
-                record.Id,
-                relatedEntityType: "Training");
-        }
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Assessment Submitted",
+            "A trainee assessment was submitted/updated by the trainer.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Assessment saved successfully.", success = true });
     }
@@ -412,6 +422,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Trainer Feedback Updated",
+            "Trainee feedback/rating was saved.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Your trainer rating has been saved.", success = true });
     }
@@ -431,6 +446,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Trainer Feedback Updated",
+            "Trainee feedback/rating was deleted.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Your trainer rating has been deleted.", success = true });
     }
@@ -448,6 +468,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Assessment Response",
+            "Trainee posted a response to trainer assessment remarks.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Your response has been saved.", success = true });
     }
@@ -467,6 +492,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Approval Updated",
+            "Creator approved this training.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Training approved.", success = true });
     }
@@ -486,6 +516,11 @@ public class DetailsModel : PageModel
         record.LastModifiedById = _currentUserService.UserId;
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await NotifyTrainingStakeholdersAsync(
+            record,
+            "Training Approval Updated",
+            "Creator rejected this training.",
+            _currentUserService.UserId);
 
         return RedirectToPage(new { id, message = "Training rejected.", success = true });
     }
@@ -711,6 +746,59 @@ public class DetailsModel : PageModel
         string Assessor, string AssessedDate, string NextAssessment);
 
     public record UserOption(Guid Id, string Name);
+
+    private async Task NotifyTrainingStakeholdersAsync(
+        TrainingRecord record,
+        string changeTitle,
+        string changeMessage,
+        Guid? actorUserId)
+    {
+        var recipientIds = new[] { record.CreatedById, record.UserId, record.TrainerId ?? Guid.Empty }
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .Where(id => !actorUserId.HasValue || id != actorUserId.Value)
+            .ToList();
+
+        if (!recipientIds.Any()) return;
+
+        var actorName = await GetActorNameAsync(actorUserId);
+        var title = changeTitle;
+        var message = $"{actorName}: {changeMessage} ({record.Title})";
+
+        var recipients = await _dbContext.Users.AsNoTracking()
+            .Where(u => recipientIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.Email, u.FullName })
+            .ToListAsync();
+
+        foreach (var recipient in recipients)
+        {
+            await _notificationService.SendAsync(
+                recipient.Id,
+                title,
+                message,
+                NotificationType.System,
+                record.Id,
+                relatedEntityType: "Training");
+
+            if (!string.IsNullOrWhiteSpace(recipient.Email))
+            {
+                await _emailService.SendEmailAsync(
+                    recipient.Email!,
+                    $"Training Update: {record.Title}",
+                    $@"<p>Hello {recipient.FullName},</p><p>{message}</p><p>Please review the training details in Training Hub.</p>",
+                    true);
+            }
+        }
+    }
+
+    private async Task<string> GetActorNameAsync(Guid? actorUserId)
+    {
+        if (!actorUserId.HasValue) return "A team member";
+        var user = await _dbContext.Users.AsNoTracking()
+            .Select(u => new { u.Id, u.FirstName, u.LastName })
+            .FirstOrDefaultAsync(u => u.Id == actorUserId.Value);
+        return user == null ? "A team member" : $"{user.FirstName} {user.LastName}".Trim();
+    }
 
     private static TrainingWorkflowMeta ParseNotes(string? notes)
     {

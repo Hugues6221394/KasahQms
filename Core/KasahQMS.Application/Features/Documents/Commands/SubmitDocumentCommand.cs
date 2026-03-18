@@ -96,6 +96,27 @@ public class SubmitDocumentCommandHandler : IRequestHandler<SubmitDocumentComman
                     cancellationToken);
             }
 
+            // Resubmission fallback:
+            // if workflow config does not resolve an approver, route back to the latest rejecting approver
+            // so the approver receives notification and badge updates end-to-end.
+            if (nextApproverId == null && document.Approvals != null)
+            {
+                var lastRejectApproverId = document.Approvals
+                    .Where(a => !a.IsApproved)
+                    .OrderByDescending(a => a.ApprovedAt)
+                    .Select(a => a.ApproverId)
+                    .FirstOrDefault();
+
+                if (lastRejectApproverId != Guid.Empty && lastRejectApproverId != userId.Value)
+                {
+                    nextApproverId = lastRejectApproverId;
+                    _logger.LogInformation(
+                        "Resubmitted document {DocumentId} routed to last rejecting approver {ApproverId}",
+                        document.Id,
+                        nextApproverId.Value);
+                }
+            }
+
             document.Submit(userId.Value, nextApproverId);
             
             // Update status to InReview if approver is assigned

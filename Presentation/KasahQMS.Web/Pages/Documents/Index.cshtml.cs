@@ -182,10 +182,17 @@ public class IndexModel : PageModel
             query = query.Where(d => d.Title.Contains(SearchTerm) || d.DocumentNumber.Contains(SearchTerm));
         }
 
-        // Apply status filter
-        if (!string.IsNullOrWhiteSpace(Status) && Enum.TryParse<DocumentStatus>(Status, out var status))
+        // Apply status filter (including virtual "Rejected" state -> returned to draft with rejection history)
+        if (!string.IsNullOrWhiteSpace(Status))
         {
-            query = query.Where(d => d.Status == status);
+            if (string.Equals(Status, "Rejected", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(d => d.Approvals.Any(a => !a.IsApproved));
+            }
+            else if (Enum.TryParse<DocumentStatus>(Status, out var status))
+            {
+                query = query.Where(d => d.Status == status);
+            }
         }
 
         // Apply type filter
@@ -197,20 +204,45 @@ public class IndexModel : PageModel
         TotalItems = await query.CountAsync();
         TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
 
-        Documents = await query
+        var projectedDocuments = await query
             .OrderByDescending(d => d.LastModifiedAt ?? d.CreatedAt)
             .Skip((CurrentPage - 1) * PageSize)
             .Take(PageSize)
+            .Select(d => new
+            {
+                d.Id,
+                d.Title,
+                d.DocumentNumber,
+                Type = d.DocumentType != null ? d.DocumentType.Name : "Unassigned",
+                d.Status,
+                d.CurrentVersion,
+                ModifiedAt = d.LastModifiedAt ?? d.CreatedAt,
+                LatestApproval = d.Approvals
+                    .OrderByDescending(a => a.ApprovedAt)
+                    .Select(a => new { a.IsApproved, a.Comments, a.ApprovedAt })
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        Documents = projectedDocuments
             .Select(d => new DocumentRow(
                 d.Id,
                 d.Title,
                 d.DocumentNumber,
-                d.DocumentType != null ? d.DocumentType.Name : "Unassigned",
-                d.Status.ToString(),
-                GetStatusClass(d.Status),
+                d.Type,
+                GetDisplayStatus(d.Status, d.LatestApproval != null && !d.LatestApproval.IsApproved),
+                GetDisplayStatusClass(d.Status, d.LatestApproval != null && !d.LatestApproval.IsApproved),
                 $"v{d.CurrentVersion}",
-                (d.LastModifiedAt ?? d.CreatedAt).ToString("MMM dd, yyyy")))
-            .ToListAsync();
+                d.ModifiedAt.ToString("MMM dd, yyyy"),
+                d.Status == DocumentStatus.Draft,
+                d.LatestApproval != null && !d.LatestApproval.IsApproved,
+                d.LatestApproval == null ? "—" : (d.LatestApproval.IsApproved ? "Approved" : "Rejected"),
+                d.LatestApproval == null
+                    ? "bg-slate-100 text-slate-600"
+                    : (d.LatestApproval.IsApproved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"),
+                d.LatestApproval?.ApprovedAt.ToString("MMM dd, yyyy HH:mm") ?? "—",
+                d.LatestApproval?.Comments))
+            .ToList();
 
         if (isTmdOrDeputy)
         {
@@ -294,6 +326,12 @@ public class IndexModel : PageModel
         };
     }
 
+    private static string GetDisplayStatus(DocumentStatus status, bool isLatestRejected)
+        => status == DocumentStatus.Draft && isLatestRejected ? "Rejected (Returned to Draft)" : status.ToString();
+
+    private static string GetDisplayStatusClass(DocumentStatus status, bool isLatestRejected)
+        => status == DocumentStatus.Draft && isLatestRejected ? "bg-rose-100 text-rose-700" : GetStatusClass(status);
+
     public record DocumentRow(
         Guid Id,
         string Title,
@@ -302,7 +340,13 @@ public class IndexModel : PageModel
         string Status,
         string StatusClass,
         string Version,
-        string ModifiedAt);
+        string ModifiedAt,
+        bool IsDraft,
+        bool IsLatestRejected,
+        string LastDecision,
+        string LastDecisionClass,
+        string LastDecisionAt,
+        string? LastDecisionReason);
 
     public record LookupItem(Guid Id, string Name);
     public record PendingApprovalRow(

@@ -61,12 +61,12 @@ public class BadgesApiController : ControllerBase
             ? await pendingTasksQuery.CountAsync(t => t.CreatedAt > lastSeenTasks.Value || t.LastModifiedAt > lastSeenTasks.Value)
             : await pendingTasksQuery.CountAsync();
 
-        // New scheduled trainings for trainee or trainer
+        // Training updates badge (changes in ongoing training visible to creator/trainer/trainee)
         var lastSeenTraining = _cache.Get<DateTime?>($"last_seen_training_{userId}");
         var trainingQuery = _dbContext.TrainingRecords
             .Where(t => t.TenantId == tenantId &&
-                        t.Status == TrainingStatus.Scheduled &&
-                        (t.UserId == userId.Value || t.TrainerId == userId.Value));
+                        t.Status != TrainingStatus.Expired &&
+                        (t.UserId == userId.Value || t.TrainerId == userId.Value || t.CreatedById == userId.Value));
         var pendingTraining = lastSeenTraining.HasValue
             ? await trainingQuery.CountAsync(t => t.CreatedAt > lastSeenTraining.Value ||
                                                   (t.LastModifiedAt.HasValue && t.LastModifiedAt.Value > lastSeenTraining.Value))

@@ -72,13 +72,13 @@
                         </div>
                     }
                     <div class="flex justify-between"><dt class="text-slate-500">Certificate #</dt><dd class="font-medium text-slate-800">@(r.CertificateNumber ?? "—")</dd></div>
-                    <div class="flex justify-between"><dt class="text-slate-500">Trainer Remarks</dt><dd class="font-medium text-slate-800">@(r.TrainerRemarks ?? "—")</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Trainer Remarks</dt><dd class="font-medium text-slate-800">@(string.IsNullOrWhiteSpace(r.TrainerRemarks) ? "—" : "See updates section")</dd></div>
                     @if (Model.CanViewTraineeRating)
                     {
                         <div class="flex justify-between"><dt class="text-slate-500">Trainee Rating</dt><dd class="font-medium text-slate-800">@(r.TraineeRating.HasValue ? $"{r.TraineeRating}/5" : "—")</dd></div>
-                        <div class="flex justify-between"><dt class="text-slate-500">Trainee Feedback</dt><dd class="font-medium text-slate-800">@(string.IsNullOrWhiteSpace(r.TraineeFeedback) ? "—" : r.TraineeFeedback)</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Trainee Feedback</dt><dd class="font-medium text-slate-800">@(string.IsNullOrWhiteSpace(r.TraineeFeedback) ? "—" : "See updates section")</dd></div>
                     }
-                    <div class="flex justify-between"><dt class="text-slate-500">Trainee Response</dt><dd class="font-medium text-slate-800">@(string.IsNullOrWhiteSpace(r.TraineeAssessmentResponse) ? "—" : r.TraineeAssessmentResponse)</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-500">Trainee Response</dt><dd class="font-medium text-slate-800">@(string.IsNullOrWhiteSpace(r.TraineeAssessmentResponse) ? "—" : "See updates section")</dd></div>
                     <div class="flex justify-between"><dt class="text-slate-500">Creator Decision</dt><dd class="font-medium text-slate-800">@(r.CreatorDecision ?? "Pending")</dd></div>
                 </dl>
 
@@ -180,6 +180,27 @@
                 </form>
             </div>
         }
+
+        <div class="card p-6 space-y-4">
+            <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Training Updates & Feedback</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p class="text-slate-500 mb-1">Trainer Remarks</p>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 max-h-48 overflow-y-auto whitespace-pre-wrap text-slate-800">@(string.IsNullOrWhiteSpace(r.TrainerRemarks) ? "—" : r.TrainerRemarks)</div>
+                </div>
+                <div>
+                    <p class="text-slate-500 mb-1">Trainee Response to Assessment</p>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 max-h-48 overflow-y-auto whitespace-pre-wrap text-slate-800">@(string.IsNullOrWhiteSpace(r.TraineeAssessmentResponse) ? "—" : r.TraineeAssessmentResponse)</div>
+                </div>
+                @if (Model.CanViewTraineeRating)
+                {
+                    <div class="md:col-span-2">
+                        <p class="text-slate-500 mb-1">Trainee Feedback on Trainer</p>
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 max-h-56 overflow-y-auto whitespace-pre-wrap text-slate-800">@(string.IsNullOrWhiteSpace(r.TraineeFeedback) ? "—" : r.TraineeFeedback)</div>
+                    </div>
+                }
+            </div>
+        </div>
 
         @if (Model.CanStartTraining || Model.CanCompleteTraining || Model.CanExpireTraining)
         {
