@@ -73,7 +73,12 @@
                     }
                     <div class="flex justify-between"><dt class="text-slate-500">Certificate #</dt><dd class="font-medium text-slate-800">@(r.CertificateNumber ?? "—")</dd></div>
                     <div class="flex justify-between"><dt class="text-slate-500">Trainer Remarks</dt><dd class="font-medium text-slate-800">@(r.TrainerRemarks ?? "—")</dd></div>
-                    <div class="flex justify-between"><dt class="text-slate-500">Trainee Rating</dt><dd class="font-medium text-slate-800">@(r.TraineeRating.HasValue ? $"{r.TraineeRating}/5" : "—")</dd></div>
+                    @if (Model.CanViewTraineeRating)
+                    {
+                        <div class="flex justify-between"><dt class="text-slate-500">Trainee Rating</dt><dd class="font-medium text-slate-800">@(r.TraineeRating.HasValue ? $"{r.TraineeRating}/5" : "—")</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Trainee Feedback</dt><dd class="font-medium text-slate-800">@(string.IsNullOrWhiteSpace(r.TraineeFeedback) ? "—" : r.TraineeFeedback)</dd></div>
+                    }
+                    <div class="flex justify-between"><dt class="text-slate-500">Trainee Response</dt><dd class="font-medium text-slate-800">@(string.IsNullOrWhiteSpace(r.TraineeAssessmentResponse) ? "—" : r.TraineeAssessmentResponse)</dd></div>
                     <div class="flex justify-between"><dt class="text-slate-500">Creator Decision</dt><dd class="font-medium text-slate-800">@(r.CreatorDecision ?? "Pending")</dd></div>
                 </dl>
 
@@ -273,7 +278,26 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Feedback</label>
                         <textarea asp-for="TraineeFeedback" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg"></textarea>
                     </div>
-                    <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">Submit Rating</button>
+                    <div class="flex gap-2">
+                        <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">Save Rating</button>
+                        @if (r.TraineeRating.HasValue || !string.IsNullOrWhiteSpace(r.TraineeFeedback))
+                        {
+                            <button type="submit" formaction="?handler=DeleteTrainerRating&id=@r.Id" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700">Delete Rating</button>
+                        }
+                    </div>
+                </form>
+            </div>
+        }
+
+        @if (Model.CanRespondToAssessment)
+        {
+            <div class="card p-6 space-y-4">
+                <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wide">Respond to Trainer Assessment</h2>
+                <p class="text-sm text-slate-500">You can review trainer results anytime and submit your response here.</p>
+                <form method="post" asp-page-handler="RespondAssessment" asp-route-id="@r.Id" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <textarea asp-for="TraineeAssessmentResponse" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="Acknowledge, ask follow-up questions, or provide your response"></textarea>
+                    <button type="submit" class="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-900">Save Response</button>
                 </form>
             </div>
         }

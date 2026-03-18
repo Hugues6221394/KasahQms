@@ -52,6 +52,8 @@ public class DetailsModel : PageModel
     public bool CanUpdateCertificate { get; set; }
     public bool CanSaveAssessment { get; set; }
     public bool CanRateTrainer { get; set; }
+    public bool CanViewTraineeRating { get; set; }
+    public bool CanRespondToAssessment { get; set; }
     public bool CanManageCertificateFile { get; set; }
     public bool CanApproveCompletion { get; set; }
     public string? TrainingChatUrl { get; set; }
@@ -74,6 +76,7 @@ public class DetailsModel : PageModel
     [BindProperty] public string? TrainerRemarks { get; set; }
     [BindProperty] public int? TraineeRating { get; set; }
     [BindProperty] public string? TraineeFeedback { get; set; }
+    [BindProperty] public string? TraineeAssessmentResponse { get; set; }
     [BindProperty] public string? ApprovalComment { get; set; }
     [BindProperty] public IFormFile? CertificateFile { get; set; }
 
@@ -410,18 +413,43 @@ public class DetailsModel : PageModel
         record.LastModifiedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
 
-        if (record.TrainerId.HasValue)
-        {
-            await _notificationService.SendAsync(
-                record.TrainerId.Value,
-                "New Trainer Rating Received",
-                $"A trainee submitted trainer feedback for '{record.Title}'.",
-                NotificationType.System,
-                record.Id,
-                relatedEntityType: "Training");
-        }
+        return RedirectToPage(new { id, message = "Your trainer rating has been saved.", success = true });
+    }
 
-        return RedirectToPage(new { id, message = "Trainer rating submitted successfully.", success = true });
+    public async Task<IActionResult> OnPostDeleteTrainerRatingAsync(Guid id)
+    {
+        var record = await GetRecordEntity(id);
+        if (record == null) return NotFound();
+        if (!await CanAccessTrainingAsync(record) || !CanRateTrainerValue(record, _currentUserService.UserId))
+            return RedirectToPage("/Account/AccessDenied");
+
+        var meta = ParseNotes(record.Notes);
+        meta.TraineeRating = null;
+        meta.TraineeFeedback = null;
+        meta.TraineeRatedAt = null;
+        record.Notes = JsonSerializer.Serialize(meta);
+        record.LastModifiedById = _currentUserService.UserId;
+        record.LastModifiedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        return RedirectToPage(new { id, message = "Your trainer rating has been deleted.", success = true });
+    }
+
+    public async Task<IActionResult> OnPostRespondAssessmentAsync(Guid id)
+    {
+        var record = await GetRecordEntity(id);
+        if (record == null) return NotFound();
+        if (!await CanAccessTrainingAsync(record) || !CanRespondToAssessmentValue(record, _currentUserService.UserId))
+            return RedirectToPage("/Account/AccessDenied");
+
+        var meta = ParseNotes(record.Notes);
+        meta.TraineeAssessmentResponse = TraineeAssessmentResponse;
+        record.Notes = JsonSerializer.Serialize(meta);
+        record.LastModifiedById = _currentUserService.UserId;
+        record.LastModifiedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        return RedirectToPage(new { id, message = "Your response has been saved.", success = true });
     }
 
     public async Task<IActionResult> OnPostApproveAsync(Guid id)
@@ -505,6 +533,7 @@ public class DetailsModel : PageModel
             meta.TrainerRemarks,
             meta.TraineeRating,
             meta.TraineeFeedback,
+            meta.TraineeAssessmentResponse,
             meta.CreatorDecision,
             meta.CreatorDecisionComment,
             t.CreatedAt.ToString("MMM dd, yyyy HH:mm"),
@@ -541,6 +570,8 @@ public class DetailsModel : PageModel
         CanUpdateCertificate = CanUpdateCertificateValue(record, currentUserId);
         CanSaveAssessment = CanSaveAssessmentValue(record, currentUserId);
         CanRateTrainer = CanRateTrainerValue(record, currentUserId);
+        CanViewTraineeRating = CanViewTraineeRatingValue(record, currentUserId);
+        CanRespondToAssessment = CanRespondToAssessmentValue(record, currentUserId);
         CanManageCertificateFile = CanManageCertificateFileValue(record, currentUserId);
         CanApproveCompletion = CanApproveCompletionValue(record, currentUserId);
         TrainingChatUrl = GetTrainingChatUrl(record, currentUserId);
@@ -554,6 +585,11 @@ public class DetailsModel : PageModel
             EditScheduledDate = record.ScheduledDate;
             EditTrainerId = record.TrainerId;
             EditPassingScore = record.PassingScore;
+            var meta = ParseNotes(record.Notes);
+            TraineeRating = meta.TraineeRating;
+            TraineeFeedback = meta.TraineeFeedback;
+            TraineeAssessmentResponse = meta.TraineeAssessmentResponse;
+            TrainerRemarks = meta.TrainerRemarks;
         }
 
         if (CanManageScheduledCrud)
@@ -601,6 +637,12 @@ public class DetailsModel : PageModel
 
     private bool CanRateTrainerValue(TrainingRecord record, Guid? currentUserId)
         => record.Status == TrainingStatus.Completed && IsTrainee(record, currentUserId);
+
+    private bool CanViewTraineeRatingValue(TrainingRecord record, Guid? currentUserId)
+        => IsCreator(record, currentUserId) || IsTrainee(record, currentUserId);
+
+    private bool CanRespondToAssessmentValue(TrainingRecord record, Guid? currentUserId)
+        => (record.Status == TrainingStatus.InProgress || record.Status == TrainingStatus.Completed) && IsTrainee(record, currentUserId);
 
     private bool CanManageCertificateFileValue(TrainingRecord record, Guid? currentUserId)
         => record.Status == TrainingStatus.Completed && (IsCreator(record, currentUserId) || IsTrainer(record, currentUserId));
@@ -660,7 +702,7 @@ public class DetailsModel : PageModel
         string StatusClass, string Employee, string Trainer, string ScheduledDate,
         string? CompletedDate, string? ExpiryDate, int? Score, int? PassingScore,
         string? CertificateNumber, string? Notes, string? CertificateFilePath, string? CertificateFileName,
-        string? TrainerRemarks, int? TraineeRating, string? TraineeFeedback,
+        string? TrainerRemarks, int? TraineeRating, string? TraineeFeedback, string? TraineeAssessmentResponse,
         string? CreatorDecision, string? CreatorDecisionComment, string CreatedAt, Guid UserId,
         Guid? TrainerId, Guid CreatedById, bool IsScheduled);
 
@@ -696,6 +738,7 @@ public class DetailsModel : PageModel
         public int? TraineeRating { get; set; }
         public string? TraineeFeedback { get; set; }
         public DateTime? TraineeRatedAt { get; set; }
+        public string? TraineeAssessmentResponse { get; set; }
         public string? CreatorDecision { get; set; }
         public string? CreatorDecisionComment { get; set; }
         public DateTime? CreatorDecisionAt { get; set; }
