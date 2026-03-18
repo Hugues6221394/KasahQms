@@ -102,19 +102,19 @@ public class ScheduleModel : PageModel
             r.Contains("Operations", StringComparison.OrdinalIgnoreCase) ||
             r.Contains("System Admin", StringComparison.OrdinalIgnoreCase));
 
-        if (!canManage)
-        {
-            ErrorMessage = "You do not have permission to delete audits.";
-            await OnGetAsync();
-            return Page();
-        }
-
         try
         {
             var audit = await _dbContext.Audits.FindAsync(id);
             if (audit == null)
             {
                 ErrorMessage = "Audit not found.";
+                await OnGetAsync();
+                return Page();
+            }
+
+            if (!canManage && audit.CreatedById != userId.Value)
+            {
+                ErrorMessage = "You do not have permission to delete this audit.";
                 await OnGetAsync();
                 return Page();
             }

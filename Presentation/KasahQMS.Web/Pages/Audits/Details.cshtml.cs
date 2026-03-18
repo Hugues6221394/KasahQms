@@ -44,6 +44,7 @@ public class DetailsModel : PageModel
     public List<TeamMemberView> TeamMembers { get; set; } = new();
     public string? ErrorMessage { get; set; }
     public bool CanEdit { get; set; }
+    public bool CanDelete { get; set; }
     public bool CanSchedule { get; set; }
     public string UserPermissionContext { get; set; } = string.Empty;
 
@@ -95,7 +96,8 @@ public class DetailsModel : PageModel
 
         // Check edit/schedule permissions
         CanSchedule = CheckSchedulePermission(roles);
-        CanEdit = CanSchedule; // Only schedulers can edit
+        CanEdit = CanSchedule || audit.CreatedById == currentUserId.Value;
+        CanDelete = CanEdit;
 
         // Map audit to view model
         Audit = new AuditDetailView
@@ -157,6 +159,50 @@ public class DetailsModel : PageModel
             currentUserId, string.Join(", ", roles), Id);
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id)
+    {
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId == null)
+            return Unauthorized();
+
+        var currentUser = await _dbContext.Users
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
+
+        if (currentUser == null)
+            return Unauthorized();
+
+        var audit = await _dbContext.Audits.FirstOrDefaultAsync(a => a.Id == id);
+        if (audit == null)
+            return RedirectToPage("./Index");
+
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var canSchedule = CheckSchedulePermission(roles);
+        var canDelete = canSchedule || audit.CreatedById == currentUserId.Value;
+
+        if (!canDelete)
+        {
+            ErrorMessage = "You do not have permission to delete this audit.";
+            Id = id;
+            return await OnGetAsync();
+        }
+
+        try
+        {
+            _dbContext.Audits.Remove(audit);
+            await _dbContext.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Audit deleted successfully.";
+            return RedirectToPage("./Index");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting audit {AuditId}", id);
+            ErrorMessage = "Unable to delete audit. Please try again.";
+            Id = id;
+            return await OnGetAsync();
+        }
     }
 
     private (bool CanView, string Reason, string Context) CheckViewPermission(List<string> roles, Audit audit, Guid currentUserId)

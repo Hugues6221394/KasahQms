@@ -5,6 +5,10 @@ html, body {
     overflow-x: hidden;
 }
 
+[x-cloak] {
+    display: none !important;
+}
+
 .hide-on-mobile { display: none; }
 .show-on-mobile { display: block; }
 
@@ -23,8 +27,18 @@ html, body {
 /* App shell */
 .app-shell { min-height: 100vh; }
 .app-sidebar { width: 280px; }
+.app-content,
+.app-main,
+.page-transition-wrapper {
+    min-width: 0;
+}
 
 @media (max-width: 1023px) {
+    .app-sidebar {
+        width: min(86vw, 320px);
+        max-width: 320px;
+    }
+
     .app-content {
         margin-left: 0 !important;
         width: 100%;
@@ -39,6 +53,11 @@ html, body {
 
     .app-main {
         padding: 0.875rem;
+        overflow-x: hidden;
+    }
+
+    .app-sidebar nav {
+        -webkit-overflow-scrolling: touch;
     }
 
     .app-global-search input {
@@ -53,6 +72,13 @@ html, body {
 
     .app-main {
         padding: 0.75rem;
+    }
+
+    .app-main > *,
+    .app-main section,
+    .app-main .card {
+        max-width: 100%;
+        min-width: 0;
     }
 
     .app-global-search { display: none !important; }
@@ -111,6 +137,12 @@ a.card:focus-visible {
 
     th, td {
         white-space: nowrap;
+    }
+
+    .app-main table {
+        width: 100%;
+        display: block;
+        overflow-x: auto;
     }
 }
 

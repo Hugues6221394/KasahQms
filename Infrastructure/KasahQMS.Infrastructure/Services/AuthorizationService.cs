@@ -287,6 +287,16 @@ public class AuthorizationService : IAuthorizationService
             if (isSystemAdminRole || isTmdOrDeputyRole)
             {
                 permissions.Add(KasahQMS.Application.Common.Security.Permissions.Employees.View);
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Organization.View);
+            }
+
+            // System Admin retains full department management
+            if (isSystemAdminRole)
+            {
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Organization.Create);
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Organization.Edit);
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Organization.Delete);
+                permissions.Add(KasahQMS.Application.Common.Security.Permissions.Organization.ManageHierarchy);
             }
 
             // Add delegated permissions if delegation service is available

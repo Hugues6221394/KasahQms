@@ -1,0 +1,88 @@
+@page "{id:guid}"
+@model KasahQMS.Web.Pages.Audits.EditModel
+@{
+    ViewData["Title"] = "Edit Audit";
+}
+
+<div class="py-8">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Edit Audit</h1>
+                <p class="text-sm text-slate-500">Update audit details and schedule.</p>
+            </div>
+            <a href="/Audits/Details/@Model.Id" class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">Back to Details</a>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">@Model.ErrorMessage</div>
+        }
+
+        <div class="card p-6">
+            <form method="post" class="space-y-5">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div>
+                    <label asp-for="Title" class="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                    <input asp-for="Title" class="w-full rounded-lg border border-slate-300 px-3 py-2.5" />
+                    <span asp-validation-for="Title" class="text-xs text-rose-600"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <textarea asp-for="Description" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2.5"></textarea>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label asp-for="AuditType" class="block text-sm font-medium text-slate-700 mb-1">Audit Type</label>
+                        <select asp-for="AuditType" asp-items="Html.GetEnumSelectList<KasahQMS.Domain.Enums.AuditType>()" class="w-full rounded-lg border border-slate-300 px-3 py-2.5"></select>
+                    </div>
+                    <div>
+                        <label asp-for="LeadAuditorId" class="block text-sm font-medium text-slate-700 mb-1">Lead Auditor</label>
+                        <select asp-for="LeadAuditorId" class="w-full rounded-lg border border-slate-300 px-3 py-2.5">
+                            <option value="">Unassigned</option>
+                            @foreach (var auditor in Model.Auditors)
+                            {
+                                <option value="@auditor.Id">@auditor.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label asp-for="PlannedStartDate" class="block text-sm font-medium text-slate-700 mb-1">Planned Start</label>
+                        <input asp-for="PlannedStartDate" type="date" class="w-full rounded-lg border border-slate-300 px-3 py-2.5" />
+                    </div>
+                    <div>
+                        <label asp-for="PlannedEndDate" class="block text-sm font-medium text-slate-700 mb-1">Planned End</label>
+                        <input asp-for="PlannedEndDate" type="date" class="w-full rounded-lg border border-slate-300 px-3 py-2.5" />
+                        <span asp-validation-for="PlannedEndDate" class="text-xs text-rose-600"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <label asp-for="Scope" class="block text-sm font-medium text-slate-700 mb-1">Scope</label>
+                    <textarea asp-for="Scope" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2.5"></textarea>
+                </div>
+
+                <div>
+                    <label asp-for="Objectives" class="block text-sm font-medium text-slate-700 mb-1">Objectives</label>
+                    <textarea asp-for="Objectives" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2.5"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-3">
+                    <a href="/Audits/Details/@Model.Id" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</a>
+                    <button type="submit" class="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
