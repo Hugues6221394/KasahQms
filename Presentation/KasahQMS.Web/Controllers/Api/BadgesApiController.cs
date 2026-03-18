@@ -89,14 +89,26 @@ public class BadgesApiController : ControllerBase
         var unreadNotifications = await _dbContext.Notifications
             .CountAsync(n => n.UserId == userId.Value && !n.IsRead);
 
-        // Pending Approvals (Tasks from subordinates)
+        // Pending Approvals (aggregate for Approvals page badge)
         var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(userId.Value, recursive: true);
         var subordinateIdsList = subordinateIds.ToList();
-        var pendingApprovals = await _dbContext.QmsTasks
+        var pendingTaskApprovals = await _dbContext.QmsTasks
             .CountAsync(t => t.TenantId == tenantId && 
                             t.Status == QmsTaskStatus.AwaitingApproval &&
                             (subordinateIdsList.Contains(t.CreatedById) || 
                              (t.AssignedToId.HasValue && subordinateIdsList.Contains(t.AssignedToId.Value))));
+
+        var pendingDocumentApprovals = await _dbContext.Documents
+            .CountAsync(d => d.TenantId == tenantId &&
+                            d.Status == DocumentStatus.Submitted &&
+                            d.CurrentApproverId == userId.Value);
+
+        var pendingTrainingApprovals = await _dbContext.TrainingRecords
+            .CountAsync(t => t.TenantId == tenantId &&
+                            t.Status == TrainingStatus.Completed &&
+                            t.CreatedById == userId.Value);
+
+        var pendingApprovals = pendingTaskApprovals + pendingDocumentApprovals + pendingTrainingApprovals;
 
         return Ok(new BadgeCounts(unreadMessages, pendingTasks, pendingDocuments, unreadNotifications, pendingApprovals, pendingTraining));
     }

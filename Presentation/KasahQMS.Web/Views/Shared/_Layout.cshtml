@@ -851,9 +851,13 @@
       if (empty) empty.classList.add('hidden');
       list.classList.remove('hidden');
       list.innerHTML = notifItems.map(function(n) {
-        var href = (n.relatedEntityType === 'TaskAssignment' && n.relatedEntityId) ? '/Tasks/Details/' + n.relatedEntityId
-                 : (n.relatedEntityType === 'DocumentSubmitted' && n.relatedEntityId) ? '/Documents/Details/' + n.relatedEntityId
-                 : '/Notifications';
+        var relType = String(n.relatedEntityType || '').toLowerCase();
+        var href = '/Notifications';
+        if (n.relatedEntityId) {
+          if (relType === 'taskassignment' || relType === 'task') href = '/Tasks/Details/' + n.relatedEntityId;
+          else if (relType === 'documentsubmitted' || relType === 'document') href = '/Documents/Details/' + n.relatedEntityId;
+          else if (relType === 'training') href = '/Training/Details/' + n.relatedEntityId;
+        }
         var time = n.createdAt ? new Date(n.createdAt).toLocaleString() : '';
         return '<a href="' + href + '" onclick="qmsNotifGo(event,\'' + (n.id||'') + '\',\'' + href + '\')" class="block px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0">'
           + '<div class="font-medium text-slate-900 text-sm">' + (n.title||'') + '</div>'

@@ -58,7 +58,7 @@
         }
 
         // Update page title with total unread
-        var total = badges.messages + badges.tasks + badges.training + badges.notifications + badges.approvals;
+        var total = badges.messages + badges.tasks + badges.documents + badges.training + badges.notifications + badges.approvals;
         var baseTitle = document.title.replace(/^\(\d+\)\s*/, '');
         document.title = total > 0 ? '(' + total + ') ' + baseTitle : baseTitle;
     }
@@ -171,9 +171,11 @@
 
         var link = '';
         if (entityId) {
-            if (entityType === 'chat') link = '/Chat?thread=' + entityId;
-            else if (entityType === 'task') link = '/Tasks/Details/' + entityId;
-            else if (entityType === 'document') link = '/Documents/Details/' + entityId;
+            var normalizedEntityType = String(entityType || '').toLowerCase();
+            if (normalizedEntityType === 'chat') link = '/Chat?thread=' + entityId;
+            else if (normalizedEntityType === 'task') link = '/Tasks/Details/' + entityId;
+            else if (normalizedEntityType === 'document') link = '/Documents/Details/' + entityId;
+            else if (normalizedEntityType === 'training') link = '/Training/Details/' + entityId;
         }
 
         toast.innerHTML =
