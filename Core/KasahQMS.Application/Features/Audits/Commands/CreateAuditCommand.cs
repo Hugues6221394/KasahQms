@@ -3,6 +3,7 @@ using KasahQMS.Application.Common.Interfaces.Repositories;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Application.Common.Security;
 using KasahQMS.Domain.Common;
+using KasahQMS.Domain.Entities.Notifications;
 using KasahQMS.Domain.Entities.Audits;
 using KasahQMS.Domain.Enums;
 using MediatR;
@@ -24,21 +25,30 @@ public record CreateAuditCommand(
 public class CreateAuditCommandHandler : IRequestHandler<CreateAuditCommand, Result<Guid>>
 {
     private readonly IAuditRepository _auditRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CreateAuditCommandHandler> _logger;
 
     public CreateAuditCommandHandler(
         IAuditRepository auditRepository,
+        IUserRepository userRepository,
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
+        INotificationService notificationService,
+        IEmailService emailService,
         IUnitOfWork unitOfWork,
         ILogger<CreateAuditCommandHandler> logger)
     {
         _auditRepository = auditRepository;
+        _userRepository = userRepository;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
+        _notificationService = notificationService;
+        _emailService = emailService;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -97,6 +107,33 @@ public class CreateAuditCommandHandler : IRequestHandler<CreateAuditCommand, Res
                 audit.Id,
                 $"Audit '{request.Title}' created",
                 cancellationToken);
+
+            if (request.LeadAuditorId.HasValue)
+            {
+                await _notificationService.SendAsync(
+                    request.LeadAuditorId.Value,
+                    "Audit Scheduled",
+                    $"You have been assigned as lead auditor for '{request.Title}' ({request.ScheduledStartDate:yyyy-MM-dd} to {request.ScheduledEndDate:yyyy-MM-dd}).",
+                    NotificationType.AuditScheduled,
+                    audit.Id,
+                    cancellationToken);
+
+                var leadAuditor = await _userRepository.GetByIdWithRolesAsync(request.LeadAuditorId.Value, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(leadAuditor?.Email))
+                {
+                    await _emailService.SendEmailAsync(
+                        leadAuditor.Email!,
+                        $"Audit Scheduled: {request.Title}",
+                        $"<p>Hello {leadAuditor.FullName},</p>" +
+                        $"<p>You have been assigned as <strong>Lead Auditor</strong>.</p>" +
+                        $"<p><strong>Audit:</strong> {request.Title}<br/>" +
+                        $"<strong>Type:</strong> {request.AuditType}<br/>" +
+                        $"<strong>Schedule:</strong> {request.ScheduledStartDate:MMMM dd, yyyy} - {request.ScheduledEndDate:MMMM dd, yyyy}</p>" +
+                        $"<p>Please log in to KASAH QMS to review the scope and prepare execution.</p>",
+                        true,
+                        cancellationToken);
+                }
+            }
 
             _logger.LogInformation("Audit {AuditId} created by user {UserId}", audit.Id, userId);
 

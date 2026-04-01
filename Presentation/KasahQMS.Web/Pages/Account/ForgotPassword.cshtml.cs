@@ -1,5 +1,6 @@
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Infrastructure.Persistence.Data;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,25 +15,29 @@ public class ForgotPasswordModel : PageModel
     private readonly IEmailService _emailService;
     private readonly ILogger<ForgotPasswordModel> _logger;
     private readonly IWebHostEnvironment _env;
+    private readonly IMemoryCache _memoryCache;
+    private const int ResetOtpLength = 6;
+    private static readonly TimeSpan ResetOtpLifetime = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(60);
 
     public ForgotPasswordModel(
         ApplicationDbContext dbContext,
         IEmailService emailService,
         ILogger<ForgotPasswordModel> logger,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        IMemoryCache memoryCache)
     {
         _dbContext = dbContext;
         _emailService = emailService;
         _logger = logger;
         _env = env;
+        _memoryCache = memoryCache;
     }
 
     [BindProperty]
     public string Email { get; set; } = string.Empty;
 
     public bool Submitted { get; set; }
-    public bool IsDevelopmentMode => _env.IsDevelopment();
-    public string? DevResetLink { get; set; }
 
     public void OnGet() { }
 
@@ -46,42 +51,46 @@ public class ForgotPasswordModel : PageModel
 
         try
         {
+            var normalizedEmail = Email.Trim().ToLowerInvariant();
             var user = await _dbContext.Users
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == Email.ToLower() && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && u.IsActive);
 
             if (user != null)
             {
-                // Generate a secure URL-safe token
-                var rawBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
-                var token = Convert.ToBase64String(rawBytes)
-                    .Replace("+", "-").Replace("/", "_").Replace("=", "");
+                var now = DateTime.UtcNow;
+                var cooldownKey = $"pwdreset:cooldown:{user.Id}";
+                var shouldThrottle = _memoryCache.TryGetValue(cooldownKey, out _);
 
-                // Store in DB — survives server restarts
-                user.PasswordResetToken = token;
-                user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
-                await _dbContext.SaveChangesAsync();
-
-                var resetLink = $"{Request.Scheme}://{Request.Host}/Account/ResetPassword?token={Uri.EscapeDataString(token)}";
-
-                if (_env.IsDevelopment())
+                string token;
+                if (user.PasswordResetTokenExpiry.HasValue &&
+                    user.PasswordResetTokenExpiry.Value > now &&
+                    !string.IsNullOrWhiteSpace(user.PasswordResetToken))
                 {
-                    _logger.LogInformation(
-                        "[PASSWORD RESET][DEV] Link for {Email}: {ResetLink}", user.Email, resetLink);
+                    token = user.PasswordResetToken!;
+                }
+                else
+                {
+                    token = GenerateNumericOtp(ResetOtpLength);
+                    user.PasswordResetToken = token;
+                    user.PasswordResetTokenExpiry = now.Add(ResetOtpLifetime);
+                    await _dbContext.SaveChangesAsync();
                 }
 
-                await _emailService.SendEmailAsync(
-                    user.Email,
-                    "Password Reset Request – KASAH QMS",
-                    $"<p>Hello {user.FirstName},</p>" +
-                    $"<p>We received a request to reset your password. Click the link below:</p>" +
-                    $"<p><a href=\"{resetLink}\" style=\"background:#0c88e8;color:white;padding:10px 22px;border-radius:5px;text-decoration:none;\">Reset My Password</a></p>" +
-                    $"<p>This link expires in 1 hour. If you did not request this, ignore this email.</p>" +
-                    $"<p>— KASAH QMS Team</p>",
-                    isHtml: true);
+                if (!shouldThrottle)
+                {
+                    if (_env.IsDevelopment())
+                    {
+                        _logger.LogInformation(
+                            "[PASSWORD RESET][DEV] OTP for {Email}: {OtpCode}", user.Email, token);
+                    }
 
-                // In dev, expose the link directly on the page so you never get stuck
-                if (_env.IsDevelopment())
-                    DevResetLink = resetLink;
+                    await _emailService.SendPasswordResetOtpEmailAsync(
+                        user.Email,
+                        user.FullName,
+                        token);
+
+                    _memoryCache.Set(cooldownKey, true, ResendCooldown);
+                }
             }
         }
         catch (Exception ex)
@@ -91,5 +100,12 @@ public class ForgotPasswordModel : PageModel
 
         Submitted = true;
         return Page();
+    }
+
+    private static string GenerateNumericOtp(int length)
+    {
+        var max = (int)Math.Pow(10, length);
+        var value = System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, max);
+        return value.ToString($"D{length}");
     }
 }

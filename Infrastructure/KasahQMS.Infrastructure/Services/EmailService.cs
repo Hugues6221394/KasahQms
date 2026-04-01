@@ -47,7 +47,9 @@ public class EmailService : IEmailService
 
                 var port = int.TryParse(smtpSettings["Port"], out var p) ? p : 587;
                 var username = smtpSettings["Username"];
-                var password = smtpSettings["Password"];
+                var password = _configuration["Smtp:Password"]
+                    ?? _configuration["SENDGRID_API_KEY"]
+                    ?? smtpSettings["Password"];
                 var from = smtpSettings["From"] ?? "noreply@kasahqms.com";
                 var fromName = smtpSettings["FromName"] ?? from;
                 var enableSsl = bool.TryParse(smtpSettings["EnableSsl"], out var ssl) ? ssl : true;
@@ -142,6 +144,36 @@ public class EmailService : IEmailService
                     </div>
                     <p>This link will expire in 24 hours.</p>
                     <p style='color: #e05c4c;'>If you did not request this password reset, please ignore this email or contact your system administrator if you have concerns.</p>
+                    <hr style='border: none; border-top: 1px solid #ddd; margin: 30px 0;'>
+                    <p style='font-size: 12px; color: #666;'>
+                        This is an automated message from Kasah QMS. Please do not reply to this email.
+                    </p>
+                </div>
+            </body>
+            </html>";
+
+        await SendEmailAsync(email, subject, body, true, cancellationToken);
+    }
+
+    public async Task SendPasswordResetOtpEmailAsync(
+        string email,
+        string fullName,
+        string otpCode,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = "Your KASAH QMS Password Reset OTP";
+        var body = $@"
+            <html>
+            <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+                    <h1 style='color: #0c88e8;'>Password Reset OTP</h1>
+                    <p>Dear {fullName},</p>
+                    <p>Use the one-time code below to reset your password:</p>
+                    <div style='background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0; text-align:center;'>
+                        <p style='font-size: 28px; letter-spacing: 6px; margin: 8px 0; font-weight: 700;'>{otpCode}</p>
+                    </div>
+                    <p>This code expires in <strong>10 minutes</strong> and can only be used once.</p>
+                    <p style='color: #e05c4c;'>If you did not request this code, please ignore this email and contact your administrator.</p>
                     <hr style='border: none; border-top: 1px solid #ddd; margin: 30px 0;'>
                     <p style='font-size: 12px; color: #666;'>
                         This is an automated message from Kasah QMS. Please do not reply to this email.

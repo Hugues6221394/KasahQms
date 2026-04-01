@@ -14,6 +14,8 @@ public class ResetPasswordModel : PageModel
     private readonly ApplicationDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ILogger<ResetPasswordModel> _logger;
+    private const int MaxOtpAttempts = 5;
+    private static readonly TimeSpan OtpLockoutDuration = TimeSpan.FromMinutes(10);
 
     public ResetPasswordModel(
         ApplicationDbContext dbContext,
@@ -25,7 +27,10 @@ public class ResetPasswordModel : PageModel
         _logger = logger;
     }
 
-    [BindProperty(SupportsGet = true)]
+    [BindProperty]
+    public string Email { get; set; } = string.Empty;
+
+    [BindProperty]
     public string Token { get; set; } = string.Empty;
 
     [BindProperty]
@@ -40,28 +45,21 @@ public class ResetPasswordModel : PageModel
 
     public async Task OnGetAsync()
     {
-        if (string.IsNullOrWhiteSpace(Token))
-        {
-            ErrorMessage = "Missing reset token. Please request a new password reset link.";
-            return;
-        }
-
-        // Validate token exists in DB and is not expired
-        var user = await _dbContext.Users.FirstOrDefaultAsync(u =>
-            u.PasswordResetToken == Token &&
-            u.PasswordResetTokenExpiry != null &&
-            u.PasswordResetTokenExpiry > DateTime.UtcNow);
-
-        TokenValid = user != null;
-        if (!TokenValid)
-            ErrorMessage = "This reset link has expired or is invalid. Please request a new one.";
+        TokenValid = true;
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (string.IsNullOrWhiteSpace(Token))
         {
-            ErrorMessage = "Missing reset token.";
+            ErrorMessage = "Enter the OTP code from your email.";
+            TokenValid = true;
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            ErrorMessage = "Enter your account email.";
             return Page();
         }
 
@@ -79,16 +77,58 @@ public class ResetPasswordModel : PageModel
             return Page();
         }
 
-        // Look up user by DB-persisted token (also re-checks expiry)
+        var normalizedEmail = Email.Trim().ToLowerInvariant();
+        var now = DateTime.UtcNow;
+
+        // Bind OTP check to both email + code to prevent cross-account token use.
         var user = await _dbContext.Users.FirstOrDefaultAsync(u =>
+            u.Email.ToLower() == normalizedEmail &&
             u.PasswordResetToken == Token &&
             u.PasswordResetTokenExpiry != null &&
-            u.PasswordResetTokenExpiry > DateTime.UtcNow);
+            u.PasswordResetTokenExpiry > now);
 
         if (user == null)
         {
-            ErrorMessage = "This reset link has expired or is invalid. Please request a new one.";
+            var candidateUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+            if (candidateUser != null)
+            {
+                if (candidateUser.LockoutEndTime.HasValue && candidateUser.LockoutEndTime.Value > now)
+                {
+                    TokenValid = false;
+                    ErrorMessage = $"Too many invalid OTP attempts. Try again after {candidateUser.LockoutEndTime.Value:HH:mm} UTC.";
+                    return Page();
+                }
+
+                candidateUser.FailedLoginAttempts += 1;
+                if (candidateUser.FailedLoginAttempts >= MaxOtpAttempts)
+                {
+                    candidateUser.IsLockedOut = true;
+                    candidateUser.LockoutEndTime = now.Add(OtpLockoutDuration);
+                    candidateUser.PasswordResetToken = null;
+                    candidateUser.PasswordResetTokenExpiry = null;
+                    ErrorMessage = "Too many invalid OTP attempts. Your reset has been locked. Request a new OTP after 10 minutes.";
+                    TokenValid = false;
+                }
+                else
+                {
+                    var remaining = MaxOtpAttempts - candidateUser.FailedLoginAttempts;
+                    ErrorMessage = $"Invalid or expired OTP code. You have {remaining} attempt(s) remaining.";
+                    TokenValid = true;
+                }
+
+                await _dbContext.SaveChangesAsync();
+                return Page();
+            }
+
+            ErrorMessage = "Invalid request. Request a new OTP and try again.";
             TokenValid = false;
+            return Page();
+        }
+
+        if (user.LockoutEndTime.HasValue && user.LockoutEndTime.Value > now)
+        {
+            TokenValid = false;
+            ErrorMessage = $"Reset is temporarily locked due to invalid OTP attempts. Try again after {user.LockoutEndTime.Value:HH:mm} UTC.";
             return Page();
         }
 
@@ -100,6 +140,7 @@ public class ResetPasswordModel : PageModel
         user.PasswordResetTokenExpiry = null;
         user.FailedLoginAttempts = 0;
         user.IsLockedOut = false;
+        user.LockoutEndTime = null;
 
         await _dbContext.SaveChangesAsync();
 
