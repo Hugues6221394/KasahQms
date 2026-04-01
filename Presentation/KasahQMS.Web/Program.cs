@@ -7,10 +7,13 @@ using KasahQMS.Infrastructure.BackgroundJobs;
 using KasahQMS.Infrastructure.Persistence.Data;
 using KasahQMS.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 using System.Threading.RateLimiting;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Web.Hubs;
@@ -29,6 +32,14 @@ builder.Services.AddDataProtection();
 
 // In-memory cache for badge tracking
 builder.Services.AddMemoryCache();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
 
 // Add services from Clean Architecture layers
 builder.Services.AddApplicationLayer();
@@ -63,6 +74,7 @@ builder.Services.AddScoped<IRealTimeNotificationService, RealTimeNotificationSer
 
 // Stock management service
 builder.Services.AddScoped<IStockService, StockService>();
+builder.Services.AddHttpClient<IGroqService, GroqService>();
 
 // SignalR
 builder.Services.AddSignalR();
@@ -353,6 +365,7 @@ else
 
 // Security: Force HTTPS
 app.UseHttpsRedirection();
+app.UseResponseCompression();
 
 // Security: Comprehensive Security Headers
 app.Use(async (context, next) =>
@@ -439,6 +452,74 @@ app.UseCors(app.Environment.IsDevelopment() ? "Development" : "Production");
 
 // Authentication & Authorization
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+
+    if (path.StartsWithSegments("/health") ||
+        path.StartsWithSegments("/css") ||
+        path.StartsWithSegments("/js") ||
+        path.StartsWithSegments("/lib") ||
+        path.StartsWithSegments("/images") ||
+        path.StartsWithSegments("/uploads") ||
+        path.StartsWithSegments("/hubs") ||
+        path.StartsWithSegments("/favicon.ico"))
+    {
+        await next();
+        return;
+    }
+
+    var dbContext = context.RequestServices.GetRequiredService<ApplicationDbContext>();
+    var tenantId = await dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+    if (tenantId == Guid.Empty)
+    {
+        await next();
+        return;
+    }
+
+    var maintenanceEnabledRaw = await dbContext.SystemSettings.AsNoTracking()
+        .Where(s => s.TenantId == tenantId && s.Key == "System.MaintenanceMode.Enabled")
+        .Select(s => s.Value)
+        .FirstOrDefaultAsync();
+    var maintenanceEnabled = bool.TryParse(maintenanceEnabledRaw, out var enabled) && enabled;
+
+    if (!maintenanceEnabled)
+    {
+        await next();
+        return;
+    }
+
+    var isSystemAdmin = context.User.Identity?.IsAuthenticated == true &&
+        (context.User.IsInRole("System Admin") ||
+         context.User.IsInRole("SystemAdmin") ||
+         context.User.IsInRole("Admin") ||
+         context.User.IsInRole("TenantAdmin"));
+
+    if (isSystemAdmin)
+    {
+        await next();
+        return;
+    }
+
+    var isAllowedAnonymousPath =
+        path.StartsWithSegments("/Account/Login") ||
+        path.StartsWithSegments("/Account/ForgotPassword") ||
+        path.StartsWithSegments("/Account/ResetPassword") ||
+        path.StartsWithSegments("/Account/AccessDenied");
+
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    }
+
+    if (!isAllowedAnonymousPath)
+    {
+        context.Response.Redirect("/Account/Login");
+        return;
+    }
+
+    await next();
+});
 app.UseAuthorization();
 
 // ===========================================

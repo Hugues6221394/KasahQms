@@ -1,5 +1,6 @@
 using KasahQMS.Domain.Enums;
 using KasahQMS.Infrastructure.Persistence.Data;
+using KasahQMS.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -10,11 +11,13 @@ public class IndexModel : PageModel
 {
     private readonly ILogger<IndexModel> _logger;
     private readonly ApplicationDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public IndexModel(ILogger<IndexModel> logger, ApplicationDbContext dbContext)
+    public IndexModel(ILogger<IndexModel> logger, ApplicationDbContext dbContext, ICurrentUserService currentUserService)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -37,10 +40,29 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var tenantId = await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
-        var query = _dbContext.Capas.AsNoTracking()
+        var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+        var userId = _currentUserService.UserId;
+        var currentUser = userId.HasValue
+            ? await _dbContext.Users.AsNoTracking().Include(u => u.Roles).FirstOrDefaultAsync(u => u.Id == userId.Value)
+            : null;
+        var roles = currentUser?.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isExecutive = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+        var orgUnitId = currentUser?.OrganizationUnitId;
+
+        var visibleQuery = _dbContext.Capas.AsNoTracking()
             .Include(c => c.Owner)
+            .Include(c => c.TargetDepartment)
             .Where(c => c.TenantId == tenantId);
+
+        if (!isExecutive)
+        {
+            visibleQuery = visibleQuery.Where(c =>
+                c.CreatedById == userId ||
+                c.OwnerId == userId ||
+                c.IsGlobal ||
+                (orgUnitId.HasValue && c.TargetDepartmentId == orgUnitId.Value));
+        }
+        var query = visibleQuery;
 
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
@@ -57,15 +79,15 @@ public class IndexModel : PageModel
             query = query.Where(c => c.Priority == priority);
         }
 
-        DraftCount = await _dbContext.Capas.CountAsync(c => c.TenantId == tenantId && c.Status == CapaStatus.Draft);
-        UnderInvestigationCount = await _dbContext.Capas.CountAsync(c => c.TenantId == tenantId && c.Status == CapaStatus.UnderInvestigation);
-        ActionsDefinedCount = await _dbContext.Capas.CountAsync(c => c.TenantId == tenantId && c.Status == CapaStatus.ActionsDefined);
-        ActionsImplementedCount = await _dbContext.Capas.CountAsync(c => c.TenantId == tenantId && c.Status == CapaStatus.ActionsImplemented);
-        VerifiedCount = await _dbContext.Capas.CountAsync(c => c.TenantId == tenantId && c.Status == CapaStatus.EffectivenessVerified);
-        ClosedCount = await _dbContext.Capas.CountAsync(c => c.TenantId == tenantId && c.Status == CapaStatus.Closed);
+        DraftCount = await visibleQuery.CountAsync(c => c.Status == CapaStatus.Draft);
+        UnderInvestigationCount = await visibleQuery.CountAsync(c => c.Status == CapaStatus.UnderInvestigation);
+        ActionsDefinedCount = await visibleQuery.CountAsync(c => c.Status == CapaStatus.ActionsDefined);
+        ActionsImplementedCount = await visibleQuery.CountAsync(c => c.Status == CapaStatus.ActionsImplemented);
+        VerifiedCount = await visibleQuery.CountAsync(c => c.Status == CapaStatus.EffectivenessVerified);
+        ClosedCount = await visibleQuery.CountAsync(c => c.Status == CapaStatus.Closed);
 
         Capas = await query
-            .OrderByDescending(c => c.CreatedAt)
+            .OrderByDescending(c => c.LastModifiedAt ?? c.CreatedAt)
             .Select(c => new CapaRow(
                 c.Id,
                 c.CapaNumber,
@@ -76,6 +98,7 @@ public class IndexModel : PageModel
                 c.Status.ToString(),
                 GetStatusClass(c.Status),
                 c.Owner != null ? c.Owner.FullName : "Unassigned",
+                c.IsGlobal ? "All Departments" : (c.TargetDepartment != null ? c.TargetDepartment.Name : "Unscoped"),
                 c.TargetCompletionDate.HasValue ? c.TargetCompletionDate.Value.ToString("MMM dd, yyyy") : "No due date"))
             .ToListAsync();
 
@@ -119,5 +142,6 @@ public class IndexModel : PageModel
         string Status,
         string StatusClass,
         string Owner,
+        string Visibility,
         string DueDate);
 }

@@ -96,6 +96,7 @@ public class ApplicationDbContext : DbContext
 
     // Audit Logs
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
+    public DbSet<UserAuditLogHistoryState> UserAuditLogHistoryStates => Set<UserAuditLogHistoryState>();
     public DbSet<UserLoginActivity> UserLoginActivities => Set<UserLoginActivity>();
     
     // Permission Delegations
@@ -105,6 +106,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<ChatThread> ChatThreads => Set<ChatThread>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<ChatThreadParticipant> ChatThreadParticipants => Set<ChatThreadParticipant>();
+    public DbSet<AiConversation> AiConversations => Set<AiConversation>();
+    public DbSet<AiConversationMessage> AiConversationMessages => Set<AiConversationMessage>();
 
     // Stock Management
     public DbSet<StockItem> StockItems => Set<StockItem>();
@@ -159,11 +162,13 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Capa>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<QmsTask>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<AuditLogEntry>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<UserAuditLogHistoryState>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<OrganizationUnit>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<Role>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<SystemSetting>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<UserPermissionDelegation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<ChatThread>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AiConversation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<UserLoginActivity>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<StockItem>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
         modelBuilder.Entity<StockLocation>().HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);
@@ -229,6 +234,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Notification>()
             .HasQueryFilter(e => CurrentTenantId == null || e.User.TenantId == CurrentTenantId);
 
+        modelBuilder.Entity<AiConversationMessage>()
+            .HasQueryFilter(e => CurrentTenantId == null || e.Conversation.TenantId == CurrentTenantId);
+
         // Configure Role permissions as JSON string
         modelBuilder.Entity<Role>()
             .Property(r => r.Permissions)
@@ -284,11 +292,24 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<AuditLogEntry>().HasIndex(a => new { a.TenantId, a.Timestamp });
         modelBuilder.Entity<Notification>().HasIndex(n => n.UserId);
         modelBuilder.Entity<Notification>().HasIndex(n => new { n.UserId, n.IsRead });
+        modelBuilder.Entity<Notification>().HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAt });
         modelBuilder.Entity<UserLoginActivity>().HasIndex(a => new { a.TenantId, a.Timestamp });
         modelBuilder.Entity<UserLoginActivity>().HasIndex(a => a.UserId);
         modelBuilder.Entity<ChatMessage>().HasIndex(m => m.ThreadId);
         modelBuilder.Entity<ChatMessage>().HasIndex(m => m.CreatedAt);
+        modelBuilder.Entity<ChatMessage>().HasIndex(m => new { m.ThreadId, m.CreatedAt });
+        modelBuilder.Entity<ChatThread>().HasIndex(t => new { t.TenantId, t.Type, t.OrganizationUnitId });
         modelBuilder.Entity<ChatThreadParticipant>().HasIndex(p => new { p.ThreadId, p.UserId }).IsUnique();
+        modelBuilder.Entity<ChatThreadParticipant>().HasIndex(p => p.UserId);
+        modelBuilder.Entity<Document>().HasIndex(d => new { d.TenantId, d.Status, d.CurrentApproverId });
+        modelBuilder.Entity<Document>().HasIndex(d => new { d.TenantId, d.TargetUserId, d.Status });
+        modelBuilder.Entity<Document>().HasIndex(d => new { d.TenantId, d.CreatedById, d.Status });
+        modelBuilder.Entity<DocumentApproval>().HasIndex(a => new { a.DocumentId, a.IsApproved });
+        modelBuilder.Entity<QmsTask>().HasIndex(t => new { t.TenantId, t.AssignedToId, t.Status });
+        modelBuilder.Entity<QmsTask>().HasIndex(t => new { t.TenantId, t.Status, t.CreatedById });
+        modelBuilder.Entity<TrainingRecord>().HasIndex(t => new { t.TenantId, t.Status, t.CreatedById });
+        modelBuilder.Entity<TrainingRecord>().HasIndex(t => new { t.TenantId, t.UserId, t.Status });
+        modelBuilder.Entity<TrainingRecord>().HasIndex(t => new { t.TenantId, t.TrainerId, t.Status });
         
         // Stock Management indexes
         modelBuilder.Entity<StockItem>().HasIndex(s => new { s.TenantId, s.SKU }).IsUnique();

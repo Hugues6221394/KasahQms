@@ -184,6 +184,10 @@
                         <span class="text-amber-700">Editing message...</span>
                         <button type="button" id="cancel-edit" class="text-amber-600 hover:text-amber-800 font-medium">Cancel</button>
                     </div>
+                    <div id="reply-mode-bar" class="hidden flex items-center justify-between px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                        <span class="text-blue-700">Replying to: <span id="reply-preview-text" class="font-medium"></span></span>
+                        <button type="button" id="cancel-reply" class="text-blue-600 hover:text-blue-800 font-medium">Cancel</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -284,6 +288,9 @@
         var editMessageIdEl = document.getElementById('edit-message-id');
         var editModeBar = document.getElementById('edit-mode-bar');
         var cancelEditBtn = document.getElementById('cancel-edit');
+        var replyModeBar = document.getElementById('reply-mode-bar');
+        var replyPreviewTextEl = document.getElementById('reply-preview-text');
+        var cancelReplyBtn = document.getElementById('cancel-reply');
         var fileInput = document.getElementById('file-input');
         var filePreview = document.getElementById('file-preview');
         var fileNameEl = document.getElementById('file-name');
@@ -296,6 +303,7 @@
         var selectedFile = null;
         var contextMessageId = null;
         var contextMessageContent = null;
+        var replySnippet = null;
         
         // Auto-resize textarea
         chatInput.addEventListener('input', function() {
@@ -325,7 +333,7 @@
             div.setAttribute('data-message-content', msg.content || '');
             
             var wrapper = document.createElement('div');
-            wrapper.className = 'max-w-[70%] group';
+            wrapper.className = 'max-w-[70%] group relative';
             
                 var bubble = document.createElement('div');
             bubble.className = 'rounded-2xl px-4 py-3 ' + (isOwn ? 'bg-brand-600 text-white rounded-br-md' : 'bg-white border border-slate-200 text-slate-900 shadow-sm rounded-bl-md');
@@ -362,34 +370,87 @@
                 bubble.appendChild(time);
             
             wrapper.appendChild(bubble);
+
+            var replyBtn = document.createElement('button');
+            replyBtn.type = 'button';
+            replyBtn.className = 'mt-1 text-xs text-slate-500 hover:text-brand-600';
+            replyBtn.textContent = 'Reply';
+            replyBtn.onclick = function() {
+                var sender = msg.senderName || 'User';
+                var snippet = (msg.content || '').replace(/\s+/g, ' ').trim();
+                if (snippet.length > 60) snippet = snippet.substring(0, 57) + '...';
+                replySnippet = sender + ': ' + snippet;
+                replyPreviewTextEl.textContent = replySnippet;
+                replyModeBar.classList.remove('hidden');
+                chatInput.focus();
+            };
+            wrapper.appendChild(replyBtn);
             
             // Context menu trigger for own messages
             if (isOwn) {
                 var menuBtn = document.createElement('button');
-                menuBtn.className = 'opacity-0 group-hover:opacity-100 absolute -left-8 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-opacity';
+                menuBtn.type = 'button';
+                menuBtn.className = 'opacity-100 absolute top-1 right-1 z-20 p-1 rounded pointer-events-auto text-white/90 hover:text-white hover:bg-black/20';
                 menuBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>';
-                menuBtn.onclick = function(e) {
+                var inlineMenu = document.createElement('div');
+                inlineMenu.className = 'inline-msg-menu hidden absolute top-7 right-1 z-30 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[130px]';
+                inlineMenu.innerHTML =
+                    '<button type="button" class="inline-edit w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">Edit</button>' +
+                    '<button type="button" class="inline-delete w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>';
+
+                menuBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    showContextMenu(e, msg.id, msg.content);
-                };
-                wrapper.style.position = 'relative';
+                    e.preventDefault();
+                    document.querySelectorAll('.inline-msg-menu').forEach(function(m) { if (m !== inlineMenu) m.classList.add('hidden'); });
+                    inlineMenu.classList.toggle('hidden');
+                });
+
+                inlineMenu.querySelector('.inline-edit').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    inlineMenu.classList.add('hidden');
+                    editMessageIdEl.value = msg.id || '';
+                    chatInput.value = msg.content || '';
+                    chatInput.focus();
+                    editModeBar.classList.remove('hidden');
+                });
+                inlineMenu.querySelector('.inline-delete').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    inlineMenu.classList.add('hidden');
+                    if (msg.id && confirm('Delete this message?')) {
+                        deleteMessage(msg.id);
+                    }
+                });
+
                 wrapper.appendChild(menuBtn);
+                wrapper.appendChild(inlineMenu);
             }
             
             div.appendChild(wrapper);
             return div;
         }
         
-        function showContextMenu(e, messageId, content) {
+        function showContextMenu(e, messageId, content, anchorEl) {
             contextMessageId = messageId;
             contextMessageContent = content;
-            contextMenu.style.left = e.pageX + 'px';
-            contextMenu.style.top = e.pageY + 'px';
+            var x = e && typeof e.pageX === 'number' ? e.pageX : 0;
+            var y = e && typeof e.pageY === 'number' ? e.pageY : 0;
+            if ((!x || !y) && anchorEl) {
+                var r = anchorEl.getBoundingClientRect();
+                x = r.left + window.scrollX;
+                y = r.bottom + window.scrollY;
+            }
+            contextMenu.style.left = x + 'px';
+            contextMenu.style.top = y + 'px';
             contextMenu.classList.remove('hidden');
         }
         
+        contextMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
         document.addEventListener('click', function() {
             contextMenu.classList.add('hidden');
+            document.querySelectorAll('.inline-msg-menu').forEach(function(m) { m.classList.add('hidden'); });
         });
         
         document.getElementById('ctx-edit').addEventListener('click', function() {
@@ -414,6 +475,12 @@
             chatInput.value = '';
             editModeBar.classList.add('hidden');
         });
+
+        cancelReplyBtn.addEventListener('click', function() {
+            replySnippet = null;
+            replyPreviewTextEl.textContent = '';
+            replyModeBar.classList.add('hidden');
+        });
         
         function deleteMessage(messageId) {
             fetch('/api/ChatApi/messages/' + messageId, {
@@ -423,6 +490,8 @@
                 if (r.ok) {
                     var msgEl = messagesEl.querySelector('[data-message-id="' + messageId + '"]');
                     if (msgEl) msgEl.remove();
+                } else {
+                    alert('You can only delete your own messages within 24 hours.');
                 }
             }).catch(function(e) {
                 console.error('Failed to delete message', e);
@@ -538,6 +607,8 @@
         
         // Refresh conversation list (like Instagram - newest at top)
         function refreshConversationList() {
+            fetch('/api/BadgesApi/mark-seen/messages', { method: 'POST' })
+                .catch(function(){});
             fetch('/api/ChatApi/conversations')
                 .then(function(r) { return r.json(); })
                 .then(function(conversations) {
@@ -608,6 +679,9 @@
                     
                     list.innerHTML = html;
                     bindConversationButtons();
+                    if (window.qmsRefreshBadges) {
+                        window.qmsRefreshBadges();
+                    }
                 })
                 .catch(function(e) { console.error('Failed to refresh conversations', e); });
         }
@@ -655,6 +729,10 @@
             var mode = chatModeEl.value;
             var targetId = chatTargetIdEl.value;
             var editId = editMessageIdEl.value;
+            var payloadText = text;
+            if (!editId && replySnippet) {
+                payloadText = ('↪ ' + replySnippet + (text ? '\n' + text : '')).trim();
+            }
             
             // Handle edit
             if (editId) {
@@ -668,6 +746,8 @@
                         chatInput.value = '';
                         editMessageIdEl.value = '';
                         editModeBar.classList.add('hidden');
+                    } else {
+                        alert('You can only edit your own messages within 15 minutes.');
                     }
                 }).catch(function(e) {
                     console.error('Failed to edit message', e);
@@ -679,7 +759,7 @@
             if (selectedFile) {
                 var formData = new FormData();
                 formData.append('threadId', currentThreadId);
-                formData.append('content', text);
+                formData.append('content', payloadText);
                 formData.append('file', selectedFile);
                 
                 fetch('/api/ChatApi/messages/with-file', {
@@ -694,6 +774,9 @@
                         refreshConversationList(); // Update conversation list
                     }
                     chatInput.value = '';
+                    replySnippet = null;
+                    replyPreviewTextEl.textContent = '';
+                    replyModeBar.classList.add('hidden');
                     selectedFile = null;
                     fileInput.value = '';
                     filePreview.classList.add('hidden');
@@ -712,7 +795,7 @@
                 fetch('/api/ChatApi/messages', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ threadId: currentThreadId, content: text })
+                    body: JSON.stringify({ threadId: currentThreadId, content: payloadText })
                 }).then(function(r) { return r.json(); })
                 .then(function(msg) {
                     if (msg && msg.id) {
@@ -723,6 +806,9 @@
                     }
                     chatInput.value = '';
                     chatInput.style.height = 'auto';
+                    replySnippet = null;
+                    replyPreviewTextEl.textContent = '';
+                    replyModeBar.classList.add('hidden');
                 }).catch(function(e) {
                     console.error('Failed to send message', e);
                 });
@@ -730,9 +816,9 @@
             }
             
             if (mode === 'department') {
-                promise = window.qmsChat.sendToDepartment(targetId, text);
+                promise = window.qmsChat.sendToDepartment(targetId, payloadText);
             } else if (mode === 'direct') {
-                promise = window.qmsChat.sendToUser(targetId, text);
+                promise = window.qmsChat.sendToUser(targetId, payloadText);
             } else {
                 return;
             }
@@ -740,6 +826,9 @@
             promise.then(function() {
                 chatInput.value = '';
                 chatInput.style.height = 'auto';
+                replySnippet = null;
+                replyPreviewTextEl.textContent = '';
+                replyModeBar.classList.add('hidden');
                 refreshConversationList(); // Update conversation list after send
             }).catch(function(e) {
                 console.error('Failed to send message', e);

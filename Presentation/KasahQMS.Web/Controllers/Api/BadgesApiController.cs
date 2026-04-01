@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
+using KasahQMS.Domain.Entities.Configuration;
 
 namespace KasahQMS.Web.Controllers.Api;
 
@@ -18,6 +19,7 @@ namespace KasahQMS.Web.Controllers.Api;
 [Authorize]
 public class BadgesApiController : ControllerBase
 {
+    private const string LastSeenSettingPrefix = "badge.last_seen";
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IHierarchyService _hierarchyService;
@@ -42,14 +44,30 @@ public class BadgesApiController : ControllerBase
             return Unauthorized();
 
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
-        var currentUser = await _dbContext.Users.AsNoTracking()
-            .Include(u => u.Roles)
-            .FirstOrDefaultAsync(u => u.Id == userId.Value);
-        var isExecutive = currentUser?.Roles?.Any(r =>
-            r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
+        var badgeCacheKey = $"badge_counts_{tenantId}_{userId.Value}";
+        if (_cache.TryGetValue(badgeCacheKey, out BadgeCounts? cachedBadges) && cachedBadges is not null)
+        {
+            return Ok(cachedBadges);
+        }
 
-        // Unread messages - count threads with unread messages for this user
-        var lastSeenMessages = _cache.Get<DateTime?>($"last_seen_messages_{userId}");
+        var executiveRoles = new[]
+        {
+            "TMD",
+            "TopManagingDirector",
+            "Country Manager",
+            "Deputy",
+            "DeputyDirector",
+            "Deputy Country Manager"
+        };
+
+        var isExecutive = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId.Value)
+            .SelectMany(u => u.Roles)
+            .AnyAsync(r => executiveRoles.Contains(r.Name));
+
+        // Unread messages - persisted across sessions.
+        var lastSeenMessages = await GetPersistedLastSeenAsync("messages", userId.Value, tenantId);
         var unreadMessages = await GetUnreadMessagesCountAsync(userId.Value, tenantId, lastSeenMessages);
 
         // New tasks: assigned to user (open or in progress), created/updated after last seen tasks
@@ -115,7 +133,13 @@ public class BadgesApiController : ControllerBase
 
         var pendingApprovals = pendingTaskApprovals + pendingDocumentApprovals + pendingTrainingApprovals;
 
-        return Ok(new BadgeCounts(unreadMessages, pendingTasks, pendingDocuments, unreadNotifications, pendingApprovals, pendingTraining));
+        var badges = new BadgeCounts(unreadMessages, pendingTasks, pendingDocuments, unreadNotifications, pendingApprovals, pendingTraining);
+        _cache.Set(badgeCacheKey, badges, new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(5)
+        });
+
+        return Ok(badges);
     }
 
     /// <summary>
@@ -154,42 +178,62 @@ public class BadgesApiController : ControllerBase
             : new List<Guid>();
 
         var allThreadIds = participantThreadIds.Concat(deptThreadIds).Distinct().ToList();
-
-        // Get threads with unread messages (messages after user's last read or messages not by user)
-        var unreadChats = new List<UnreadChatInfo>();
-        foreach (var threadId in allThreadIds)
+        if (allThreadIds.Count == 0)
         {
-            var latestMessage = await _dbContext.ChatMessages
-                .AsNoTracking()
-                .Where(m => m.ThreadId == threadId && !m.IsDeleted && m.SenderId != userId.Value)
+            return Ok(Array.Empty<UnreadChatInfo>());
+        }
+
+        var latestMessages = await _dbContext.ChatMessages
+            .AsNoTracking()
+            .Where(m => allThreadIds.Contains(m.ThreadId) && !m.IsDeleted && m.SenderId != userId.Value)
+            .GroupBy(m => m.ThreadId)
+            .Select(g => g
                 .OrderByDescending(m => m.CreatedAt)
-                .Include(m => m.Sender)
-                .FirstOrDefaultAsync();
-
-            if (latestMessage != null)
-            {
-                var thread = await _dbContext.ChatThreads.AsNoTracking()
-                    .Include(t => t.OrganizationUnit)
-                    .FirstOrDefaultAsync(t => t.Id == threadId);
-
-                if (thread != null)
+                .Select(m => new
                 {
-                    var name = thread.Type == KasahQMS.Domain.Entities.Chat.ChatThreadType.Department
-                        ? thread.OrganizationUnit?.Name ?? "Department"
-                        : latestMessage.Sender != null 
-                            ? $"{latestMessage.Sender.FirstName} {latestMessage.Sender.LastName}"
-                            : "Unknown";
+                    m.ThreadId,
+                    m.Content,
+                    m.CreatedAt,
+                    m.SenderId,
+                    SenderName = m.Sender != null
+                        ? $"{m.Sender.FirstName} {m.Sender.LastName}"
+                        : "Unknown"
+                })
+                .FirstOrDefault())
+            .Where(m => m != null)
+            .ToListAsync();
 
-                    unreadChats.Add(new UnreadChatInfo(
-                        threadId,
-                        name,
-                        thread.Type.ToString(),
-                        latestMessage.Content.Length > 50 ? latestMessage.Content.Substring(0, 47) + "..." : latestMessage.Content,
-                        latestMessage.CreatedAt,
-                        latestMessage.SenderId
-                    ));
-                }
+        var threadLookup = await _dbContext.ChatThreads
+            .AsNoTracking()
+            .Where(t => allThreadIds.Contains(t.Id))
+            .Select(t => new
+            {
+                t.Id,
+                t.Type,
+                DepartmentName = t.OrganizationUnit != null ? t.OrganizationUnit.Name : null
+            })
+            .ToDictionaryAsync(t => t.Id);
+
+        var unreadChats = new List<UnreadChatInfo>(latestMessages.Count);
+        foreach (var latestMessage in latestMessages)
+        {
+            if (latestMessage == null || !threadLookup.TryGetValue(latestMessage.ThreadId, out var thread))
+            {
+                continue;
             }
+
+            var name = thread.Type == KasahQMS.Domain.Entities.Chat.ChatThreadType.Department
+                ? thread.DepartmentName ?? "Department"
+                : latestMessage.SenderName;
+
+            unreadChats.Add(new UnreadChatInfo(
+                latestMessage.ThreadId,
+                name,
+                thread.Type.ToString(),
+                latestMessage.Content.Length > 50 ? latestMessage.Content[..47] + "..." : latestMessage.Content,
+                latestMessage.CreatedAt,
+                latestMessage.SenderId
+            ));
         }
 
         return Ok(unreadChats.OrderByDescending(c => c.LastMessageAt).Take(10));
@@ -199,18 +243,28 @@ public class BadgesApiController : ControllerBase
     /// Mark a badge type as seen, resetting its count.
     /// </summary>
     [HttpPost("mark-seen/{type}")]
-    public IActionResult MarkSeen(string type)
+    public async Task<IActionResult> MarkSeen(string type)
     {
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
+        var tenantId = _currentUserService.TenantId;
+        if (!tenantId.HasValue) return Unauthorized();
 
         var expiry = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30) };
         if (type == "tasks")
             _cache.Set($"last_seen_tasks_{userId}", (DateTime?)DateTime.UtcNow, expiry);
         else if (type == "messages")
+        {
             _cache.Set($"last_seen_messages_{userId}", (DateTime?)DateTime.UtcNow, expiry);
+            await SetPersistedLastSeenAsync("messages", userId.Value, tenantId.Value, DateTime.UtcNow);
+        }
         else if (type == "training")
             _cache.Set($"last_seen_training_{userId}", (DateTime?)DateTime.UtcNow, expiry);
+
+        if (tenantId.HasValue)
+        {
+            _cache.Remove($"badge_counts_{tenantId.Value}_{userId.Value}");
+        }
 
         return Ok();
     }
@@ -235,6 +289,46 @@ public class BadgesApiController : ControllerBase
 
         var count = await query.CountAsync();
         return Math.Min(count, 99); // Cap at 99 for display
+    }
+
+    private async Task<DateTime?> GetPersistedLastSeenAsync(string type, Guid userId, Guid tenantId)
+    {
+        var key = $"{LastSeenSettingPrefix}.{type}.{userId:N}";
+        var value = await _dbContext.SystemSettings
+            .AsNoTracking()
+            .Where(s => s.TenantId == tenantId && s.Key == key)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return DateTime.TryParse(value, out var parsed) ? parsed : null;
+    }
+
+    private async Task SetPersistedLastSeenAsync(string type, Guid userId, Guid tenantId, DateTime value)
+    {
+        var key = $"{LastSeenSettingPrefix}.{type}.{userId:N}";
+        var setting = await _dbContext.SystemSettings
+            .FirstOrDefaultAsync(s => s.TenantId == tenantId && s.Key == key);
+
+        if (setting == null)
+        {
+            _dbContext.SystemSettings.Add(SystemSetting.Create(
+                tenantId,
+                key,
+                value.ToString("o"),
+                userId,
+                $"Last seen timestamp for {type} badge"));
+        }
+        else
+        {
+            setting.Value = value.ToString("o");
+        }
+
+        await _dbContext.SaveChangesAsync();
     }
 
     private static bool IsPendingTrainingApproval(string? notes)

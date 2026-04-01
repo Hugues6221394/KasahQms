@@ -426,3 +426,20 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+bin/
+obj/
+*.log
+*.png
+*.jpg
+*.jpeg
+*.docx
+*.pdf
+.env
+
+.DS_Store
+.idea/
+
+# local runtime logs
+Presentation/KasahQMS.Web/*_build.log
+Presentation/KasahQMS.Web/*_errors.log

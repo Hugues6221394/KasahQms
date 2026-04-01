@@ -74,6 +74,19 @@
                         </div>
                     </div>
                 }
+                else if (Model.IsManagerUser)
+                {
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-bold text-indigo-900 mb-2">Department Manager Controls</h3>
+                        <label class="flex items-center gap-2 text-sm text-indigo-900">
+                            <input type="checkbox" asp-for="UseDepartmentWideAccess" class="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500" />
+                            <span>Make this document available to all staff in my department</span>
+                        </label>
+                        <p class="mt-1 text-xs text-indigo-700">
+                            When enabled, this document is targeted to your department for internal shared use.
+                        </p>
+                    </div>
+                }
 
                 <!-- Document Title -->
                 <div>
@@ -237,6 +250,7 @@
                                     <option value="@u.Id">@u.Name — @u.Department · @u.Roles</option>
                                 }
                             </select>
+                            <span asp-validation-for="ApproverId" class="text-xs text-red-600"></span>
                         </div>
                         <div>
                             <label for="approverDepartmentId" class="block text-sm font-medium text-emerald-900 mb-1">Approve by (department)</label>
@@ -247,6 +261,7 @@
                                     <option value="@d.Id">@d.Name</option>
                                 }
                             </select>
+                            <span asp-validation-for="ApproverDepartmentId" class="text-xs text-red-600"></span>
                         </div>
                     </div>
                     <p class="mt-2 text-xs text-emerald-600">For submit action, selecting approver person or department is mandatory. If both are selected, person is used.</p>

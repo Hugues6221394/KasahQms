@@ -17,6 +17,8 @@ public record CreateCapaCommand(
     CapaType CapaType,
     CapaPriority Priority,
     Guid? OwnerId,
+    bool IsGlobal,
+    Guid? TargetDepartmentId,
     Guid? LinkedAuditId,
     Guid? LinkedAuditFindingId,
     DateTime? TargetCompletionDate,
@@ -80,6 +82,9 @@ public class CreateCapaCommandHandler : IRequestHandler<CreateCapaCommand, Resul
             {
                 capa.AssignOwner(request.OwnerId.Value);
             }
+
+            capa.IsGlobal = request.IsGlobal;
+            capa.TargetDepartmentId = request.IsGlobal ? null : request.TargetDepartmentId;
 
             if (request.LinkedAuditId.HasValue)
             {

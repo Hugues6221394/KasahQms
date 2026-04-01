@@ -123,7 +123,7 @@ public class IndexModel : PageModel
             .ToListAsync();
 
         var auditsList = await query
-            .OrderByDescending(a => a.PlannedStartDate)
+            .OrderByDescending(a => a.LastModifiedAt ?? a.CreatedAt)
             .ToListAsync();
 
         Audits = auditsList

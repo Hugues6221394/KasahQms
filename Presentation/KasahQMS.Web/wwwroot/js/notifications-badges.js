@@ -88,10 +88,12 @@
             return;
         }
 
-        var connection = new signalR.HubConnectionBuilder()
+        var existingConnection = window.qmsNotifications && window.qmsNotifications.connection;
+        var connection = existingConnection || new signalR.HubConnectionBuilder()
             .withUrl('/hubs/notifications', { withCredentials: true })
-            .withAutomaticReconnect()
+            .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
             .build();
+        var usesSharedConnection = !!existingConnection;
 
         // Handle notification count updates
         connection.on('UnreadCount', function (count) {
@@ -139,9 +141,11 @@
             fetchBadges();
         });
 
-        connection.start().catch(function (err) {
-            console.warn('Notifications hub connection failed:', err);
-        });
+        if (!usesSharedConnection && connection.state === signalR.HubConnectionState.Disconnected) {
+            connection.start().catch(function (err) {
+                console.warn('Notifications hub connection failed:', err);
+            });
+        }
 
         // Store connection for external use
         window.notificationsHub = connection;
@@ -264,8 +268,7 @@
 
     // Sync with generic notification events from signalr-notifications.js
     window.addEventListener('qms:notification', function () {
-        badges.notifications++;
-        updateAllBadges();
+        fetchBadges();
     });
     window.addEventListener('qms:unreadCount', function (e) {
         var count = e && e.detail ? Number(e.detail.count || 0) : 0;
@@ -273,15 +276,24 @@
         updateAllBadges();
     });
     window.addEventListener('qms:notificationsRead', function () {
-        badges.notifications = 0;
-        updateAllBadges();
+        fetchBadges();
     });
     window.addEventListener('qms:refreshBadges', function () {
         fetchBadges();
     });
 
-    // Refresh badges periodically (every 60 seconds as fallback)
-    setInterval(fetchBadges, 60000);
+    // Refresh badges periodically as fallback (SignalR handles real-time updates)
+    var pollIntervalMs = 120000;
+    setInterval(function () {
+        if (document.visibilityState !== 'visible') return;
+        fetchBadges();
+    }, pollIntervalMs);
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            fetchBadges();
+        }
+    });
 
     // Immediately refresh badges when landing on specific pages
     document.addEventListener('DOMContentLoaded', function () {
@@ -301,4 +313,5 @@
             setTimeout(window.qmsRefreshBadges, 1500);
         }
     });
+
 })();

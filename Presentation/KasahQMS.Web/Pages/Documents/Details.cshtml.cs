@@ -1,8 +1,8 @@
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Application.Features.Documents.Commands;
+using KasahQMS.Domain.Enums;
 using KasahQMS.Infrastructure.Persistence.Data;
-using KasahQMS.Web.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,20 +17,23 @@ public class DetailsModel : PageModel
     private readonly ApplicationDbContext _dbContext;
     private readonly IMediator _mediator;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IHierarchyService _hierarchyService;
+    private readonly IWebHostEnvironment _environment;
+    private readonly IAuditLogService _auditLogService;
     private readonly ILogger<DetailsModel> _logger;
 
     public DetailsModel(
         ApplicationDbContext dbContext,
         IMediator mediator,
         ICurrentUserService currentUserService,
-        IHierarchyService hierarchyService,
+        IWebHostEnvironment environment,
+        IAuditLogService auditLogService,
         ILogger<DetailsModel> logger)
     {
         _dbContext = dbContext;
         _mediator = mediator;
         _currentUserService = currentUserService;
-        _hierarchyService = hierarchyService;
+        _environment = environment;
+        _auditLogService = auditLogService;
         _logger = logger;
     }
 
@@ -38,6 +41,7 @@ public class DetailsModel : PageModel
     public List<DocumentAttachmentInfo> Attachments { get; set; } = new();
     public List<DocumentVersionInfo> Versions { get; set; } = new();
     public List<DocumentApprovalInfo> ApprovalHistory { get; set; } = new();
+    public List<WorkflowRound> ApprovalTimelineRounds { get; set; } = new();
     public string? ActionMessage { get; set; }
     public bool? ActionSuccess { get; set; }
     
@@ -55,10 +59,14 @@ public class DetailsModel : PageModel
     public record DocumentAttachmentInfo(Guid Id, string FileName, string FilePath);
     public record DocumentVersionInfo(int VersionNumber, string? ChangeNotes, string CreatedAt, string CreatedBy);
     public record DocumentApprovalInfo(string ApproverName, bool IsApproved, string? Comments, string ApprovedAt);
+    public record WorkflowTimelineEvent(DateTime Timestamp, string Action, string ActionClass, string Actor, string? Details);
+    public record WorkflowRound(int RoundNumber, List<WorkflowTimelineEvent> Events);
 
     [BindProperty] public string? ApproveComments { get; set; }
     [BindProperty] public string? RejectReason { get; set; }
     [BindProperty] public string? ArchiveReason { get; set; }
+    [BindProperty] public string? ReturnComments { get; set; }
+    [BindProperty] public IFormFile? ReviewedFile { get; set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id, string? message = null, bool? success = null)
     {
@@ -130,22 +138,37 @@ public class DetailsModel : PageModel
         }
         else if (isManager)
         {
-            // Managers can view documents created by their subordinates
-            var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(currentUserId.Value);
-            canView = subordinateIds.Contains(doc.CreatedById);
-            
-            // Also check if document is targeted to their department or no specific department
-            if (!canView && (doc.TargetDepartmentId == null || doc.TargetDepartmentId == currentUser.OrganizationUnitId))
+            canView =
+                doc.CreatedById == currentUserId.Value ||
+                doc.CurrentApproverId == currentUserId.Value ||
+                doc.TargetUserId == currentUserId.Value ||
+                (currentUser.OrganizationUnitId.HasValue && doc.TargetDepartmentId == currentUser.OrganizationUnitId.Value);
+
+            if (!canView && currentUser.OrganizationUnitId.HasValue)
             {
-                canView = true;
+                var creatorOrgUnitId = await _dbContext.Users.AsNoTracking()
+                    .Where(u => u.Id == doc.CreatedById)
+                    .Select(u => u.OrganizationUnitId)
+                    .FirstOrDefaultAsync();
+                canView = creatorOrgUnitId == currentUser.OrganizationUnitId;
             }
         }
         else
         {
-            // Staff can view documents they created or that are targeted to their department
-            canView = doc.CreatedById == currentUserId || 
-                      doc.TargetDepartmentId == null || 
-                      doc.TargetDepartmentId == currentUser.OrganizationUnitId;
+            canView =
+                doc.CreatedById == currentUserId ||
+                doc.CurrentApproverId == currentUserId ||
+                doc.TargetUserId == currentUserId ||
+                (currentUser.OrganizationUnitId.HasValue && doc.TargetDepartmentId == currentUser.OrganizationUnitId.Value);
+
+            if (!canView && currentUser.OrganizationUnitId.HasValue)
+            {
+                var creatorOrgUnitId = await _dbContext.Users.AsNoTracking()
+                    .Where(u => u.Id == doc.CreatedById)
+                    .Select(u => u.OrganizationUnitId)
+                    .FirstOrDefaultAsync();
+                canView = creatorOrgUnitId == currentUser.OrganizationUnitId;
+            }
         }
 
         if (!canView)
@@ -166,13 +189,59 @@ public class DetailsModel : PageModel
     public async Task<IActionResult> OnPostSubmitAsync(Guid id)
     {
         var result = await _mediator.Send(new SubmitDocumentCommand(id));
-        return RedirectToPage(new { id, message = result.IsSuccess ? "Document submitted for approval." : result.ErrorMessage, success = result.IsSuccess });
+        return RedirectToPage(new { id, message = result.IsSuccess ? "Document moved to pending approval." : result.ErrorMessage, success = result.IsSuccess });
     }
 
     public async Task<IActionResult> OnPostApproveAsync(Guid id)
     {
+        var userId = _currentUserService.UserId;
+        if (!userId.HasValue)
+        {
+            return RedirectToPage(new { id, message = "Unauthorized.", success = false });
+        }
+
+        var doc = await _dbContext.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id);
+        if (doc == null)
+        {
+            return RedirectToPage(new { id, message = "Document not found.", success = false });
+        }
+
+        var currentUser = await _dbContext.Users.AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == userId.Value);
+        if (currentUser == null)
+        {
+            return RedirectToPage(new { id, message = "Unauthorized.", success = false });
+        }
+
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isExecutiveOverride = roles.Any(r => r is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+        if (!isExecutiveOverride && doc.CurrentApproverId != userId.Value)
+        {
+            return RedirectToPage(new { id, message = "Only assigned approver can approve this document.", success = false });
+        }
+
+        if (doc.Status != DocumentStatus.Submitted && doc.Status != DocumentStatus.InReview)
+        {
+            return RedirectToPage(new { id, message = "Only submitted/in-review documents can be approved.", success = false });
+        }
+
         var result = await _mediator.Send(new ApproveDocumentCommand(id, ApproveComments));
-        return RedirectToPage(new { id, message = result.IsSuccess ? "Document approved." : result.ErrorMessage, success = result.IsSuccess });
+        if (!result.IsSuccess)
+        {
+            return RedirectToPage(new { id, message = result.ErrorMessage, success = false });
+        }
+
+        if (ReviewedFile != null)
+        {
+            var attachResult = await SaveReviewedFileAsync(id, ReviewedFile);
+            if (!attachResult.IsSuccess)
+            {
+                return RedirectToPage(new { id, message = "Document approved but reviewed file could not be attached.", success = false });
+            }
+        }
+
+        return RedirectToPage(new { id, message = "Document approved.", success = true });
     }
 
     public async Task<IActionResult> OnPostRejectAsync(Guid id)
@@ -183,6 +252,72 @@ public class DetailsModel : PageModel
         }
         var result = await _mediator.Send(new RejectDocumentCommand(id, RejectReason));
         return RedirectToPage(new { id, message = result.IsSuccess ? "Document rejected and returned to draft." : result.ErrorMessage, success = result.IsSuccess });
+    }
+
+    public async Task<IActionResult> OnPostReturnWithRevisionAsync(Guid id)
+    {
+        var userId = _currentUserService.UserId;
+        if (!userId.HasValue)
+        {
+            return RedirectToPage(new { id, message = "Unauthorized.", success = false });
+        }
+
+        var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+        var doc = await _dbContext.Documents
+            .FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenantId);
+        if (doc == null)
+        {
+            return RedirectToPage(new { id, message = "Document not found.", success = false });
+        }
+
+        var currentUser = await _dbContext.Users.AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == userId.Value);
+        if (currentUser == null)
+        {
+            return RedirectToPage(new { id, message = "Unauthorized.", success = false });
+        }
+
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isExecutiveOverride = roles.Any(r => r is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+        if (!isExecutiveOverride && doc.CurrentApproverId != userId.Value)
+        {
+            return RedirectToPage(new { id, message = "Only assigned approver can return this document.", success = false });
+        }
+
+        if (doc.Status != DocumentStatus.Submitted && doc.Status != DocumentStatus.InReview)
+        {
+            return RedirectToPage(new { id, message = "Only submitted/in-review documents can be returned.", success = false });
+        }
+
+        if (ReviewedFile == null || ReviewedFile.Length == 0)
+        {
+            return RedirectToPage(new { id, message = "Attach the reviewed/signed file before returning.", success = false });
+        }
+
+        var attachResult = await SaveReviewedFileAsync(id, ReviewedFile);
+        if (!attachResult.IsSuccess)
+        {
+            return RedirectToPage(new { id, message = attachResult.ErrorMessage, success = false });
+        }
+
+        var reason = string.IsNullOrWhiteSpace(ReturnComments)
+            ? "Returned with revised attachment by approver."
+            : ReturnComments!;
+        var rejectResult = await _mediator.Send(new RejectDocumentCommand(id, reason));
+        if (!rejectResult.IsSuccess)
+        {
+            return RedirectToPage(new { id, message = rejectResult.ErrorMessage, success = false });
+        }
+
+        await _auditLogService.LogAsync(
+            "DOCUMENT_RETURNED_WITH_REVISION",
+            "Documents",
+            id,
+            $"Document returned with revised attachment by {userId}. Notes: {reason}",
+            CancellationToken.None);
+
+        return RedirectToPage(new { id, message = "Reviewed file returned to creator in the same approval thread.", success = true });
     }
 
     public async Task<IActionResult> OnPostArchiveAsync(Guid id)
@@ -215,7 +350,8 @@ public class DetailsModel : PageModel
             doc.FilePath,
             doc.OriginalFileName,
             doc.CreatedById,
-            doc.CurrentApproverId
+            doc.CurrentApproverId,
+            await ResolveSubmittedToAsync(doc)
         );
 
         // Load attachments
@@ -246,6 +382,28 @@ public class DetailsModel : PageModel
                 a.Comments,
                 a.ApprovedAt.ToString("MMM dd, yyyy HH:mm")))
             .ToListAsync();
+
+        var auditTrail = await _dbContext.AuditLogEntries.AsNoTracking()
+            .Where(a => a.EntityType == "Documents" && a.EntityId == id && (
+                a.Action == "DOCUMENT_APPROVED_PARTIAL" ||
+                a.Action == "DOCUMENT_APPROVED_FINAL" ||
+                a.Action == "DOCUMENT_REJECTED" ||
+                a.Action == "DOCUMENT_RETURNED_WITH_REVISION"))
+            .OrderByDescending(a => a.Timestamp)
+            .Take(30)
+            .Select(a => new DocumentApprovalInfo(
+                a.User != null ? a.User.FirstName + " " + a.User.LastName : "System",
+                a.Action.Contains("APPROVED"),
+                a.Description,
+                a.Timestamp.ToString("MMM dd, yyyy HH:mm")))
+            .ToListAsync();
+
+        if (auditTrail.Count > 0)
+        {
+            ApprovalHistory = ApprovalHistory.Concat(auditTrail).ToList();
+        }
+
+        await LoadApprovalTimelineAsync(id);
     }
 
     /// <summary>
@@ -268,6 +426,8 @@ public class DetailsModel : PageModel
         && (IsExecutive || _currentUserService.UserId == Document.CurrentApproverId)
         && (Document.Status == "Submitted" || Document.Status == "InReview");
 
+    public bool CanReturnWithRevision => CanApproveOrReject;
+
     /// <summary>
     /// Indicates if current user can edit this document.
     /// Only editable in Draft or Rejected state, and only by creator.
@@ -276,7 +436,7 @@ public class DetailsModel : PageModel
     public bool CanEdit => Document != null 
         && !IsReadOnly
         && _currentUserService.UserId == Document.CreatedById
-        && (Document.Status == "Draft" || Document.Status == "Rejected");
+        && Document.Status != "Archived";
 
     /// <summary>
     /// Indicates if current user can archive this document.
@@ -302,6 +462,181 @@ public class DetailsModel : PageModel
         string? FilePath,
         string? OriginalFileName,
         Guid CreatedById,
-        Guid? CurrentApproverId
+        Guid? CurrentApproverId,
+        string SubmittedTo
     );
+
+    private async Task<string> ResolveSubmittedToAsync(KasahQMS.Domain.Entities.Documents.Document doc)
+    {
+        if (doc.CurrentApproverId.HasValue)
+        {
+            var approverName = await _dbContext.Users.AsNoTracking()
+                .Where(u => u.Id == doc.CurrentApproverId.Value)
+                .Select(u => u.FullName)
+                .FirstOrDefaultAsync();
+            return !string.IsNullOrWhiteSpace(approverName) ? approverName! : "Pending approval queue";
+        }
+
+        if (doc.ApproverDepartmentId.HasValue)
+        {
+            var departmentName = await _dbContext.OrganizationUnits.AsNoTracking()
+                .Where(ou => ou.Id == doc.ApproverDepartmentId.Value)
+                .Select(ou => ou.Name)
+                .FirstOrDefaultAsync();
+            return !string.IsNullOrWhiteSpace(departmentName)
+                ? $"{departmentName} department leaders"
+                : "Department leaders";
+        }
+
+        if (doc.TargetUserId.HasValue)
+        {
+            var targetUserName = await _dbContext.Users.AsNoTracking()
+                .Where(u => u.Id == doc.TargetUserId.Value)
+                .Select(u => u.FullName)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrWhiteSpace(targetUserName)) return targetUserName!;
+        }
+
+        if (doc.TargetDepartmentId.HasValue)
+        {
+            var targetDepartmentName = await _dbContext.OrganizationUnits.AsNoTracking()
+                .Where(ou => ou.Id == doc.TargetDepartmentId.Value)
+                .Select(ou => ou.Name)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrWhiteSpace(targetDepartmentName)) return $"{targetDepartmentName} department";
+        }
+
+        return "Not specified";
+    }
+
+    private async Task<(bool IsSuccess, string? ErrorMessage)> SaveReviewedFileAsync(Guid documentId, IFormFile file)
+    {
+        try
+        {
+            var root = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+            var year = DateTime.UtcNow.Year.ToString();
+            var uploadsDir = Path.Combine(root, "uploads", "documents", year);
+            if (!Directory.Exists(uploadsDir)) Directory.CreateDirectory(uploadsDir);
+
+            var ext = Path.GetExtension(file.FileName);
+            if (string.IsNullOrEmpty(ext)) ext = ".bin";
+            var safeName = $"{Guid.NewGuid():N}{ext}";
+            var fullPath = Path.Combine(uploadsDir, safeName);
+
+            await using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var relPath = $"/uploads/documents/{year}/{safeName}";
+            _dbContext.DocumentAttachments.Add(new KasahQMS.Domain.Entities.Documents.DocumentAttachment
+            {
+                Id = Guid.NewGuid(),
+                DocumentId = documentId,
+                FilePath = relPath,
+                OriginalFileName = file.FileName,
+                ContentType = file.ContentType,
+                SourceDocumentId = documentId
+            });
+            await _dbContext.SaveChangesAsync();
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed saving reviewed file for document {DocumentId}", documentId);
+            return (false, "Failed to save reviewed file.");
+        }
+    }
+
+    private async Task LoadApprovalTimelineAsync(Guid documentId)
+    {
+        var entries = await _dbContext.AuditLogEntries.AsNoTracking()
+            .Where(a => a.EntityType == "Documents"
+                        && a.EntityId == documentId
+                        && (a.Action == "DOCUMENT_SUBMITTED"
+                            || a.Action == "DOCUMENT_APPROVED_PARTIAL"
+                            || a.Action == "DOCUMENT_APPROVED_FINAL"
+                            || a.Action == "DOCUMENT_REJECTED"
+                            || a.Action == "DOCUMENT_RETURNED_WITH_REVISION"))
+            .OrderBy(a => a.Timestamp)
+            .Select(a => new
+            {
+                a.Timestamp,
+                a.Action,
+                a.Description,
+                a.UserId
+            })
+            .ToListAsync();
+
+        if (entries.Count == 0)
+        {
+            ApprovalTimelineRounds = new List<WorkflowRound>();
+            return;
+        }
+
+        var userIds = entries.Where(e => e.UserId.HasValue).Select(e => e.UserId!.Value).Distinct().ToList();
+        var users = await _dbContext.Users.AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.FullName);
+
+        var rounds = new List<WorkflowRound>();
+        var currentRoundNumber = 0;
+        List<WorkflowTimelineEvent>? currentRoundEvents = null;
+
+        foreach (var entry in entries)
+        {
+            if (entry.Action == "DOCUMENT_SUBMITTED")
+            {
+                currentRoundNumber++;
+                currentRoundEvents = new List<WorkflowTimelineEvent>();
+                rounds.Add(new WorkflowRound(currentRoundNumber, currentRoundEvents));
+            }
+            else if (currentRoundEvents == null)
+            {
+                currentRoundNumber = 1;
+                currentRoundEvents = new List<WorkflowTimelineEvent>();
+                rounds.Add(new WorkflowRound(currentRoundNumber, currentRoundEvents));
+            }
+
+            var actor = entry.UserId.HasValue && users.TryGetValue(entry.UserId.Value, out var fullName)
+                ? fullName
+                : "System";
+
+            currentRoundEvents!.Add(new WorkflowTimelineEvent(
+                entry.Timestamp,
+                GetTimelineActionLabel(entry.Action),
+                GetTimelineActionClass(entry.Action),
+                actor,
+                entry.Description));
+        }
+
+        ApprovalTimelineRounds = rounds
+            .OrderByDescending(r => r.RoundNumber)
+            .Select(r => new WorkflowRound(
+                r.RoundNumber,
+                r.Events.OrderByDescending(e => e.Timestamp).ToList()))
+            .ToList();
+    }
+
+    private static string GetTimelineActionLabel(string action)
+        => action switch
+        {
+            "DOCUMENT_SUBMITTED" => "Pending Approval",
+            "DOCUMENT_APPROVED_PARTIAL" => "Partially Approved",
+            "DOCUMENT_APPROVED_FINAL" => "Final Approval",
+            "DOCUMENT_REJECTED" => "Rejected / Returned",
+            "DOCUMENT_RETURNED_WITH_REVISION" => "Returned with Revised File",
+            _ => action
+        };
+
+    private static string GetTimelineActionClass(string action)
+        => action switch
+        {
+            "DOCUMENT_SUBMITTED" => "bg-amber-100 text-amber-700",
+            "DOCUMENT_APPROVED_PARTIAL" => "bg-blue-100 text-blue-700",
+            "DOCUMENT_APPROVED_FINAL" => "bg-emerald-100 text-emerald-700",
+            "DOCUMENT_REJECTED" => "bg-rose-100 text-rose-700",
+            "DOCUMENT_RETURNED_WITH_REVISION" => "bg-indigo-100 text-indigo-700",
+            _ => "bg-slate-100 text-slate-700"
+        };
 }

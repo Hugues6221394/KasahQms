@@ -80,6 +80,16 @@ public class EditModel : PageModel
 
         // Determine edit permissions based on roles
         var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isExecutive = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+        var canView = isExecutive
+            || capa.CreatedById == userId.Value
+            || capa.OwnerId == userId.Value
+            || capa.IsGlobal
+            || (currentUser.OrganizationUnitId.HasValue && capa.TargetDepartmentId == currentUser.OrganizationUnitId.Value);
+        if (!canView)
+        {
+            return Forbid();
+        }
         var (canEdit, permission) = CheckEditPermission(roles, capa.CreatedById, userId.Value);
         
         CanEdit = canEdit;
@@ -195,6 +205,16 @@ public class EditModel : PageModel
         }
 
         var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isExecutive = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+        var canView = isExecutive
+            || capa.CreatedById == userId.Value
+            || capa.OwnerId == userId.Value
+            || capa.IsGlobal
+            || (currentUser.OrganizationUnitId.HasValue && capa.TargetDepartmentId == currentUser.OrganizationUnitId.Value);
+        if (!canView)
+        {
+            return Forbid();
+        }
         var (canEdit, permission) = CheckEditPermission(roles, capa.CreatedById, userId.Value);
         
         if (!canEdit)
@@ -309,6 +329,16 @@ public class EditModel : PageModel
         }
 
         var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isExecutive = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+        var canView = isExecutive
+            || capa.CreatedById == userId.Value
+            || capa.OwnerId == userId.Value
+            || capa.IsGlobal
+            || (currentUser.OrganizationUnitId.HasValue && capa.TargetDepartmentId == currentUser.OrganizationUnitId.Value);
+        if (!canView)
+        {
+            return Forbid();
+        }
         var (canEdit, _) = CheckEditPermission(roles, capa.CreatedById, userId.Value);
         
         if (!canEdit)
@@ -324,18 +354,15 @@ public class EditModel : PageModel
             return RedirectToPage(new { Id, message = "CAPA cannot be advanced further.", success = false });
         }
 
-        // Special handling for effectiveness verification
-        if (nextStatus == CapaStatus.EffectivenessVerified)
-        {
-            if (capa.CreatedById == userId)
-            {
-                return RedirectToPage(new { Id, message = "You cannot verify effectiveness of a CAPA you created.", success = false });
-            }
-        }
-
         if (!capa.AdvanceStatus())
         {
             return RedirectToPage(new { Id, message = "Failed to advance CAPA status.", success = false });
+        }
+
+        if (capa.Status == CapaStatus.EffectivenessVerified)
+        {
+            capa.VerifiedById = userId.Value;
+            capa.VerifiedAt = DateTime.UtcNow;
         }
 
         capa.LastModifiedById = userId.Value;
@@ -388,6 +415,16 @@ public class EditModel : PageModel
         }
 
         var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isExecutive = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+        var canView = isExecutive
+            || capa.CreatedById == userId.Value
+            || capa.OwnerId == userId.Value
+            || capa.IsGlobal
+            || (currentUser.OrganizationUnitId.HasValue && capa.TargetDepartmentId == currentUser.OrganizationUnitId.Value);
+        if (!canView)
+        {
+            return Forbid();
+        }
         if (!CheckDeletePermission(roles, capa.CreatedById, userId.Value))
         {
             ErrorMessage = "You do not have permission to delete this CAPA.";

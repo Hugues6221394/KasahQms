@@ -156,7 +156,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDeactivateAsync(Guid id)
     {
-        if (!CanEdit)
+        if (!await IsCurrentUserSystemAdminAsync())
         {
             TempData["Error"] = "You do not have permission to deactivate users.";
             return RedirectToPage();
@@ -197,7 +197,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostActivateAsync(Guid id)
     {
-        if (!CanEdit)
+        if (!await IsCurrentUserSystemAdminAsync())
         {
             TempData["Error"] = "You do not have permission to activate users.";
             return RedirectToPage();
@@ -231,7 +231,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostUnlockAsync(Guid id)
     {
-        if (!CanEdit)
+        if (!await IsCurrentUserSystemAdminAsync())
         {
             TempData["Error"] = "You do not have permission to unlock users.";
             return RedirectToPage();
@@ -265,7 +265,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostResetPasswordAsync(Guid id)
     {
-        if (!CanEdit)
+        if (!await IsCurrentUserSystemAdminAsync())
         {
             TempData["Error"] = "You do not have permission to reset passwords.";
             return RedirectToPage();
@@ -310,6 +310,23 @@ public class IndexModel : PageModel
         bool RequiresPasswordChange);
 
     public record LookupItem(Guid Id, string Name);
-}
 
+    private async Task<bool> IsCurrentUserSystemAdminAsync()
+    {
+        var currentUserId = _currentUserService.UserId;
+        if (!currentUserId.HasValue) return false;
+
+        var currentUser = await _dbContext.Users
+            .AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
+
+        if (currentUser == null) return false;
+        var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        return roles.Any(r =>
+            r.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
+            r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+    }
+}
 

@@ -35,7 +35,7 @@
         <h2 class="text-lg font-semibold text-slate-900 mb-1">Consent Management</h2>
         <p class="text-sm text-slate-500 mb-6">Control how your data is used. Changes take effect immediately.</p>
 
-        <div class="space-y-4">
+        <div id="consent-list" class="space-y-4">
             @foreach (var consent in Model.Consents)
             {
                 <div class="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3.5">
@@ -43,11 +43,15 @@
                         <div class="text-sm font-medium text-slate-800">@consent.Type</div>
                         <div class="text-xs text-slate-500 mt-0.5">@consent.Description</div>
                     </div>
-                    <form method="post" asp-page-handler="ToggleConsent">
+                    <form method="post" asp-page-handler="ToggleConsent" class="consent-toggle-form">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" name="consentType" value="@consent.Type" />
                         <input type="hidden" name="isGranted" value="@(!consent.IsGranted)" />
-                        <button type="submit" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 @(consent.IsGranted ? "bg-brand-600" : "bg-slate-200")">
-                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out @(consent.IsGranted ? "translate-x-5" : "translate-x-0")"></span>
+                        <button type="submit"
+                                data-consent-toggle
+                                data-is-granted="@(consent.IsGranted.ToString().ToLowerInvariant())"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 @(consent.IsGranted ? "bg-brand-600" : "bg-slate-200")">
+                            <span data-consent-thumb class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out @(consent.IsGranted ? "translate-x-5" : "translate-x-0")"></span>
                         </button>
                     </form>
                 </div>
@@ -127,3 +131,59 @@
     </div>
 </div>
 
+@section Scripts {
+<script>
+(function () {
+    const forms = document.querySelectorAll('.consent-toggle-form');
+    const statusBox = document.querySelector('.bg-brand-50.border-brand-200 p');
+    const errorBox = document.querySelector('.bg-accent-50.border-accent-100 p');
+
+    function setToggleVisual(button, isGranted) {
+        if (!button) return;
+        button.dataset.isGranted = String(isGranted);
+        button.classList.toggle('bg-brand-600', isGranted);
+        button.classList.toggle('bg-slate-200', !isGranted);
+        const thumb = button.querySelector('[data-consent-thumb]');
+        if (thumb) {
+            thumb.classList.toggle('translate-x-5', isGranted);
+            thumb.classList.toggle('translate-x-0', !isGranted);
+        }
+    }
+
+    forms.forEach(function (form) {
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const button = form.querySelector('[data-consent-toggle]');
+            const nextValueInput = form.querySelector('input[name="isGranted"]');
+            if (!button || !nextValueInput) return;
+
+            const nextGranted = String(nextValueInput.value).toLowerCase() === 'true';
+            button.disabled = true;
+
+            try {
+                const data = new FormData(form);
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: data
+                });
+
+                const payload = await res.json();
+                if (!res.ok || !payload.ok) throw new Error(payload.message || 'Consent update failed');
+
+                setToggleVisual(button, payload.isGranted === true);
+                nextValueInput.value = payload.isGranted ? 'false' : 'true';
+
+                if (statusBox) statusBox.textContent = payload.message;
+                if (errorBox) errorBox.textContent = '';
+                try { window.dispatchEvent(new CustomEvent('qms:refreshBadges')); } catch (err) {}
+            } catch (err) {
+                if (errorBox) errorBox.textContent = err.message || 'Failed to update consent. Please try again.';
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+})();
+</script>
+}

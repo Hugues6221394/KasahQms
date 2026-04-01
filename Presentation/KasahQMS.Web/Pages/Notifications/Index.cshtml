@@ -113,57 +113,62 @@
         if (empty) empty.classList.add('hidden');
 
         container.innerHTML = notifications.map(function(n) {
-            var relatedLink = '';
-            if (n.relatedEntityId) {
-                var type = String(n.relatedEntityType || '');
-                var href = '/Documents/Details/' + n.relatedEntityId;
-                if (type === 'Task') href = '/Tasks/Details/' + n.relatedEntityId;
-                else if (type === 'Training') href = '/Training/Details/' + n.relatedEntityId;
-                relatedLink = '<div class="mt-2"><a href="' + esc(href) + '" onclick="event.stopPropagation()" class="text-xs font-medium text-brand-600 hover:text-brand-700 underline">View Related ' + esc(n.relatedEntityType) + '</a></div>';
-            }
+            var href = resolveUrl(n);
+            var actionLabel = href === '/Notifications' ? 'Open notifications center' : 'Open related item';
             var rowBg = n.isRead ? 'opacity-75' : 'bg-slate-50/50';
-            var dot = n.isRead ? '' : '<div class="mt-2 h-2 w-2 rounded-full bg-brand-500 flex-shrink-0"></div>';
-            return '<div class="flex items-start gap-4 p-4 transition-colors hover:bg-slate-50 cursor-pointer ' + rowBg + '" onclick="qmsPageMarkRead(\'' + (n.id||'') + '\')">'
+            var dot = n.isRead ? '<span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Read</span>' : '<span class="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">New</span>';
+            return '<a href="' + esc(href) + '" class="flex items-start gap-4 p-4 transition-colors hover:bg-slate-50 cursor-pointer ' + rowBg + '" onclick="qmsPageOpenNotification(event,\'' + (n.id||'') + '\',\'' + esc(href) + '\')">'
                 + '<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ' + iconBg(n.type) + '">' + iconHtml(n.type) + '</div>'
                 + '<div class="min-w-0 flex-1">'
                 +   '<div class="flex items-center justify-between gap-2">'
                 +     '<h3 class="truncate text-sm font-semibold text-slate-900">' + esc(n.title) + '</h3>'
-                +     '<span class="whitespace-nowrap text-xs text-slate-400">' + esc(n.time) + '</span>'
+                    +     '<span class="whitespace-nowrap text-xs text-slate-400">' + esc(n.time) + '</span>'
                 +   '</div>'
-                +   '<p class="mt-1 text-sm text-slate-600">' + esc(n.message) + '</p>'
-                +   relatedLink
+                +   '<p class="mt-1 break-words text-sm leading-6 text-slate-700">' + esc(n.message) + '</p>'
+                +   '<p class="mt-2 text-[11px] font-medium text-brand-600">' + actionLabel + '</p>'
                 + '</div>'
                 + dot
-                + '</div>';
+                + '</a>';
         }).join('');
     }
 
-    window.qmsPageMarkRead = function(id) {
-        if (!id) return;
+    function resolveUrl(notification) {
+        if (!notification || !notification.relatedEntityId) return '/Notifications';
+        var type = String(notification.relatedEntityType || '').toLowerCase();
+        if (type === 'task' || type === 'taskassignment') return '/Tasks/Details/' + notification.relatedEntityId;
+        if (type === 'training') return '/Training/Details/' + notification.relatedEntityId;
+        if (type === 'chat') return '/Chat?thread=' + notification.relatedEntityId;
+        if (type === 'newsarticle' || type === 'news') return '/News/Details/' + notification.relatedEntityId;
+        return '/Documents/Details/' + notification.relatedEntityId;
+    }
+
+    window.qmsPageOpenNotification = function(e, id, href) {
+        if (e) e.preventDefault();
+        if (!id) {
+            window.location.href = href || '/Notifications';
+            return;
+        }
         var n = notifications.find(function(x) { return x.id === id; });
         if (n && !n.isRead) {
             fetch('/api/NotificationsApi/' + id + '/read', { method: 'POST' }).finally(function() {
                 notifications = notifications.map(function(x) { return x.id === id ? Object.assign({}, x, { isRead: true }) : x; });
                 render();
-                try { window.dispatchEvent(new CustomEvent('qms:notificationsRead')); } catch(e) {}
+                try { window.dispatchEvent(new CustomEvent('qms:refreshBadges')); } catch(e) {}
+                window.location.href = href || '/Notifications';
             });
+            return;
         }
+        window.location.href = href || '/Notifications';
     };
 
-    // Auto mark all as read on page open
-    var hasUnread = notifications.some(function(n) { return !n.isRead; });
-    if (hasUnread) {
-        fetch('/api/NotificationsApi/read-all', { method: 'POST' }).then(function() {
-            notifications = notifications.map(function(n) { return Object.assign({}, n, { isRead: true }); });
-            render();
-            try {
-                window.dispatchEvent(new CustomEvent('qms:notificationsRead'));
-                window.dispatchEvent(new CustomEvent('qms:unreadCount', { detail: { count: 0 } }));
-            } catch(e) {}
-        });
-    }
-
     render();
+
+    window.addEventListener('qms:notification', function() {
+        fetch('/api/NotificationsApi?limit=100').then(function(r) { return r.json(); }).then(function(d) {
+            notifications = d.items || [];
+            render();
+        });
+    });
 })();
 </script>
 }

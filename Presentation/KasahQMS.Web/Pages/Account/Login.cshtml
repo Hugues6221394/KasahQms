@@ -182,6 +182,14 @@
                     </div>
                 }
 
+                @if (Model.MaintenanceModeEnabled)
+                {
+                    <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                        <div class="text-sm font-semibold text-amber-800">Maintenance mode is enabled</div>
+                        <p class="text-sm text-amber-700 mt-1">@Model.MaintenanceMessage</p>
+                    </div>
+                }
+
                 <!-- Login Form -->
                 <form method="post" class="space-y-5" id="loginForm">
                     @Html.AntiForgeryToken()

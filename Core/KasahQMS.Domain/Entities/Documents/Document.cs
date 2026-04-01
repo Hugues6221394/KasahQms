@@ -19,6 +19,7 @@ public class Document : AuditableEntity
     public Guid? DocumentTypeId { get; set; }
     public Guid? CategoryId { get; set; }
     public Guid? CurrentApproverId { get; set; }
+    public Guid? ApproverDepartmentId { get; set; }
     public DateTime? SubmittedAt { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public Guid? ApprovedById { get; set; }

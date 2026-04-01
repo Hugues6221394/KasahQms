@@ -64,40 +64,11 @@ public class DataPrivacyService : IDataPrivacyService
                 return;
             }
 
-            var exportData = new Dictionary<string, object>
-            {
-                ["personalInfo"] = new
-                {
-                    user.Email,
-                    user.FirstName,
-                    user.LastName,
-                    user.PhoneNumber,
-                    user.JobTitle
-                },
-                ["accountInfo"] = new
-                {
-                    user.CreatedAt,
-                    user.LastLoginAt,
-                    user.IsActive
-                }
-            };
-
-            var consents = await _dbContext.ConsentRecords
-                .Where(c => c.UserId == request.UserId)
-                .ToListAsync(cancellationToken);
-
-            exportData["consents"] = consents.Select(c => new
-            {
-                c.ConsentType,
-                c.IsGranted,
-                c.GrantedAt,
-                c.RevokedAt
-            }).ToList();
-
-            request.DownloadUrl = $"/api/privacy/exports/{request.Id}/download";
+            // The downloadable payload is generated on demand by the secure page handler.
+            request.DownloadUrl = $"/Privacy/DataExport?handler=Download&id={request.Id}";
             request.Status = DataExportStatus.Completed;
             request.CompletedAt = DateTime.UtcNow;
-            request.ExpiresAt = DateTime.UtcNow.AddDays(7);
+            request.ExpiresAt = DateTime.UtcNow.AddDays(30);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Data export completed for request {RequestId}", requestId);

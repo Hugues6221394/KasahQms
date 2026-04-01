@@ -33,6 +33,7 @@ public class AdminModel : PageModel
     public List<StatCard> Stats { get; set; } = new();
     public List<UserItem> RecentUsers { get; set; } = new();
     public List<ActivityItem> Activity { get; set; } = new();
+    public List<LatestNewsItem> LatestNews { get; set; } = new();
     public string UsersTrendJson { get; set; } = "{}";
     public string SystemHealthJson { get; set; } = "{}";
     public int TotalUsersCount { get; set; }
@@ -107,6 +108,16 @@ public class AdminModel : PageModel
 
         UsersTrendJson = await BuildUsersTrendAsync(tenantId);
         SystemHealthJson = await BuildSystemHealthAsync(tenantId);
+        LatestNews = await _dbContext.NewsArticles.AsNoTracking()
+            .Where(n => n.TenantId == tenantId && n.IsActive)
+            .OrderByDescending(n => n.PublishedAt)
+            .Take(5)
+            .Select(n => new LatestNewsItem(
+                n.Id,
+                n.Title,
+                n.Content.Length > 160 ? n.Content.Substring(0, 160) + "..." : n.Content,
+                n.PublishedAt.ToString("MMM dd, yyyy")))
+            .ToListAsync();
     }
 
     private static string SerializeChart(IEnumerable<string> labels, IEnumerable<int> values)
@@ -121,6 +132,7 @@ public class AdminModel : PageModel
     public record StatCard(string Title, string Value, string Subtitle);
     public record UserItem(string Name, string Email, string Status, string Created);
     public record ActivityItem(string Title, string Description, string When);
+    public record LatestNewsItem(Guid Id, string Title, string Summary, string PublishedAt);
 
     private async Task<User?> GetCurrentUserAsync()
     {
@@ -165,7 +177,7 @@ public class AdminModel : PageModel
         var pendingDocs = await _dbContext.Documents.CountAsync(d => 
             d.TenantId == tenantId && (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview));
 
-        var labels = new[] { "Active Users", "Inactive Users", "Approved Docs", "Pending Docs" };
+        var labels = new[] { "Active Users", "Inactive Users", "Approved Docs", "Pending Approval Docs" };
         var values = new[]
         {
             activeUsers,

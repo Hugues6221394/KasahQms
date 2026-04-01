@@ -14,15 +14,18 @@ public record GetDocumentQuery(Guid DocumentId) : IRequest<Result<DocumentDto>>;
 public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Result<DocumentDto>>
 {
     private readonly IDocumentRepository _documentRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<GetDocumentQueryHandler> _logger;
 
     public GetDocumentQueryHandler(
         IDocumentRepository documentRepository,
+        IUserRepository userRepository,
         ICurrentUserService currentUserService,
         ILogger<GetDocumentQueryHandler> logger)
     {
         _documentRepository = documentRepository;
+        _userRepository = userRepository;
         _currentUserService = currentUserService;
         _logger = logger;
     }
@@ -41,6 +44,41 @@ public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Result<
             if (document.TenantId != _currentUserService.TenantId)
             {
                 return Result.Failure<DocumentDto>(Error.Forbidden);
+            }
+
+            var userId = _currentUserService.UserId;
+            if (!userId.HasValue)
+            {
+                return Result.Failure<DocumentDto>(Error.Unauthorized);
+            }
+
+            var currentUser = await _userRepository.GetByIdWithRolesAsync(userId.Value, cancellationToken);
+            if (currentUser == null)
+            {
+                return Result.Failure<DocumentDto>(Error.Unauthorized);
+            }
+
+            var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+            var isExecutive = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or
+                                             "TMD" or "TopManagingDirector" or "Country Manager" or
+                                             "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+            if (!isExecutive)
+            {
+                var canView = document.CreatedById == userId.Value
+                              || document.CurrentApproverId == userId.Value
+                              || document.TargetUserId == userId.Value
+                              || (currentUser.OrganizationUnitId.HasValue && document.TargetDepartmentId == currentUser.OrganizationUnitId.Value);
+
+                if (!canView && currentUser.OrganizationUnitId.HasValue)
+                {
+                    var creator = await _userRepository.GetByIdAsync(document.CreatedById, cancellationToken);
+                    canView = creator?.OrganizationUnitId == currentUser.OrganizationUnitId;
+                }
+
+                if (!canView)
+                {
+                    return Result.Failure<DocumentDto>(Error.Forbidden);
+                }
             }
 
             var dto = new DocumentDto

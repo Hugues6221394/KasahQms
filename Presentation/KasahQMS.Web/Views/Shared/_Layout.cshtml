@@ -92,6 +92,12 @@
     // Check for "Auditor" role specifically for the badge, or derive it.
     // Using role check here for the visual badge only.
     var isAuditor = await AuthorizationService.IsInRoleAsync("Auditor");
+    var canViewChatAudit = roles.Any(r =>
+        string.Equals(r, "Auditor", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(r, "Internal Auditor", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(r, "System Admin", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(r, "SystemAdmin", StringComparison.OrdinalIgnoreCase));
     var hasQuickAdd = canCreateDocuments || canCreateTasks || (canCreateCapa && !isAuditor);
 }
 <!DOCTYPE html>
@@ -360,7 +366,7 @@
                         <span>Audits</span>
                     </a>
                 }
-                @if (canViewAudits)
+                @if (canViewChatAudit)
                 {
                     <a data-nav="/chat/audit" href="/Chat/Audit" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -420,6 +426,13 @@
                     }
                 </a>
                 }
+                <a data-nav="/ai" href="/Ai" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 3v3m0 12v3m9-9h-3M6 12H3m15.364 6.364l-2.121-2.121M8.757 8.757 6.636 6.636m11.728 0-2.121 2.121M8.757 15.243l-2.121 2.121"/>
+                        <circle cx="12" cy="12" r="3" stroke-width="1.75"></circle>
+                    </svg>
+                    <span>AI Assistant</span>
+                </a>
                 @if (canViewRisk)
                 {
                 <a data-nav="/risk" href="/Risk" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">
@@ -792,7 +805,7 @@
         e.stopPropagation();
         var wasHidden = notifPanel && notifPanel.classList.contains('hidden');
         togglePanel('notif-panel', null);
-        if (wasHidden) { fetchNotifications(); markAllNotifsRead(); }
+        if (wasHidden) { fetchNotifications(); }
       });
     }
 
@@ -869,6 +882,7 @@
         }
         var time = n.createdAt ? new Date(n.createdAt).toLocaleString() : '';
         return '<a href="' + href + '" onclick="qmsNotifGo(event,\'' + (n.id||'') + '\',\'' + href + '\')" class="block px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0">'
+          + '<div class="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700 mb-1">New</div>'
           + '<div class="font-medium text-slate-900 text-sm">' + (n.title||'') + '</div>'
           + '<div class="text-slate-500 text-xs mt-0.5">' + (n.message||'') + '</div>'
           + '<div class="text-slate-400 text-xs mt-1">' + time + '</div>'
@@ -880,7 +894,15 @@
 
   window.qmsNotifGo = function(e, id, href) {
     e.preventDefault();
-    if (id) { fetch('/api/NotificationsApi/' + id + '/read', { method: 'POST' }).finally(function() { window.location.href = href; }); }
+    if (id) {
+      fetch('/api/NotificationsApi/' + id + '/read', { method: 'POST' }).finally(function() {
+        notifItems = notifItems.filter(function(n){ return String(n.id) !== String(id); });
+        notifUnreadCount = Math.max(0, notifUnreadCount - 1);
+        renderNotifications();
+        if (window.qmsRefreshBadges) window.qmsRefreshBadges();
+        window.location.href = href;
+      });
+    }
     else { window.location.href = href; }
   };
 
@@ -891,8 +913,8 @@
     if (loading) loading.classList.remove('hidden');
     if (empty) empty.classList.add('hidden');
     if (list) list.classList.add('hidden');
-    fetch('/api/NotificationsApi?limit=10').then(function(r) { return r.json(); }).then(function(d) {
-      notifItems = d.items || [];
+    fetch('/api/NotificationsApi?limit=10&unreadOnly=true').then(function(r) { return r.json(); }).then(function(d) {
+      notifItems = (d.items || []).filter(function(n){ return n && n.isRead === false; });
       notifUnreadCount = d.unreadCount != null ? Number(d.unreadCount) : 0;
       renderNotifications();
     }).catch(function() { notifItems = []; renderNotifications(); });
@@ -910,9 +932,8 @@
 
   // Listen for real-time notification events
   window.addEventListener('qms:notification', function() {
-    notifUnreadCount++;
-    var dot = document.getElementById('notification-dot');
-    if (dot) dot.classList.remove('hidden');
+    fetchNotifications();
+    if (window.qmsRefreshBadges) window.qmsRefreshBadges();
   });
   window.addEventListener('qms:unreadCount', function(e) {
     notifUnreadCount = e && e.detail ? Number(e.detail.count || 0) : 0;

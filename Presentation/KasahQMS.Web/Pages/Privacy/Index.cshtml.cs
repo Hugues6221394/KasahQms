@@ -59,10 +59,31 @@ public class IndexModel : PageModel
             {
                 await _privacyService.RevokeConsentAsync(userId.Value, type);
             }
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return new JsonResult(new
+                {
+                    ok = true,
+                    consentType,
+                    isGranted,
+                    message = $"Consent for {consentType} has been {(isGranted ? "enabled" : "disabled")}."
+                });
+            }
+
             StatusMessage = $"Consent for {consentType} has been updated.";
         }
         catch (Exception)
         {
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                Response.StatusCode = StatusCodes.Status400BadRequest;
+                return new JsonResult(new
+                {
+                    ok = false,
+                    message = "Failed to update consent. Please try again."
+                });
+            }
+
             ErrorMessage = "Failed to update consent. Please try again.";
         }
 
@@ -83,7 +104,8 @@ public class IndexModel : PageModel
 
         try
         {
-            await _privacyService.RequestDataExportAsync(userId.Value, tenantId);
+            var requestId = await _privacyService.RequestDataExportAsync(userId.Value, tenantId);
+            await _privacyService.ProcessDataExportAsync(requestId);
             StatusMessage = "Data export request submitted. You can track its status on the Data Export page.";
         }
         catch (Exception)

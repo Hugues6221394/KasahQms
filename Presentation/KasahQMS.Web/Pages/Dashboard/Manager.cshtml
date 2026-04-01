@@ -14,7 +14,7 @@
             <p class="mt-2 text-sm text-slate-200">Welcome back, @Model.DisplayName | @Model.CurrentDate</p>
             <div class="mt-6 flex flex-wrap gap-3">
                 <a href="/Tasks/Create" class="inline-flex items-center rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">Create Task</a>
-                <a href="/Documents?status=Submitted" class="inline-flex items-center rounded-xl border border-brand-300/40 bg-brand-500/20 px-4 py-2.5 text-sm font-semibold text-brand-100 transition hover:bg-brand-500/30">Review Approvals</a>
+                <a href="/Documents?status=PendingApproval" class="inline-flex items-center rounded-xl border border-brand-300/40 bg-brand-500/20 px-4 py-2.5 text-sm font-semibold text-brand-100 transition hover:bg-brand-500/30">Review Approvals</a>
             </div>
         </div>
     </section>
@@ -112,6 +112,34 @@
             <h3 class="text-lg font-semibold text-slate-900">Department Throughput</h3>
             <p class="text-sm text-slate-500">Document trend across the last 6 months</p>
             <div class="mt-4 h-[280px]"><canvas id="documentsTrendChart"></canvas></div>
+        </div>
+    </section>
+
+    <section class="card p-6">
+        <div class="mb-5 flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Latest News</h3>
+                <p class="text-sm text-slate-500">Team-relevant updates and announcements</p>
+            </div>
+            <a href="/News" class="text-sm font-medium text-brand-600 hover:underline">View all</a>
+        </div>
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            @if (Model.LatestNews.Any())
+            {
+                @foreach (var item in Model.LatestNews)
+                {
+                    <a href="/News/Details/@item.Id" class="group rounded-xl border border-slate-200 bg-gradient-to-br from-white to-brand-50/40 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-brand-600">Latest News</p>
+                        <p class="mt-2 line-clamp-2 text-sm font-semibold text-slate-900">@item.Title</p>
+                        <p class="mt-2 line-clamp-3 text-xs text-slate-600">@item.Summary</p>
+                        <p class="mt-3 text-[11px] text-slate-400">@item.PublishedAt</p>
+                    </a>
+                }
+            }
+            else
+            {
+                <p class="text-sm text-slate-500">No published news yet.</p>
+            }
         </div>
     </section>
 </div>

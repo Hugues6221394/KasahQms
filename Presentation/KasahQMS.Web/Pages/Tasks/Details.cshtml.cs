@@ -54,6 +54,7 @@ public class DetailsModel : PageModel
     /// Indicates if current user is the supervisor (created the task)
     /// </summary>
     public bool IsSupervisor { get; set; }
+    public bool IsSystemAdmin { get; set; }
     
     /// <summary>
     /// The user's role context for display purposes
@@ -122,6 +123,7 @@ public class DetailsModel : PageModel
         else UserRoleContext = "Staff";
 
         IsReadOnly = isAuditor;
+        IsSystemAdmin = isAdmin;
 
         // AUTHORIZATION CHECK: Can this user view this task?
         bool canView = false;
@@ -416,8 +418,13 @@ public class DetailsModel : PageModel
     /// </summary>
     public bool CanEditOrDelete => TaskItem != null
         && !IsReadOnly
-        && _currentUserService.UserId == TaskItem.CreatedById
-        && TaskItem.Status != "Completed" && TaskItem.Status != "Cancelled";
+        && (_currentUserService.UserId == TaskItem.CreatedById || IsSystemAdmin)
+        && TaskItem.Status != "Cancelled";
+
+    public bool CanArchive => TaskItem != null
+        && !IsReadOnly
+        && TaskItem.Status == "Completed"
+        && (_currentUserService.UserId == TaskItem.CreatedById || IsSystemAdmin);
 
     /// <summary>
     /// Indicates if current user can approve the task completion (for managers).

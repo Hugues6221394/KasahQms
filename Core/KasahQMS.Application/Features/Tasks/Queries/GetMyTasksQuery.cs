@@ -105,19 +105,19 @@ public class GetMyTasksQueryHandler : IRequestHandler<GetMyTasksQuery, Result<My
             // Categorize tasks
             var overdueTasks = taskList
                 .Where(t => t.DueDate < today && t.Status != QmsTaskStatus.Completed && t.Status != QmsTaskStatus.Cancelled)
-                .OrderBy(t => t.DueDate)
+                .OrderByDescending(t => t.LastModifiedAt ?? t.CreatedAt)
                 .Take(request.Limit)
                 .ToList();
 
             var dueTodayTasks = taskList
                 .Where(t => t.DueDate >= today && t.DueDate < tomorrow && t.Status != QmsTaskStatus.Completed && t.Status != QmsTaskStatus.Cancelled)
-                .OrderBy(t => t.DueDate)
+                .OrderByDescending(t => t.LastModifiedAt ?? t.CreatedAt)
                 .Take(request.Limit)
                 .ToList();
 
             var upcomingTasks = taskList
                 .Where(t => t.DueDate >= tomorrow && t.DueDate <= nextWeek && t.Status != QmsTaskStatus.Completed && t.Status != QmsTaskStatus.Cancelled)
-                .OrderBy(t => t.DueDate)
+                .OrderByDescending(t => t.LastModifiedAt ?? t.CreatedAt)
                 .Take(request.Limit)
                 .ToList();
 

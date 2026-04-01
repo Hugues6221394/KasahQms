@@ -96,12 +96,12 @@ public class EditModel : PageModel
         bool isCreator = document.CreatedById == userId;
         bool isDraft = document.Status == DocumentStatus.Draft;
 
-        CanEdit = (isCreator && isDraft) || (IsTmdOrDeputy && isDraft);
+        CanEdit = (isCreator && document.Status != DocumentStatus.Archived) || (IsTmdOrDeputy && isDraft);
 
         if (!CanEdit)
         {
-            ErrorMessage = document.Status != DocumentStatus.Draft 
-                ? "Only draft documents can be edited." 
+            ErrorMessage = document.Status == DocumentStatus.Archived
+                ? "Archived documents cannot be edited."
                 : "You don't have permission to edit this document.";
         }
 
@@ -141,7 +141,7 @@ public class EditModel : PageModel
 
         bool isCreator = document.CreatedById == userId;
         bool isDraft = document.Status == DocumentStatus.Draft;
-        CanEdit = (isCreator && isDraft) || (IsTmdOrDeputy && isDraft);
+        CanEdit = (isCreator && document.Status != DocumentStatus.Archived) || (IsTmdOrDeputy && isDraft);
 
         if (!CanEdit)
         {
@@ -220,12 +220,10 @@ public class EditModel : PageModel
         bool isTmd = roles.Any(r => r == "TMD" || r == "TopManagingDirector" || r == "Country Manager");
         bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin");
         bool isCreator = document.CreatedById == userId;
-        bool isDraft = document.Status == DocumentStatus.Draft;
-
         // Can delete if:
-        // 1. User is creator and document is Draft
+        // 1. User is creator and document is not archived
         // 2. User is TMD/Admin
-        bool canDelete = (isCreator && isDraft) || isTmd || isAdmin;
+        bool canDelete = (isCreator && document.Status != DocumentStatus.Archived) || isTmd || isAdmin;
 
         if (!canDelete)
         {

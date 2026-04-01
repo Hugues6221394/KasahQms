@@ -15,6 +15,7 @@ public record DeleteTaskCommand(Guid TaskId) : IRequest<Result>;
 public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Result>
 {
     private readonly ITaskRepository _taskRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
     private readonly IUnitOfWork _unitOfWork;
@@ -22,12 +23,14 @@ public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Resul
 
     public DeleteTaskCommandHandler(
         ITaskRepository taskRepository,
+        IUserRepository userRepository,
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
         IUnitOfWork unitOfWork,
         ILogger<DeleteTaskCommandHandler> logger)
     {
         _taskRepository = taskRepository;
+        _userRepository = userRepository;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
         _unitOfWork = unitOfWork;
@@ -45,11 +48,17 @@ public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Resul
         if (task == null) return Result.Failure(Error.NotFound);
         if (task.TenantId != tenantId) return Result.Failure(Error.Forbidden);
 
-        if (task.CreatedById != userId.Value)
-            return Result.Failure(Error.Forbidden);
-
-        if (task.Status == QmsTaskStatus.Completed)
+        if (task.Status == QmsTaskStatus.Cancelled)
             return Result.Failure(Error.Conflict);
+
+        var user = await _userRepository.GetByIdWithRolesAsync(userId.Value, cancellationToken);
+        if (user == null) return Result.Failure(Error.Unauthorized);
+
+        var isAdmin = user.Roles?.Any(r =>
+            r.Name is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin") == true;
+        var isCreator = task.CreatedById == userId.Value;
+        if (!isCreator && !isAdmin)
+            return Result.Failure(Error.Forbidden);
 
         await _taskRepository.DeleteAsync(task, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

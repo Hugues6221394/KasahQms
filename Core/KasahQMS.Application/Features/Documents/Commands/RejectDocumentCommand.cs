@@ -75,10 +75,30 @@ public class RejectDocumentCommandHandler : IRequestHandler<RejectDocumentComman
             var isExecutiveOverride = user?.Roles?.Any(r =>
                 r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
 
-            // Check if current user is the assigned approver or executive override
-            if (!isExecutiveOverride && document.CurrentApproverId != userId.Value)
+            // Check if current user is the assigned approver, or department leader approver, or executive override
+            if (!isExecutiveOverride)
             {
-                return Result.Failure(Error.Forbidden);
+                var isDirectApprover = document.CurrentApproverId == userId.Value;
+                var isDepartmentLeaderApprover = false;
+                if (document.ApproverDepartmentId.HasValue && user != null)
+                {
+                    var inDept = user.OrganizationUnitId == document.ApproverDepartmentId.Value;
+                    var isLeader = user.Roles?.Any(r => r.Name.Contains("Manager")
+                                                    || r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
+                    isDepartmentLeaderApprover = inDept && isLeader;
+                }
+                
+                if (document.ApproverDepartmentId.HasValue)
+                {
+                    if (!isDepartmentLeaderApprover)
+                    {
+                        return Result.Failure(Error.Forbidden);
+                    }
+                }
+                else if (!isDirectApprover)
+                {
+                    return Result.Failure(Error.Forbidden);
+                }
             }
 
             document.Reject(userId.Value, request.Reason);

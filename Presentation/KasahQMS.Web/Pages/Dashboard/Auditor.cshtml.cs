@@ -34,6 +34,7 @@ public class AuditorModel : PageModel
     public List<DocumentItem> RecentDocuments { get; set; } = new();
     public List<CapaItem> RecentCapas { get; set; } = new();
     public List<ActivityItem> Activity { get; set; } = new();
+    public List<LatestNewsItem> LatestNews { get; set; } = new();
     public string DocumentsTrendJson { get; set; } = "{}";
     public string ComplianceStatusJson { get; set; } = "{}";
 
@@ -95,6 +96,16 @@ public class AuditorModel : PageModel
 
         DocumentsTrendJson = await BuildDocumentTrendAsync(tenantId);
         ComplianceStatusJson = await BuildComplianceStatusAsync(tenantId);
+        LatestNews = await _dbContext.NewsArticles.AsNoTracking()
+            .Where(n => n.TenantId == tenantId && n.IsActive)
+            .OrderByDescending(n => n.PublishedAt)
+            .Take(5)
+            .Select(n => new LatestNewsItem(
+                n.Id,
+                n.Title,
+                n.Content.Length > 160 ? n.Content.Substring(0, 160) + "..." : n.Content,
+                n.PublishedAt.ToString("MMM dd, yyyy")))
+            .ToListAsync();
     }
 
     private static string SerializeChart(IEnumerable<string> labels, IEnumerable<int> values)
@@ -110,6 +121,7 @@ public class AuditorModel : PageModel
     public record DocumentItem(string Title, string Number, string Status, string Created);
     public record CapaItem(string Title, string Number, string Status, string Created);
     public record ActivityItem(string Title, string Description, string When);
+    public record LatestNewsItem(Guid Id, string Title, string Summary, string PublishedAt);
 
     private async Task<User?> GetCurrentUserAsync()
     {
@@ -155,7 +167,7 @@ public class AuditorModel : PageModel
         var draft = await _dbContext.Documents.CountAsync(d =>
             d.TenantId == tenantId && d.Status == DocumentStatus.Draft);
 
-        var labels = new[] { "Approved", "In Review", "Draft", "Other" };
+        var labels = new[] { "Approved", "Pending Approval", "Draft", "Other" };
         var values = new[]
         {
             approved,

@@ -55,7 +55,7 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
         if (task.CreatedById != userId.Value)
             return Result.Failure(Error.Forbidden);
 
-        if (task.Status == QmsTaskStatus.Completed || task.Status == QmsTaskStatus.Cancelled)
+        if (task.Status == QmsTaskStatus.Cancelled)
             return Result.Failure(Error.Conflict);
 
         task.Title = request.Title;

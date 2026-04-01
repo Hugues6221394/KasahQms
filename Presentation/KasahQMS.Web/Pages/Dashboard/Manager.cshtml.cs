@@ -46,6 +46,7 @@ public class ManagerModel : PageModel
     public List<ApprovalItem> PendingApprovals { get; set; } = new();
     public List<ActivityItem> Activity { get; set; } = new();
     public List<SubordinateItem> SubordinateWork { get; set; } = new();
+    public List<LatestNewsItem> LatestNews { get; set; } = new();
     public int DeptDocumentsCount { get; set; }
     public int OpenCapasCount { get; set; }
     public int PendingApprovalsCount { get; set; }
@@ -104,7 +105,7 @@ public class ManagerModel : PageModel
         {
             new("Department Documents", activeDocuments.ToString(), "Created by team", "/Documents", activeDocuments),
             new("Open CAPAs", openCapas.ToString(), "Requires follow-up", "/Capa", openCapas),
-            new("Pending Approvals", pendingApprovals.ToString(), "Awaiting your review", "/Documents?status=Submitted", pendingApprovals),
+            new("Pending Approvals", pendingApprovals.ToString(), "Awaiting your review", "/Documents?status=PendingApproval", pendingApprovals),
             new("Overdue Tasks", overdueTasks.ToString(), "Team tasks", "/Tasks?status=Overdue", overdueTasks)
         };
 
@@ -131,7 +132,8 @@ public class ManagerModel : PageModel
             .Join(_dbContext.Users.AsNoTracking(),
                 d => d.CreatedById,
                 u => u.Id,
-                (d, u) => new { d.Title, u.FirstName, u.LastName, Status = d.Status.ToString() })
+                (d, u) => new { d.Title, u.FirstName, u.LastName, Status = (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview) ? "Pending Approval" : d.Status.ToString(), SortAt = d.SubmittedAt ?? d.LastModifiedAt ?? d.CreatedAt })
+            .OrderByDescending(x => x.SortAt)
             .Take(5)
             .ToListAsync();
 
@@ -194,11 +196,12 @@ public class ManagerModel : PageModel
             var subordinateDocs = await _dbContext.Documents.AsNoTracking()
                 .Where(d => d.TenantId == tenantId && 
                            subordinateList.Contains(d.CreatedById) &&
-                           (d.Status == DocumentStatus.Draft || d.Status == DocumentStatus.Submitted))
+                           (d.Status == DocumentStatus.Draft || d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview))
                 .Join(_dbContext.Users.AsNoTracking(),
                     d => d.CreatedById,
                     u => u.Id,
-                    (d, u) => new { d.Title, UserName = u.FullName, Status = d.Status.ToString() })
+                    (d, u) => new { d.Title, UserName = u.FullName, Status = (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview) ? "Pending Approval" : d.Status.ToString(), SortAt = d.LastModifiedAt ?? d.CreatedAt })
+                .OrderByDescending(x => x.SortAt)
                 .Take(5)
                 .ToListAsync();
 
@@ -216,6 +219,16 @@ public class ManagerModel : PageModel
 
         DocumentsTrendJson = await BuildDocumentTrendAsync(tenantId, visibleUserIds);
         TaskStatusJson = await BuildTaskStatusAsync(tenantId, visibleUserIds);
+        LatestNews = await _dbContext.NewsArticles.AsNoTracking()
+            .Where(n => n.TenantId == tenantId && n.IsActive)
+            .OrderByDescending(n => n.PublishedAt)
+            .Take(5)
+            .Select(n => new LatestNewsItem(
+                n.Id,
+                n.Title,
+                n.Content.Length > 160 ? n.Content.Substring(0, 160) + "..." : n.Content,
+                n.PublishedAt.ToString("MMM dd, yyyy")))
+            .ToListAsync();
 
         var hasAnyTraining = await _dbContext.TrainingRecords
             .AnyAsync(t => t.UserId == currentUser.Id && t.TenantId == tenantId);
@@ -237,6 +250,7 @@ public class ManagerModel : PageModel
     public record ActivityItem(string Title, string Description, string When);
     public record SubordinateItem(string Title, string Owner, string Status);
     public record TeamMemberItem(string Name, string Initials, int TaskCount, int CompletedCount);
+    public record LatestNewsItem(Guid Id, string Title, string Summary, string PublishedAt);
 
     private async Task<User?> GetCurrentUserAsync()
     {

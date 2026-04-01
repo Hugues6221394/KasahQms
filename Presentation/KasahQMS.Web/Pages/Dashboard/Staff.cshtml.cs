@@ -42,6 +42,7 @@ public class StaffModel : PageModel
     public List<DocumentItem> MyDocuments { get; set; } = new();
     public List<NotificationItem> Notifications { get; set; } = new();
     public List<TrainingItem> TrainingItems { get; set; } = new();
+    public List<LatestNewsItem> LatestNews { get; set; } = new();
     public bool ShowTrainingWelcome { get; set; }
     public int MyDocumentsCount { get; set; }
     public int PendingTasksCount { get; set; }
@@ -117,7 +118,7 @@ public class StaffModel : PageModel
                            t.AssignedToId == currentUser.Id &&
                            t.Status != QmsTaskStatus.Completed &&
                            t.Status != QmsTaskStatus.Cancelled)
-                .OrderBy(t => t.DueDate)
+                .OrderByDescending(t => t.LastModifiedAt ?? t.CreatedAt)
                 .Take(5)
                 .Select(t => new TaskItem(t.Title, t.DueDate != null ? t.DueDate.Value.ToString("MMM dd") : "No due date", t.Status.ToString()))
                 .ToListAsync();
@@ -131,7 +132,8 @@ public class StaffModel : PageModel
             .Join(_dbContext.Users.AsNoTracking(),
                 d => d.CreatedById,
                 u => u.Id,
-                (d, u) => new { d.Title, u.FirstName, u.LastName, Status = d.Status.ToString() })
+                (d, u) => new { d.Title, u.FirstName, u.LastName, Status = (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview) ? "Pending Approval" : d.Status.ToString(), SortAt = d.SubmittedAt ?? d.LastModifiedAt ?? d.CreatedAt })
+            .OrderByDescending(x => x.SortAt)
             .Take(5)
             .ToListAsync();
 
@@ -183,6 +185,17 @@ public class StaffModel : PageModel
             ShowTrainingWelcome = !hasAnyTraining;
         }
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to load training records"); }
+
+        LatestNews = await _dbContext.NewsArticles.AsNoTracking()
+            .Where(n => n.TenantId == tenantId && n.IsActive)
+            .OrderByDescending(n => n.PublishedAt)
+            .Take(5)
+            .Select(n => new LatestNewsItem(
+                n.Id,
+                n.Title,
+                n.Content.Length > 160 ? n.Content.Substring(0, 160) + "..." : n.Content,
+                n.PublishedAt.ToString("MMM dd, yyyy")))
+            .ToListAsync();
     }
 
     public record StatCard(string Title, string Value, string Subtitle, string Link, int CountTo);
@@ -191,6 +204,7 @@ public class StaffModel : PageModel
     public record DocumentItem(string Title, string Number, string Status, string Created);
     public record NotificationItem(string Title, string Message, string When, bool IsRead);
     public record TrainingItem(string Title, string DueDate, string Status);
+    public record LatestNewsItem(Guid Id, string Title, string Summary, string PublishedAt);
 
     private async Task<User?> GetCurrentUserAsync()
     {

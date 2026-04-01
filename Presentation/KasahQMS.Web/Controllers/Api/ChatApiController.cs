@@ -2,6 +2,7 @@ using System.Security.Claims;
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Infrastructure.Persistence.Data;
+using KasahQMS.Domain.Entities.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace KasahQMS.Web.Controllers.Api;
 [Authorize]
 public class ChatApiController : ControllerBase
 {
+    private const string LastSeenSettingPrefix = "badge.last_seen";
     private readonly IChatService _chatService;
     private readonly ICurrentUserService _currentUser;
     private readonly IWebHostEnvironment _environment;
@@ -102,7 +104,7 @@ public class ChatApiController : ControllerBase
             return BadRequest("Message content is required");
 
         var msg = await _chatService.EditMessageAsync(id, userId.Value, request.Content);
-        if (msg == null) return NotFound("Message not found or you cannot edit it");
+        if (msg == null) return BadRequest("You can only edit your own messages within 15 minutes.");
 
         return Ok(msg);
     }
@@ -114,7 +116,7 @@ public class ChatApiController : ControllerBase
         if (userId == null) return Unauthorized();
 
         var success = await _chatService.DeleteMessageAsync(id, userId.Value);
-        if (!success) return NotFound("Message not found or you cannot delete it");
+        if (!success) return BadRequest("You can only delete your own messages within 24 hours.");
 
         return Ok(new { success = true });
     }
@@ -212,6 +214,7 @@ public class ChatApiController : ControllerBase
             .ToListAsync();
 
         var conversationList = new List<ConversationDto>();
+        var persistedLastSeenMessages = await GetPersistedLastSeenMessagesAsync(userId.Value, tenantId.Value);
 
         foreach (var thread in threads)
         {
@@ -229,7 +232,8 @@ public class ChatApiController : ControllerBase
             var unreadCount = await _db.ChatMessages
                 .CountAsync(m => m.ThreadId == thread.Id && 
                                 !m.IsDeleted && 
-                                m.SenderId != userId.Value);
+                                m.SenderId != userId.Value &&
+                                (!persistedLastSeenMessages.HasValue || m.CreatedAt > persistedLastSeenMessages.Value));
 
             // Determine conversation info
             string name;
@@ -298,6 +302,23 @@ public class ChatApiController : ControllerBase
 
         var list = await _chatService.GetMessagesAsync(id, skip, Math.Min(take, 100));
         return Ok(list);
+    }
+
+    private async Task<DateTime?> GetPersistedLastSeenMessagesAsync(Guid userId, Guid tenantId)
+    {
+        var key = $"{LastSeenSettingPrefix}.messages.{userId:N}";
+        var value = await _db.SystemSettings
+            .AsNoTracking()
+            .Where(s => s.TenantId == tenantId && s.Key == key)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return DateTime.TryParse(value, out var parsed) ? parsed : null;
     }
 }
 

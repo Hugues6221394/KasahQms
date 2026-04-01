@@ -19,6 +19,8 @@ public class Capa : AuditableEntity
     public Guid? OwnerId { get; set; }
     public Guid? SourceAuditId { get; set; }
     public Guid? SourceAuditFindingId { get; set; }
+    public bool IsGlobal { get; set; }
+    public Guid? TargetDepartmentId { get; set; }
     public DateTime? TargetCompletionDate { get; set; }
     public DateTime? ActualCompletionDate { get; set; }
     public string? ImmediateActions { get; set; }
@@ -34,6 +36,7 @@ public class Capa : AuditableEntity
     // Navigation properties
     public virtual User? Owner { get; set; }
     public virtual User? VerifiedBy { get; set; }
+    public virtual OrganizationUnit? TargetDepartment { get; set; }
     public virtual ICollection<CapaAction>? Actions { get; set; }
     
     public Capa() { }

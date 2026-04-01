@@ -74,6 +74,17 @@ public class DetailsModel : PageModel
             if (currentUser != null)
             {
                 var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+                var isExecutive = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+                var canView = isExecutive
+                    || capa.CreatedById == userId.Value
+                    || capa.OwnerId == userId.Value
+                    || capa.IsGlobal
+                    || (currentUser.OrganizationUnitId.HasValue && capa.TargetDepartmentId == currentUser.OrganizationUnitId.Value);
+                if (!canView)
+                {
+                    return Forbid();
+                }
+
                 var (canEdit, editContext) = CheckEditPermission(roles, capa.CreatedById, userId.Value);
                 var canDelete = capa.CanBeDeleted && CheckDeletePermission(roles, capa.CreatedById, userId.Value);
 
