@@ -27,24 +27,30 @@ public record CreateCapaCommand(
 public class CreateCapaCommandHandler : IRequestHandler<CreateCapaCommand, Result<Guid>>
 {
     private readonly ICapaRepository _capaRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
     private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CreateCapaCommandHandler> _logger;
 
     public CreateCapaCommandHandler(
         ICapaRepository capaRepository,
+        IUserRepository userRepository,
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
         INotificationService notificationService,
+        IEmailService emailService,
         IUnitOfWork unitOfWork,
         ILogger<CreateCapaCommandHandler> logger)
     {
         _capaRepository = capaRepository;
+        _userRepository = userRepository;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
         _notificationService = notificationService;
+        _emailService = emailService;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -126,6 +132,22 @@ public class CreateCapaCommandHandler : IRequestHandler<CreateCapaCommand, Resul
                     NotificationType.CapaAssignment,
                     capa.Id,
                     cancellationToken);
+
+                var ownerUser = await _userRepository.GetByIdWithRolesAsync(request.OwnerId.Value, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(ownerUser?.Email))
+                {
+                    await _emailService.SendEmailAsync(
+                        ownerUser.Email!,
+                        $"CAPA Assigned: {request.Title}",
+                        $"<p>Hello {ownerUser.FullName},</p>" +
+                        $"<p>You have been assigned ownership of a new CAPA.</p>" +
+                        $"<p><strong>CAPA:</strong> {request.Title}<br/>" +
+                        $"<strong>Priority:</strong> {request.Priority}" +
+                        $"{(request.TargetCompletionDate.HasValue ? $"<br/><strong>Target Completion:</strong> {request.TargetCompletionDate.Value:MMMM dd, yyyy}" : "")}</p>" +
+                        $"<p>Please log in to KASAH QMS and start the corrective/preventive workflow.</p>",
+                        true,
+                        cancellationToken);
+                }
             }
 
             _logger.LogInformation("CAPA {CapaId} created by user {UserId}", capa.Id, userId);

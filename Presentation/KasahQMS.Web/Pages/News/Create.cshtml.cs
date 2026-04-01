@@ -98,8 +98,7 @@ public class CreateModel : PageModel
 
         _logger.LogInformation("News article {Id} published by {UserId}: {Title}", article.Id, userId, Title);
 
-        // Send in-app and email notifications to all active users in tenant (async, fire-and-forget)
-        _ = Task.Run(async () => await SendNotificationsAsync(article, tenantId, userId.Value));
+        await SendNotificationsAsync(article, tenantId, userId.Value);
 
         return RedirectToPage("./Index");
     }
@@ -137,7 +136,10 @@ public class CreateModel : PageModel
 <p><a href='{GetBaseUrl()}/News/Details?id={article.Id}'>Read Full Article</a></p>
 ";
 
-                    await _emailService.SendEmailAsync(user.Email, subject, body);
+                    if (!string.IsNullOrWhiteSpace(user.Email))
+                    {
+                        await _emailService.SendEmailAsync(user.Email, subject, body);
+                    }
                 }
                 catch (Exception ex)
                 {
