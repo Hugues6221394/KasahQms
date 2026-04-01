@@ -117,7 +117,7 @@ public class AuditLoggingService : IAuditLoggingService
 
     public async Task LogDocumentSubmittedAsync(Guid documentId)
     {
-        await LogActionAsync("DOCUMENT_SUBMITTED", "Document", documentId, "Document submitted for approval");
+        await LogActionAsync("DOCUMENT_SUBMITTED", "Document", documentId, "Document moved to pending approval");
     }
 
     public async Task LogDocumentApprovedAsync(Guid documentId, string? comments = null)

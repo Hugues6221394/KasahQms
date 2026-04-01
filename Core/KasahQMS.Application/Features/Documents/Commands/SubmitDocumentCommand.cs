@@ -118,6 +118,7 @@ public class SubmitDocumentCommandHandler : IRequestHandler<SubmitDocumentComman
             }
 
             document.Submit(userId.Value, nextApproverId);
+            document.ApproverDepartmentId = request.ApproverDepartmentId;
             
             // Update status to InReview if approver is assigned
             if (nextApproverId.HasValue)

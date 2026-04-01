@@ -39,15 +39,20 @@ public class CreateModel : PageModel
     [BindProperty] public string CapaType { get; set; } = "Corrective";
     [BindProperty] public string Priority { get; set; } = "Medium";
     [BindProperty] public Guid? OwnerId { get; set; }
+    [BindProperty] public bool IsGlobal { get; set; }
+    [BindProperty] public Guid? TargetDepartmentId { get; set; }
     [BindProperty] public DateTime? TargetCompletionDate { get; set; }
     [BindProperty] public string? ImmediateActions { get; set; }
     [BindProperty] public Guid? LinkedAuditId { get; set; }
 
     public List<UserOption> Users { get; set; } = new();
     public List<AuditOption> Audits { get; set; } = new();
+    public List<DepartmentOption> Departments { get; set; } = new();
     public string? ErrorMessage { get; set; }
     public bool CanCreate { get; set; }
     public string UserRoleContext { get; set; } = string.Empty;
+    public bool CanSetScope { get; set; }
+    public Guid? CurrentUserDepartmentId { get; set; }
 
     /// <summary>
     /// Checks if user has permission to create CAPAs.
@@ -115,6 +120,13 @@ public class CreateModel : PageModel
         }
         
         UserRoleContext = message;
+        CanSetScope = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or "TMD" or "TopManagingDirector" or "Country Manager");
+        CurrentUserDepartmentId = currentUser.OrganizationUnitId;
+        if (!CanSetScope)
+        {
+            IsGlobal = false;
+            TargetDepartmentId = currentUser.OrganizationUnitId;
+        }
         await LoadLookupsAsync();
     }
 
@@ -142,6 +154,18 @@ public class CreateModel : PageModel
         if (string.IsNullOrWhiteSpace(Title))
             ModelState.AddModelError(nameof(Title), "Title is required.");
 
+        CanSetScope = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or "TMD" or "TopManagingDirector" or "Country Manager");
+        CurrentUserDepartmentId = currentUser.OrganizationUnitId;
+        if (!CanSetScope)
+        {
+            IsGlobal = false;
+            TargetDepartmentId = currentUser.OrganizationUnitId;
+        }
+        else if (!IsGlobal && !TargetDepartmentId.HasValue)
+        {
+            ModelState.AddModelError(nameof(TargetDepartmentId), "Select a target department or choose global CAPA.");
+        }
+
         if (!ModelState.IsValid)
         {
             CanCreate = true;
@@ -163,6 +187,8 @@ public class CreateModel : PageModel
                 capaType,
                 priority,
                 OwnerId,
+                IsGlobal,
+                IsGlobal ? null : TargetDepartmentId,
                 LinkedAuditId,
                 null, // LinkedAuditFindingId
                 TargetCompletionDate,
@@ -221,6 +247,13 @@ public class CreateModel : PageModel
             .Select(u => new UserOption(u.Id, $"{u.FirstName} {u.LastName}", u.OrganizationUnit != null ? u.OrganizationUnit.Name : "—"))
             .ToListAsync();
 
+        Departments = await _dbContext.OrganizationUnits
+            .AsNoTracking()
+            .Where(o => o.TenantId == tenantId)
+            .OrderBy(o => o.Name)
+            .Select(o => new DepartmentOption(o.Id, o.Name))
+            .ToListAsync();
+
         Audits = await _dbContext.Audits
             .AsNoTracking()
             .Where(a => a.TenantId == tenantId)
@@ -232,4 +265,5 @@ public class CreateModel : PageModel
 
     public record UserOption(Guid Id, string Name, string Department);
     public record AuditOption(Guid Id, string Number, string Title);
+    public record DepartmentOption(Guid Id, string Name);
 }

@@ -77,10 +77,30 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
             var isExecutiveOverride = user?.Roles?.Any(r =>
                 r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
 
-            // Check if current user is the assigned approver or executive override
-            if (!isExecutiveOverride && document.CurrentApproverId != userId.Value)
+            // Check if current user is the assigned approver, or department leader approver, or executive override
+            if (!isExecutiveOverride)
             {
-                return Result.Failure(Error.Forbidden);
+                var isDirectApprover = document.CurrentApproverId == userId.Value;
+                var isDepartmentLeaderApprover = false;
+                if (document.ApproverDepartmentId.HasValue && user != null)
+                {
+                    var inDept = user.OrganizationUnitId == document.ApproverDepartmentId.Value;
+                    var isLeader = user.Roles?.Any(r => r.Name.Contains("Manager")
+                                                    || r.Name is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager") == true;
+                    isDepartmentLeaderApprover = inDept && isLeader;
+                }
+                
+                if (document.ApproverDepartmentId.HasValue)
+                {
+                    if (!isDepartmentLeaderApprover)
+                    {
+                        return Result.Failure(Error.Forbidden);
+                    }
+                }
+                else if (!isDirectApprover)
+                {
+                    return Result.Failure(Error.Forbidden);
+                }
             }
 
             // Documents must have a DocumentTypeId to use the approval workflow
@@ -92,11 +112,15 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
                     "Document must have a document type assigned before it can be approved."));
             }
 
-            // Check if more approvals are required
-            var requiresMoreApprovals = await _workflowService.RequiresAdditionalApprovalsAsync(
-                document.Id,
-                userId.Value,
-                cancellationToken);
+            // Department-targeted approvals are single-step: first department leader decision finalizes.
+            var requiresMoreApprovals = false;
+            if (!document.ApproverDepartmentId.HasValue)
+            {
+                requiresMoreApprovals = await _workflowService.RequiresAdditionalApprovalsAsync(
+                    document.Id,
+                    userId.Value,
+                    cancellationToken);
+            }
 
             if (requiresMoreApprovals)
             {
@@ -113,6 +137,7 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
                 {
                     document.Status = DocumentStatus.InReview;
                     document.CurrentApproverId = nextApproverId;
+                    document.ApproverDepartmentId = null;
                     document.ApprovedById = null; // Clear final approval until last approver
                     document.ApprovedAt = null;
 
@@ -138,6 +163,7 @@ public class ApproveDocumentCommandHandler : IRequestHandler<ApproveDocumentComm
                 // Final approval - document is now approved and read-only
                 document.Approve(userId.Value, request.Comments);
                 document.EffectiveDate = DateTime.UtcNow;
+                document.ApproverDepartmentId = null;
 
                 await _auditLogService.LogAsync(
                     "DOCUMENT_APPROVED_FINAL",

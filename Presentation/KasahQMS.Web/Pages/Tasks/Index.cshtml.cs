@@ -169,7 +169,7 @@ public class IndexModel : PageModel
         OverdueCount = await query.CountAsync(t => t.Status == QmsTaskStatus.Overdue);
 
         Tasks = await query
-            .OrderBy(t => t.DueDate ?? DateTime.MaxValue)
+            .OrderByDescending(t => t.LastModifiedAt ?? t.CreatedAt)
             .Select(t => new TaskRow(
                 t.Id,
                 t.TaskNumber,

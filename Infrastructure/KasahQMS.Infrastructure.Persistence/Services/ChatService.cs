@@ -8,6 +8,8 @@ namespace KasahQMS.Infrastructure.Persistence.Services;
 public class ChatService : IChatService
 {
     private readonly ApplicationDbContext _db;
+    private static readonly TimeSpan EditWindow = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan DeleteWindow = TimeSpan.FromHours(24);
 
     public ChatService(ApplicationDbContext db)
     {
@@ -168,6 +170,7 @@ public class ChatService : IChatService
             .FirstOrDefaultAsync(x => x.Id == messageId && x.SenderId == userId && !x.IsDeleted, cancellationToken);
         
         if (m == null) return null;
+        if (GetMessageAge(m.CreatedAt) > EditWindow) return null;
 
         m.Content = newContent.Trim().Length > 4000 ? newContent.Trim().Substring(0, 4000) : newContent.Trim();
         m.EditedAt = DateTime.UtcNow;
@@ -184,12 +187,27 @@ public class ChatService : IChatService
             .FirstOrDefaultAsync(x => x.Id == messageId && x.SenderId == userId && !x.IsDeleted, cancellationToken);
         
         if (m == null) return false;
+        if (GetMessageAge(m.CreatedAt) > DeleteWindow) return false;
 
         m.IsDeleted = true;
         m.Content = "[Message deleted]";
         
         await _db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private static TimeSpan GetMessageAge(DateTime createdAt)
+    {
+        // Handle mixed historical DateTime kinds from persistence/providers consistently.
+        var createdAtUtc = createdAt.Kind switch
+        {
+            DateTimeKind.Utc => createdAt,
+            DateTimeKind.Local => createdAt.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(createdAt, DateTimeKind.Local).ToUniversalTime()
+        };
+
+        var age = DateTime.UtcNow - createdAtUtc;
+        return age < TimeSpan.Zero ? TimeSpan.Zero : age;
     }
 
     private static ChatThreadDto ToDto(ChatThread t) =>

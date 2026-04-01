@@ -181,15 +181,15 @@ public class DocumentsController : ControllerBase
             return BadRequest(new { error = result.ErrorMessage });
         }
 
-        // Log submission and transition to Submitted state
+        // Log submission and transition to pending-approval workflow state
         await _documentStateService.TransitionStateAsync(id, Domain.Enums.DocumentStatus.Submitted, userId);
         await _auditLoggingService.LogDocumentSubmittedAsync(id);
 
-        return Ok(new { message = "Document submitted for approval." });
+        return Ok(new { message = "Document moved to pending approval." });
     }
 
     /// <summary>
-    /// Approve a document. Only assigned approvers can approve. Document must be in Submitted state.
+    /// Approve a document. Only assigned approvers can approve. Document must be in pending approval state.
     /// </summary>
     [HttpPost("{id:guid}/approve")]
     [Authorize(Policy = "Authenticated")]
@@ -210,7 +210,7 @@ public class DocumentsController : ControllerBase
         if (currentState != Domain.Enums.DocumentStatus.Submitted)
         {
             _logger.LogWarning("Document {DocumentId} is in {State}, cannot approve", id, currentState);
-            return BadRequest(new { error = "Document must be in Submitted state to approve" });
+            return BadRequest(new { error = "Document must be in pending approval state to approve" });
         }
 
         // Authorization check: Can approve this document
@@ -241,7 +241,7 @@ public class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Reject a document. Only assigned approvers can reject. Document must be in Submitted state.
+    /// Reject a document. Only assigned approvers can reject. Document must be in pending approval state.
     /// Rejection reason is mandatory and logged in audit trail.
     /// </summary>
     [HttpPost("{id:guid}/reject")]
@@ -267,7 +267,7 @@ public class DocumentsController : ControllerBase
         if (currentState != Domain.Enums.DocumentStatus.Submitted)
         {
             _logger.LogWarning("Document {DocumentId} is in {State}, cannot reject", id, currentState);
-            return BadRequest(new { error = "Document must be in Submitted state to reject" });
+            return BadRequest(new { error = "Document must be in pending approval state to reject" });
         }
 
         // Authorization check: Can reject this document (same as approval)

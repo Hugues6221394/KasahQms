@@ -10,6 +10,13 @@
         <p class="text-sm text-slate-500">View archived tasks and documents</p>
     </div>
 
+    @if (!string.IsNullOrWhiteSpace(Model.ActionMessage))
+    {
+        <div class="p-4 rounded-lg @(Model.ActionSuccess == true ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-rose-50 border border-rose-200 text-rose-700")">
+            @Model.ActionMessage
+        </div>
+    }
+
     <!-- Tabs -->
     <div class="border-b border-slate-200">
         <nav class="-mb-px flex space-x-8">
@@ -48,6 +55,12 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Assigned To</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Completed</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Archived</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">State</th>
+                                @if (Model.CanViewActorInfo)
+                                {
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Archived By</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Deleted By</th>
+                                }
                                 <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -67,8 +80,30 @@
                                     <td class="px-6 py-4 text-sm text-slate-900">@task.AssignedTo</td>
                                     <td class="px-6 py-4 text-sm text-slate-500">@task.CompletedAt</td>
                                     <td class="px-6 py-4 text-sm text-slate-500">@task.ArchivedAt</td>
+                                    <td class="px-6 py-4 text-sm">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium @(task.Lifecycle == "Deleted" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-700")">
+                                            @task.Lifecycle
+                                        </span>
+                                    </td>
+                                    @if (Model.CanViewActorInfo)
+                                    {
+                                        <td class="px-6 py-4 text-sm text-slate-500">@task.ArchivedBy</td>
+                                        <td class="px-6 py-4 text-sm text-slate-500">@(string.IsNullOrWhiteSpace(task.DeletedBy) ? "—" : task.DeletedBy)</td>
+                                    }
                                     <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium">
-                                        <a href="/Tasks/Details?id=@task.Id" class="text-brand-600 hover:text-brand-900">View</a>
+                                        <a href="/Tasks/Details/@task.Id" class="text-brand-600 hover:text-brand-900">View</a>
+                                        @if (task.CanRestore)
+                                        {
+                                            <form method="post" asp-page-handler="RestoreTask" asp-route-id="@task.Id" class="inline ml-3">
+                                                <button type="submit" class="text-emerald-600 hover:text-emerald-800">Restore</button>
+                                            </form>
+                                        }
+                                        @if (task.CanPermanentDelete)
+                                        {
+                                            <form method="post" asp-page-handler="PermanentDeleteTask" asp-route-id="@task.Id" class="inline ml-3" onsubmit="return confirm('Permanently delete this task?');">
+                                                <button type="submit" class="text-rose-600 hover:text-rose-800">Delete</button>
+                                            </form>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -100,6 +135,12 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Document</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Archived</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">State</th>
+                                @if (Model.CanViewActorInfo)
+                                {
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Archived By</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Deleted By</th>
+                                }
                                 <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -113,8 +154,30 @@
                                     </td>
                                     <td class="px-6 py-4 text-sm text-slate-900">@doc.Type</td>
                                     <td class="px-6 py-4 text-sm text-slate-500">@doc.ArchivedAt</td>
+                                    <td class="px-6 py-4 text-sm">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium @(doc.Lifecycle == "Deleted" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-700")">
+                                            @doc.Lifecycle
+                                        </span>
+                                    </td>
+                                    @if (Model.CanViewActorInfo)
+                                    {
+                                        <td class="px-6 py-4 text-sm text-slate-500">@doc.ArchivedBy</td>
+                                        <td class="px-6 py-4 text-sm text-slate-500">@(string.IsNullOrWhiteSpace(doc.DeletedBy) ? "—" : doc.DeletedBy)</td>
+                                    }
                                     <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium">
-                                        <a href="/Documents/Details?id=@doc.Id" class="text-brand-600 hover:text-brand-900">View</a>
+                                        <a href="/Documents/Details/@doc.Id" class="text-brand-600 hover:text-brand-900">View</a>
+                                        @if (doc.CanRestore)
+                                        {
+                                            <form method="post" asp-page-handler="RestoreDocument" asp-route-id="@doc.Id" class="inline ml-3">
+                                                <button type="submit" class="text-emerald-600 hover:text-emerald-800">Restore</button>
+                                            </form>
+                                        }
+                                        @if (doc.CanPermanentDelete)
+                                        {
+                                            <form method="post" asp-page-handler="PermanentDeleteDocument" asp-route-id="@doc.Id" class="inline ml-3" onsubmit="return confirm('Permanently delete this document?');">
+                                                <button type="submit" class="text-rose-600 hover:text-rose-800">Delete</button>
+                                            </form>
+                                        }
                                     </td>
                                 </tr>
                             }

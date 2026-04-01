@@ -56,15 +56,19 @@ public class LoginModel : PageModel
 
     public List<SampleCredential> SampleCredentials { get; set; } = new();
     public string? PasswordHint { get; set; }
+    public bool MaintenanceModeEnabled { get; set; }
+    public string? MaintenanceMessage { get; set; }
 
     public async Task OnGetAsync(string? returnUrl = null)
     {
         ReturnUrl = returnUrl;
+        await LoadMaintenanceModeAsync();
         await LoadSampleCredentialsAsync();
     }
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
+        await LoadMaintenanceModeAsync();
         await LoadSampleCredentialsAsync();
         ModelState.Remove(nameof(RememberMe)); // prevent "on" parse error on re-render
 
@@ -92,6 +96,17 @@ public class LoginModel : PageModel
                 await _auditLoggingService.LogFailedLoginAsync(Email);
                 ErrorMessage = "Invalid email or password.";
                 return Page();
+            }
+
+            if (MaintenanceModeEnabled)
+            {
+                var isSystemAdmin = user.Roles?.Any(r =>
+                    r.Name is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin") == true;
+                if (!isSystemAdmin)
+                {
+                    ErrorMessage = MaintenanceMessage ?? "System is temporarily under maintenance. Please try again shortly.";
+                    return Page();
+                }
             }
 
             if (!user.IsActive || user.IsLockedOut)
@@ -251,6 +266,28 @@ public class LoginModel : PageModel
                 u.Email,
                 PasswordHint ?? "P@ssw0rd!"))
             .ToList();
+    }
+
+    private async Task LoadMaintenanceModeAsync()
+    {
+        var tenantId = await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+        if (tenantId == Guid.Empty)
+        {
+            MaintenanceModeEnabled = false;
+            return;
+        }
+
+        var settings = await _dbContext.SystemSettings
+            .AsNoTracking()
+            .Where(s => s.TenantId == tenantId && (s.Key == "System.MaintenanceMode.Enabled" || s.Key == "System.MaintenanceMode.Message"))
+            .ToDictionaryAsync(s => s.Key, s => s.Value);
+
+        MaintenanceModeEnabled = settings.TryGetValue("System.MaintenanceMode.Enabled", out var enabledValue)
+            && bool.TryParse(enabledValue, out var enabled)
+            && enabled;
+        MaintenanceMessage = settings.TryGetValue("System.MaintenanceMode.Message", out var message)
+            ? message
+            : "System is temporarily under maintenance. Please try again shortly.";
     }
 }
 

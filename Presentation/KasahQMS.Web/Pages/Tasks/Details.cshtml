@@ -79,6 +79,15 @@ else
                         </button>
                     </form>
                 }
+                @if (Model.CanArchive)
+                {
+                    <form method="post" asp-page-handler="Archive" asp-route-id="@Model.TaskItem!.Id" class="inline" onsubmit="return confirm('Archive this completed task?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-black">
+                            Archive
+                        </button>
+                    </form>
+                }
             </div>
         </div>
 
@@ -350,4 +359,3 @@ else
         </div>
     }
 }
-

@@ -8,7 +8,7 @@
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
             <h1 class="text-2xl font-semibold text-slate-900">Data Exports</h1>
-            <p class="text-sm text-slate-500">Track your personal data export requests.</p>
+            <p class="text-sm text-slate-500">Track your personal data export requests. Downloads are delivered as Excel-compatible CSV files in a ZIP package.</p>
         </div>
         <a href="/Privacy" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,6 +19,29 @@
     </div>
 
     <div class="card p-6">
+        <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] uppercase tracking-wider text-slate-500">Documents</p>
+                <p class="mt-1 text-xl font-semibold text-slate-900">@Model.Preview.Documents</p>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] uppercase tracking-wider text-slate-500">Tasks + CAPAs</p>
+                <p class="mt-1 text-xl font-semibold text-slate-900">@(Model.Preview.Tasks + Model.Preview.Capas)</p>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] uppercase tracking-wider text-slate-500">Audits + Trainings</p>
+                <p class="mt-1 text-xl font-semibold text-slate-900">@(Model.Preview.Audits + Model.Preview.Trainings)</p>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] uppercase tracking-wider text-slate-500">Messages + Notifications</p>
+                <p class="mt-1 text-xl font-semibold text-slate-900">@(Model.Preview.ChatMessages + Model.Preview.Notifications)</p>
+            </div>
+            <div class="rounded-lg border border-brand-200 bg-brand-50 p-3">
+                <p class="text-[11px] uppercase tracking-wider text-brand-600">Total Preview Records</p>
+                <p class="mt-1 text-xl font-semibold text-brand-800">@Model.Preview.TotalRecords</p>
+            </div>
+        </div>
+
         @if (Model.Exports.Any())
         {
             <div class="overflow-hidden rounded-lg border border-slate-200">
@@ -29,6 +52,7 @@
                             <th class="px-4 py-3 text-left font-semibold">Status</th>
                             <th class="px-4 py-3 text-left font-semibold">Completed</th>
                             <th class="px-4 py-3 text-left font-semibold">Expires</th>
+                            <th class="px-4 py-3 text-left font-semibold">Preview Records</th>
                             <th class="px-4 py-3 text-right font-semibold">Download</th>
                         </tr>
                     </thead>
@@ -51,6 +75,7 @@
                                 </td>
                                 <td class="px-4 py-3 text-slate-600">@(export.CompletedAt?.ToString("MMM dd, yyyy HH:mm") ?? "-")</td>
                                 <td class="px-4 py-3 text-slate-600">@(export.ExpiresAt?.ToString("MMM dd, yyyy") ?? "-")</td>
+                                <td class="px-4 py-3 text-slate-700 font-medium">@export.TotalRecords</td>
                                 <td class="px-4 py-3 text-right">
                                     @if (!string.IsNullOrEmpty(export.DownloadUrl) && export.Status == "Completed" && (export.ExpiresAt == null || export.ExpiresAt > DateTime.UtcNow))
                                     {

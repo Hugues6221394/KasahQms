@@ -9,6 +9,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=kasah_qms;Username=kasahqms;Password=${DB_PASSWORD}
       - JwtSettings__SecretKey=${JWT_SECRET_KEY}
+      - Groq__ApiKey=${GROQ_API_KEY}
+      - Groq__Model=${GROQ_MODEL:-llama-3.3-70b-versatile}
       - EmailSettings__SmtpServer=${SMTP_SERVER:-smtp.gmail.com}
       - EmailSettings__SmtpPort=${SMTP_PORT:-587}
       - EmailSettings__Username=${SMTP_USERNAME}

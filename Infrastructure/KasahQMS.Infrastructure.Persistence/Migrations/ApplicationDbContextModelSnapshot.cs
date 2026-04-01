@@ -89,6 +89,35 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.ToTable("audit_log", (string)null);
                 });
 
+            modelBuilder.Entity("KasahQMS.Domain.Entities.AuditLog.UserAuditLogHistoryState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuditLogEntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserAuditLogHistoryStates");
+                });
+
             modelBuilder.Entity("KasahQMS.Domain.Entities.Audits.Audit", b =>
                 {
                     b.Property<Guid>("Id")
@@ -467,6 +496,9 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<bool?>("IsEffective")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsGlobal")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -502,6 +534,9 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("TargetCompletionDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("TargetDepartmentId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
@@ -521,6 +556,8 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("TargetDepartmentId");
 
                     b.HasIndex("VerifiedById");
 
@@ -585,6 +622,71 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.ToTable("CapaActions");
                 });
 
+            modelBuilder.Entity("KasahQMS.Domain.Entities.Chat.AiConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConversationKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "UserId", "ConversationKey")
+                        .IsUnique();
+
+                    b.ToTable("ai_conversations", (string)null);
+                });
+
+            modelBuilder.Entity("KasahQMS.Domain.Entities.Chat.AiConversationMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(12000)
+                        .HasColumnType("character varying(12000)");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
+
+                    b.ToTable("ai_conversation_messages", (string)null);
+                });
+
             modelBuilder.Entity("KasahQMS.Domain.Entities.Chat.ChatMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -623,6 +725,8 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.HasIndex("SenderId");
 
                     b.HasIndex("ThreadId");
+
+                    b.HasIndex("ThreadId", "CreatedAt");
 
                     b.ToTable("chat_messages", (string)null);
                 });
@@ -764,6 +868,9 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ApprovedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ApproverDepartmentId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("ArchiveReason")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -888,6 +995,12 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "DocumentNumber")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "CreatedById", "Status");
+
+                    b.HasIndex("TenantId", "Status", "CurrentApproverId");
+
+                    b.HasIndex("TenantId", "TargetUserId", "Status");
+
                     b.ToTable("documents", (string)null);
                 });
 
@@ -999,6 +1112,8 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.HasIndex("ApproverId");
 
                     b.HasIndex("DocumentId");
+
+                    b.HasIndex("DocumentId", "IsApproved");
 
                     b.ToTable("document_approvals", (string)null);
                 });
@@ -1789,6 +1904,8 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "IsRead");
+
+                    b.HasIndex("UserId", "IsRead", "CreatedAt");
 
                     b.ToTable("Notifications");
                 });
@@ -2923,6 +3040,10 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "TaskNumber")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "AssignedToId", "Status");
+
+                    b.HasIndex("TenantId", "Status", "CreatedById");
+
                     b.ToTable("QmsTasks");
                 });
 
@@ -3178,6 +3299,12 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("TenantId", "Status", "CreatedById");
+
+                    b.HasIndex("TenantId", "TrainerId", "Status");
+
+                    b.HasIndex("TenantId", "UserId", "Status");
+
                     b.ToTable("TrainingRecords");
                 });
 
@@ -3302,11 +3429,17 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("OwnerId");
 
+                    b.HasOne("KasahQMS.Domain.Entities.Identity.OrganizationUnit", "TargetDepartment")
+                        .WithMany()
+                        .HasForeignKey("TargetDepartmentId");
+
                     b.HasOne("KasahQMS.Domain.Entities.Identity.User", "VerifiedBy")
                         .WithMany()
                         .HasForeignKey("VerifiedById");
 
                     b.Navigation("Owner");
+
+                    b.Navigation("TargetDepartment");
 
                     b.Navigation("VerifiedBy");
                 });
@@ -3332,6 +3465,36 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
                     b.Navigation("Capa");
 
                     b.Navigation("CompletedBy");
+                });
+
+            modelBuilder.Entity("KasahQMS.Domain.Entities.Chat.AiConversation", b =>
+                {
+                    b.HasOne("KasahQMS.Domain.Entities.Identity.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("KasahQMS.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("KasahQMS.Domain.Entities.Chat.AiConversationMessage", b =>
+                {
+                    b.HasOne("KasahQMS.Domain.Entities.Chat.AiConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
                 });
 
             modelBuilder.Entity("KasahQMS.Domain.Entities.Chat.ChatMessage", b =>
@@ -4010,6 +4173,11 @@ namespace KasahQMS.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("KasahQMS.Domain.Entities.Capa.Capa", b =>
                 {
                     b.Navigation("Actions");
+                });
+
+            modelBuilder.Entity("KasahQMS.Domain.Entities.Chat.AiConversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("KasahQMS.Domain.Entities.Chat.ChatThread", b =>

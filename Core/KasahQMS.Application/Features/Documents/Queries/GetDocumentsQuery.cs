@@ -26,23 +26,17 @@ public class GetDocumentsQueryHandler : IRequestHandler<GetDocumentsQuery, Resul
 {
     private readonly IDocumentRepository _documentRepository;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IHierarchyService _hierarchyService;
-    private readonly IAuthorizationService _authorizationService;
     private readonly IUserRepository _userRepository;
     private readonly ILogger<GetDocumentsQueryHandler> _logger;
 
     public GetDocumentsQueryHandler(
         IDocumentRepository documentRepository,
         ICurrentUserService currentUserService,
-        IHierarchyService hierarchyService,
-        IAuthorizationService authorizationService,
         IUserRepository userRepository,
         ILogger<GetDocumentsQueryHandler> logger)
     {
         _documentRepository = documentRepository;
         _currentUserService = currentUserService;
-        _hierarchyService = hierarchyService;
-        _authorizationService = authorizationService;
         _userRepository = userRepository;
         _logger = logger;
     }
@@ -60,29 +54,33 @@ public class GetDocumentsQueryHandler : IRequestHandler<GetDocumentsQuery, Resul
                 return Result.Failure<PaginatedList<DocumentListDto>>(Error.Unauthorized);
             }
 
-            // Check if user has ViewAll permission (TMD, Deputy, Managers)
-            var hasViewAll = await _authorizationService.HasPermissionAsync(
-                Permissions.Documents.ViewAll, 
-                cancellationToken);
-
-            IEnumerable<Document> documents;
-
-            if (hasViewAll)
+            var currentUser = await _userRepository.GetByIdWithRolesAsync(userId.Value, cancellationToken);
+            if (currentUser == null)
             {
-                // User can view all documents - get based on hierarchy
-                var visibleUserIds = await _hierarchyService.GetVisibleUserIdsAsync(userId.Value, cancellationToken);
-                documents = await _documentRepository.GetByCreatorIdsAsync(visibleUserIds, cancellationToken);
-                
-                // Also include documents awaiting their approval
-                var approvalDocuments = await _documentRepository.GetByApproverIdAsync(userId.Value, cancellationToken);
-                documents = documents.Union(approvalDocuments).DistinctBy(d => d.Id);
+                return Result.Failure<PaginatedList<DocumentListDto>>(Error.Unauthorized);
             }
-            else
+
+            var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+            var isExecutive = roles.Any(r => r is "System Admin" or "SystemAdmin" or "Admin" or "TenantAdmin" or
+                                             "TMD" or "TopManagingDirector" or "Country Manager" or
+                                             "Deputy" or "DeputyDirector" or "Deputy Country Manager");
+            var orgUnitId = currentUser.OrganizationUnitId;
+
+            var tenantDocuments = await _documentRepository.GetAllForTenantAsync(tenantId.Value, cancellationToken);
+            IEnumerable<Document> documents = tenantDocuments;
+
+            if (!isExecutive)
             {
-                // User can only view their own documents and documents assigned to them
-                var myDocuments = await _documentRepository.GetByCreatorIdsAsync(new[] { userId.Value }, cancellationToken);
-                var approvalDocuments = await _documentRepository.GetByApproverIdAsync(userId.Value, cancellationToken);
-                documents = myDocuments.Union(approvalDocuments).DistinctBy(d => d.Id);
+                var deptUserIds = orgUnitId.HasValue
+                    ? (await _userRepository.GetUserIdsInOrganizationUnitAsync(orgUnitId.Value, cancellationToken)).ToHashSet()
+                    : new HashSet<Guid>();
+
+                documents = tenantDocuments.Where(d =>
+                    d.CreatedById == userId.Value ||
+                    d.CurrentApproverId == userId.Value ||
+                    d.TargetUserId == userId.Value ||
+                    (orgUnitId.HasValue && d.TargetDepartmentId == orgUnitId.Value) ||
+                    (orgUnitId.HasValue && deptUserIds.Contains(d.CreatedById)));
             }
 
             // Apply filters - also filter by tenant for security

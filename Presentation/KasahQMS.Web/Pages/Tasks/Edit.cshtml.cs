@@ -50,8 +50,8 @@ public class EditModel : PageModel
         if (task == null) return NotFound();
         if (task.CreatedById != _currentUserService.UserId)
             return Forbid();
-        if (task.Status == QmsTaskStatus.Completed || task.Status == QmsTaskStatus.Cancelled)
-            return RedirectToPage("./Details", new { id, message = "Cannot edit completed or cancelled task.", success = false });
+        if (task.Status == QmsTaskStatus.Cancelled)
+            return RedirectToPage("./Details", new { id, message = "Cannot edit cancelled task.", success = false });
 
         TaskItem = new TaskEditView(task.Id, task.TaskNumber, task.Title, task.Description, task.AssignedToId, task.DueDate, task.Priority.ToString());
         Title = task.Title;

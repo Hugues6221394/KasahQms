@@ -1,7 +1,6 @@
 using KasahQMS.Domain.Enums;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Infrastructure.Persistence.Data;
-using KasahQMS.Web.Services;
 using KasahQMS.Application.Features.Documents.Commands;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -18,20 +17,17 @@ public class IndexModel : PageModel
     private readonly ILogger<IndexModel> _logger;
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IHierarchyService _hierarchyService;
     private readonly IMediator _mediator;
 
     public IndexModel(
         ILogger<IndexModel> logger, 
         ApplicationDbContext dbContext, 
         ICurrentUserService currentUserService,
-        IHierarchyService hierarchyService,
         IMediator mediator)
     {
         _logger = logger;
         _dbContext = dbContext;
         _currentUserService = currentUserService;
-        _hierarchyService = hierarchyService;
         _mediator = mediator;
     }
 
@@ -51,6 +47,11 @@ public class IndexModel : PageModel
     public int TotalPages { get; set; } = 5;
     public int TotalItems { get; set; } = 45;
     public int PageSize { get; set; } = 10;
+    public int SummaryTotalCount { get; set; }
+    public int SummaryDraftCount { get; set; }
+    public int SummaryPendingApprovalCount { get; set; }
+    public int SummaryApprovedCount { get; set; }
+    public int SummaryRejectedCount { get; set; }
 
     /// <summary>
     /// Indicates if current user can create documents (auditors cannot)
@@ -97,6 +98,10 @@ public class IndexModel : PageModel
         var query = _dbContext.Documents.AsNoTracking()
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
+            .Include(d => d.TargetDepartment)
+            .Include(d => d.TargetUser)
+            .Include(d => d.CurrentApprover)
+            .Include(d => d.CreatedBy)
             .Where(d => d.TenantId == tenantId);
 
         // Get current user with roles
@@ -143,37 +148,27 @@ public class IndexModel : PageModel
         }
         else if (isManager)
         {
-            // Managers can see:
-            // 1. Documents they created
-            // 2. Documents where they are the current approver
-            // 3. Documents created by their subordinates (recursively)
-            // 4. Documents targeted to their department or no specific department
-            var subordinateIds = await _hierarchyService.GetSubordinateUserIdsAsync(currentUserId.Value);
-            var visibleCreatorIds = new List<Guid> { currentUserId.Value };
-            visibleCreatorIds.AddRange(subordinateIds);
+            // Managers: own docs, docs sent to them, docs in their department.
+            query = query.Where(d =>
+                d.CreatedById == currentUserId.Value ||
+                d.CurrentApproverId == currentUserId.Value ||
+                d.TargetUserId == currentUserId.Value ||
+                (currentUser.OrganizationUnitId.HasValue && d.TargetDepartmentId == currentUser.OrganizationUnitId.Value) ||
+                (currentUser.OrganizationUnitId.HasValue && d.CreatedBy != null && d.CreatedBy.OrganizationUnitId == currentUser.OrganizationUnitId.Value));
 
-            query = query.Where(d => 
-                visibleCreatorIds.Contains(d.CreatedById) ||  // Created by visible users
-                d.CurrentApproverId == currentUserId.Value ||  // Awaiting their approval
-                d.TargetDepartmentId == null ||  // No specific department
-                d.TargetDepartmentId == currentUser.OrganizationUnitId);  // Targeted to their department
-
-            _logger.LogInformation("Manager {UserId} can see documents for {Count} users (including subordinates)", 
-                currentUserId, visibleCreatorIds.Count);
+            _logger.LogInformation("Manager {UserId} restricted to own/incoming/department documents", currentUserId);
         }
         else
         {
-            // Staff can only see:
-            // 1. Documents they created
-            // 2. Documents where they are the current approver (if any)
-            // 3. Documents targeted to their department or no specific department
-            query = query.Where(d => 
+            // Staff: own docs, docs sent to them, docs in their department.
+            query = query.Where(d =>
                 d.CreatedById == currentUserId.Value ||
                 d.CurrentApproverId == currentUserId.Value ||
-                d.TargetDepartmentId == null ||
-                d.TargetDepartmentId == currentUser.OrganizationUnitId);
+                d.TargetUserId == currentUserId.Value ||
+                (currentUser.OrganizationUnitId.HasValue && d.TargetDepartmentId == currentUser.OrganizationUnitId.Value) ||
+                (currentUser.OrganizationUnitId.HasValue && d.CreatedBy != null && d.CreatedBy.OrganizationUnitId == currentUser.OrganizationUnitId.Value));
 
-            _logger.LogInformation("Staff user {UserId} can see their own documents and department documents", currentUserId);
+            _logger.LogInformation("Staff user {UserId} restricted to own/incoming/department documents", currentUserId);
         }
 
         // Apply search filter
@@ -182,23 +177,40 @@ public class IndexModel : PageModel
             query = query.Where(d => d.Title.Contains(SearchTerm) || d.DocumentNumber.Contains(SearchTerm));
         }
 
-        // Apply status filter (including virtual "Rejected" state -> returned to draft with rejection history)
+        // Apply type filter
+        if (!string.IsNullOrWhiteSpace(Type))
+        {
+            query = query.Where(d => d.DocumentType != null && d.DocumentType.Name == Type);
+        }
+
+        var summaryQuery = query;
+        SummaryTotalCount = await summaryQuery.CountAsync();
+        SummaryPendingApprovalCount = await summaryQuery.CountAsync(d => d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview);
+        SummaryApprovedCount = await summaryQuery.CountAsync(d => d.Status == DocumentStatus.Approved);
+        SummaryRejectedCount = await summaryQuery.CountAsync(d =>
+            d.Status == DocumentStatus.Draft &&
+            d.Approvals!.OrderByDescending(a => a.ApprovedAt).Select(a => (bool?)a.IsApproved).FirstOrDefault() == false);
+        SummaryDraftCount = await summaryQuery.CountAsync(d =>
+            d.Status == DocumentStatus.Draft &&
+            d.Approvals!.OrderByDescending(a => a.ApprovedAt).Select(a => (bool?)a.IsApproved).FirstOrDefault() != false);
+
+        // Apply status filter (includes virtual Pending Approval and Rejected states)
         if (!string.IsNullOrWhiteSpace(Status))
         {
             if (string.Equals(Status, "Rejected", StringComparison.OrdinalIgnoreCase))
             {
-                query = query.Where(d => d.Approvals!.Any(a => !a.IsApproved));
+                query = query.Where(d =>
+                    d.Status == DocumentStatus.Draft &&
+                    d.Approvals!.OrderByDescending(a => a.ApprovedAt).Select(a => (bool?)a.IsApproved).FirstOrDefault() == false);
+            }
+            else if (IsPendingApprovalStatus(Status))
+            {
+                query = query.Where(d => d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview);
             }
             else if (Enum.TryParse<DocumentStatus>(Status, out var status))
             {
                 query = query.Where(d => d.Status == status);
             }
-        }
-
-        // Apply type filter
-        if (!string.IsNullOrWhiteSpace(Type))
-        {
-            query = query.Where(d => d.DocumentType != null && d.DocumentType.Name == Type);
         }
 
         TotalItems = await query.CountAsync();
@@ -217,6 +229,13 @@ public class IndexModel : PageModel
                 d.Status,
                 d.CurrentVersion,
                 ModifiedAt = d.LastModifiedAt ?? d.CreatedAt,
+                SubmittedTo = d.CurrentApprover != null
+                    ? (d.CurrentApprover.FirstName + " " + d.CurrentApprover.LastName)
+                    : d.TargetUser != null
+                        ? (d.TargetUser.FirstName + " " + d.TargetUser.LastName)
+                        : d.TargetDepartment != null
+                            ? d.TargetDepartment.Name
+                            : "—",
                 LatestApproval = d.Approvals
                     !
                     .OrderByDescending(a => a.ApprovedAt)
@@ -231,12 +250,13 @@ public class IndexModel : PageModel
                 d.Title,
                 d.DocumentNumber,
                 d.Type,
+                d.SubmittedTo,
                 GetDisplayStatus(d.Status, d.LatestApproval != null && !d.LatestApproval.IsApproved),
                 GetDisplayStatusClass(d.Status, d.LatestApproval != null && !d.LatestApproval.IsApproved),
                 $"v{d.CurrentVersion}",
                 d.ModifiedAt.ToString("MMM dd, yyyy"),
                 d.Status == DocumentStatus.Draft,
-                d.LatestApproval != null && !d.LatestApproval.IsApproved,
+                d.Status == DocumentStatus.Draft && d.LatestApproval != null && !d.LatestApproval.IsApproved,
                 d.LatestApproval == null ? "—" : (d.LatestApproval.IsApproved ? "Approved" : "Rejected"),
                 d.LatestApproval == null
                     ? "bg-slate-100 text-slate-600"
@@ -256,7 +276,7 @@ public class IndexModel : PageModel
                     d.Id,
                     d.Title,
                     d.DocumentNumber,
-                    d.Status.ToString(),
+                    "Pending Approval",
                     d.CurrentApproverId,
                     d.CreatedById,
                     (d.SubmittedAt ?? d.LastModifiedAt ?? d.CreatedAt).ToString("MMM dd, yyyy HH:mm")))
@@ -320,7 +340,7 @@ public class IndexModel : PageModel
         {
             DocumentStatus.Approved => "bg-emerald-100 text-emerald-700",
             DocumentStatus.Submitted => "bg-amber-100 text-amber-800",
-            DocumentStatus.InReview => "bg-indigo-100 text-indigo-700",
+            DocumentStatus.InReview => "bg-amber-100 text-amber-800",
             DocumentStatus.Rejected => "bg-rose-100 text-rose-700",
             DocumentStatus.Archived => "bg-slate-100 text-slate-500",
             _ => "bg-slate-100 text-slate-600"
@@ -328,16 +348,25 @@ public class IndexModel : PageModel
     }
 
     private static string GetDisplayStatus(DocumentStatus status, bool isLatestRejected)
-        => status == DocumentStatus.Draft && isLatestRejected ? "Rejected (Returned to Draft)" : status.ToString();
+        => status == DocumentStatus.Draft && isLatestRejected
+            ? "Rejected (Returned to Draft)"
+            : (status == DocumentStatus.Submitted || status == DocumentStatus.InReview ? "Pending Approval" : status.ToString());
 
     private static string GetDisplayStatusClass(DocumentStatus status, bool isLatestRejected)
         => status == DocumentStatus.Draft && isLatestRejected ? "bg-rose-100 text-rose-700" : GetStatusClass(status);
+
+    private static bool IsPendingApprovalStatus(string status)
+        => status.Equals("PendingApproval", StringComparison.OrdinalIgnoreCase)
+           || status.Equals("Pending Approval", StringComparison.OrdinalIgnoreCase)
+           || status.Equals("Submitted", StringComparison.OrdinalIgnoreCase)
+           || status.Equals("InReview", StringComparison.OrdinalIgnoreCase);
 
     public record DocumentRow(
         Guid Id,
         string Title,
         string Number,
         string Type,
+        string SubmittedTo,
         string Status,
         string StatusClass,
         string Version,

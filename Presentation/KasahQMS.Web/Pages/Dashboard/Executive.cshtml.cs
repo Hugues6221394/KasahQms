@@ -45,6 +45,7 @@ public class ExecutiveModel : PageModel
     public List<ApprovalItem> PendingApprovals { get; set; } = new();
     public List<ActivityItem> Activity { get; set; } = new();
     public List<InsightItem> ExecutiveInsights { get; set; } = new();
+    public List<LatestNewsItem> LatestNews { get; set; } = new();
     public int ActiveDocumentsCount { get; set; }
     public int OpenCapasCount { get; set; }
     public int PendingApprovalsCount { get; set; }
@@ -128,7 +129,8 @@ public class ExecutiveModel : PageModel
             .Join(_dbContext.Users.AsNoTracking(),
                 d => d.CreatedById,
                 u => u.Id,
-                (d, u) => new { d.Title, u.FirstName, u.LastName, Status = d.Status.ToString() })
+                (d, u) => new { d.Title, u.FirstName, u.LastName, Status = (d.Status == DocumentStatus.Submitted || d.Status == DocumentStatus.InReview) ? "Pending Approval" : d.Status.ToString(), SortAt = d.SubmittedAt ?? d.LastModifiedAt ?? d.CreatedAt })
+            .OrderByDescending(x => x.SortAt)
             .Take(5)
             .ToListAsync();
 
@@ -190,6 +192,16 @@ public class ExecutiveModel : PageModel
         DocumentsTrendJson = await BuildDocumentTrendAsync(tenantId);
         CapaStatusJson = await BuildCapaStatusAsync(tenantId);
         DepartmentBreakdownJson = await BuildDepartmentBreakdownAsync(tenantId);
+        LatestNews = await _dbContext.NewsArticles.AsNoTracking()
+            .Where(n => n.TenantId == tenantId && n.IsActive)
+            .OrderByDescending(n => n.PublishedAt)
+            .Take(5)
+            .Select(n => new LatestNewsItem(
+                n.Id,
+                n.Title,
+                n.Content.Length > 160 ? n.Content.Substring(0, 160) + "..." : n.Content,
+                n.PublishedAt.ToString("MMM dd, yyyy")))
+            .ToListAsync();
 
         // Check if this is effectively the user's first real session (no training records yet)
         if (currentUser != null)
@@ -215,6 +227,7 @@ public class ExecutiveModel : PageModel
     public record ActivityItem(string Title, string Description, string When);
     public record InsightItem(string Label, string Value, string Note);
     public record CriticalItem(string Title, string Type, string DueDate, string Severity);
+    public record LatestNewsItem(Guid Id, string Title, string Summary, string PublishedAt);
 
     private async Task<User?> GetCurrentUserAsync()
     {

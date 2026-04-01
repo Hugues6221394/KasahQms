@@ -67,6 +67,9 @@ public class CreateModel : PageModel
 
     [BindProperty]
     public Guid? ApproverDepartmentId { get; set; }
+    
+    [BindProperty]
+    public bool UseDepartmentWideAccess { get; set; }
 
     [BindProperty]
     public Guid? AttachFromDocumentId { get; set; }
@@ -78,6 +81,8 @@ public class CreateModel : PageModel
     public List<IFormFile>? Attachments { get; set; }
 
     public bool IsTmdOrDeputy { get; set; }
+    public bool IsManagerUser { get; set; }
+    public Guid? CurrentUserDepartmentId { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public Guid? TemplateId { get; set; }
@@ -102,6 +107,8 @@ public class CreateModel : PageModel
 
         IsTmdOrDeputy = currentUser.Roles != null && 
             currentUser.Roles.Any(r => r.Name == "TMD" || r.Name == "Deputy Country Manager" || r.Name == "System Admin" || r.Name == "Admin");
+        IsManagerUser = currentUser.Roles != null && currentUser.Roles.Any(r => r.Name.Contains("Manager"));
+        CurrentUserDepartmentId = currentUser.OrganizationUnitId;
 
         await LoadLookupsAsync();
 
@@ -137,6 +144,8 @@ public class CreateModel : PageModel
 
         IsTmdOrDeputy = currentUser.Roles != null &&
             currentUser.Roles.Any(r => r.Name == "TMD" || r.Name == "Deputy Country Manager" || r.Name == "System Admin" || r.Name == "Admin");
+        IsManagerUser = currentUser.Roles != null && currentUser.Roles.Any(r => r.Name.Contains("Manager"));
+        CurrentUserDepartmentId = currentUser.OrganizationUnitId;
 
         if (string.IsNullOrWhiteSpace(Title))
         {
@@ -161,6 +170,51 @@ public class CreateModel : PageModel
             && !ApproverDepartmentId.HasValue)
         {
             ModelState.AddModelError(nameof(ApproverId), "Select an approver person or department before submitting.");
+            await LoadLookupsAsync();
+            return Page();
+        }
+
+        if (ApproverId.HasValue && ApproverId.Value == currentUser.Id)
+        {
+            ModelState.AddModelError(nameof(ApproverId), "You cannot select yourself as approver.");
+        }
+
+        if (ApproverId.HasValue)
+        {
+            var validApprover = await _dbContext.Users.AsNoTracking()
+                .AnyAsync(u => u.Id == ApproverId.Value && u.TenantId == currentUser.TenantId && u.IsActive);
+            if (!validApprover)
+            {
+                ModelState.AddModelError(nameof(ApproverId), "Selected approver is invalid.");
+            }
+        }
+
+        if (ApproverDepartmentId.HasValue)
+        {
+            var validApproverDept = await _dbContext.OrganizationUnits.AsNoTracking()
+                .AnyAsync(o => o.Id == ApproverDepartmentId.Value && o.TenantId == currentUser.TenantId);
+            if (!validApproverDept)
+            {
+                ModelState.AddModelError(nameof(ApproverDepartmentId), "Selected approver department is invalid.");
+            }
+        }
+
+        Guid? effectiveTargetDepartmentId = null;
+        if (IsTmdOrDeputy)
+        {
+            effectiveTargetDepartmentId = TargetDepartmentId;
+        }
+        else if (IsManagerUser && UseDepartmentWideAccess)
+        {
+            if (!currentUser.OrganizationUnitId.HasValue)
+            {
+                ModelState.AddModelError(nameof(UseDepartmentWideAccess), "Manager must belong to a department to create department-wide documents.");
+            }
+            effectiveTargetDepartmentId = currentUser.OrganizationUnitId;
+        }
+
+        if (!ModelState.IsValid)
+        {
             await LoadLookupsAsync();
             return Page();
         }
@@ -218,7 +272,7 @@ public class CreateModel : PageModel
             CategoryId,
             filePath,
             originalFileName,
-            IsTmdOrDeputy ? TargetDepartmentId : null);
+            effectiveTargetDepartmentId);
 
         var createResult = await _mediator.Send(createCmd);
         if (!createResult.IsSuccess)
@@ -261,7 +315,8 @@ public class CreateModel : PageModel
 
     private async Task LoadLookupsAsync()
     {
-        var tenantId = await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+        var currentUser = await GetCurrentUserAsync();
+        var tenantId = currentUser?.TenantId ?? _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
         DocumentTypes = await _dbContext.DocumentTypes.AsNoTracking()
             .Where(t => t.TenantId == tenantId)
             .OrderBy(t => t.Name)
@@ -281,15 +336,26 @@ public class CreateModel : PageModel
             .ToListAsync();
 
         var userList = await _dbContext.Users.AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.IsActive)
+            .Where(u => u.TenantId == tenantId)
             .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
             .Include(u => u.OrganizationUnit).Include(u => u.Roles)
             .ToListAsync();
-        ApproverUsers = userList.Select(u => new ApproverUserOption(
+        var creatorUserId = currentUser?.Id;
+        ApproverUsers = userList
+            .Where(u => creatorUserId == null || u.Id != creatorUserId.Value)
+            .OrderBy(u =>
+            {
+                var roleNames = u.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+                var isExecutive = roleNames.Any(r => r is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager" or "System Admin" or "Admin" or "SystemAdmin");
+                return isExecutive ? 0 : 1;
+            })
+            .ThenBy(u => u.FirstName)
+            .ThenBy(u => u.LastName)
+            .Select(u => new ApproverUserOption(
             u.Id,
             $"{u.FirstName} {u.LastName}",
             u.OrganizationUnit?.Name ?? "—",
-            u.Roles?.Any() == true ? string.Join(", ", u.Roles.Select(r => r.Name)) : "—")).ToList();
+            $"{(u.IsActive ? "" : "[Inactive] ")}{(u.Roles?.Any() == true ? string.Join(", ", u.Roles.Select(r => r.Name)) : "—")}")).ToList();
         AllUsers = userList.Select(u => new ApproverUserOption(
             u.Id,
             $"{u.FirstName} {u.LastName}",
@@ -304,7 +370,6 @@ public class CreateModel : PageModel
             .ToListAsync();
 
         // Load Templates - documents marked as IsTemplate
-        var currentUser = await GetCurrentUserAsync();
         var userOrgUnitId = currentUser?.OrganizationUnitId?.ToString() ?? "";
         var isTmdOrAdmin = currentUser?.Roles != null &&
             currentUser.Roles.Any(r => r.Name == "System Admin" || r.Name == "Admin" || r.Name == "TMD" || r.Name == "Country Manager");
