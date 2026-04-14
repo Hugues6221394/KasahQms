@@ -308,6 +308,7 @@
             fetch('/api/BadgesApi/mark-seen/messages', { method: 'POST', headers: { 'RequestVerificationToken': document.querySelector('meta[name="__RequestVerificationToken"]')?.content || '' } });
             setTimeout(window.qmsRefreshBadges, 500);
         } else if (path.startsWith('/Approvals')) {
+            fetch('/api/BadgesApi/mark-seen/approvals', { method: 'POST', headers: { 'RequestVerificationToken': document.querySelector('meta[name="__RequestVerificationToken"]')?.content || '' } });
             setTimeout(window.qmsRefreshBadges, 500);
         } else if (path.startsWith('/Documents') || path.startsWith('/Notifications')) {
             setTimeout(window.qmsRefreshBadges, 1500);

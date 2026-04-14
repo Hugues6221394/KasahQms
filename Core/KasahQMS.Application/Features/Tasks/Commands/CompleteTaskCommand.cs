@@ -92,6 +92,17 @@ public class CompleteTaskCommandHandler : IRequestHandler<CompleteTaskCommand, R
                 }
             }
 
+            if (task.ReportedToUserId.HasValue)
+            {
+                await _notificationService.SendAsync(
+                    task.ReportedToUserId.Value,
+                    "Task awaiting your approval",
+                    $"Task '{task.Title}' was completed and is awaiting your approval.",
+                    NotificationType.TaskUpdate,
+                    task.Id,
+                    cancellationToken);
+            }
+
             _logger.LogInformation("Task {TaskId} completed by user {UserId}", task.Id, userId);
             return Result.Success();
         }

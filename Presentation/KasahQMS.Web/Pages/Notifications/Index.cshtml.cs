@@ -40,12 +40,13 @@ public class IndexModel : PageModel
             .AsNoTracking()
             .Where(n => n.UserId == userId.Value)
             .OrderByDescending(n => n.CreatedAt)
-            .Take(100)
+            .Take(25)
             .Select(n => new NotificationItem(
                 n.Id,
                 n.Title,
                 n.Message,
                 n.CreatedAt.ToString("MMM dd, yyyy HH:mm"),
+                n.CreatedAt,
                 n.IsRead,
                 n.Type.ToString(),
                 n.RelatedEntityId,
@@ -113,9 +114,9 @@ public class IndexModel : PageModel
         // Reload page data
         Notifications = await _dbContext.Notifications.AsNoTracking()
             .Where(n => n.UserId == userId.Value)
-            .OrderByDescending(n => n.CreatedAt).Take(100)
+            .OrderByDescending(n => n.CreatedAt).Take(25)
             .Select(n => new NotificationItem(n.Id, n.Title, n.Message,
-                n.CreatedAt.ToString("MMM dd, yyyy HH:mm"), n.IsRead,
+                n.CreatedAt.ToString("MMM dd, yyyy HH:mm"), n.CreatedAt, n.IsRead,
                 n.Type.ToString(), n.RelatedEntityId, n.RelatedEntityType))
             .ToListAsync();
 
@@ -154,6 +155,7 @@ public class IndexModel : PageModel
         string Title, 
         string Message, 
         string Time, 
+        DateTime CreatedAt,
         bool IsRead, 
         string Type, 
         Guid? RelatedEntityId, 
