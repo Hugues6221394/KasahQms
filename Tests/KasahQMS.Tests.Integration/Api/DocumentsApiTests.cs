@@ -108,7 +108,8 @@ public class DocumentsApiTests : IClassFixture<TestWebApplicationFactory>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();
-        content.Should().Contain("submitted");
+        content.Should().Contain("\"message\"");
+        content.Should().MatchRegex("(?i)(submitted|pending approval)");
     }
 
     [Fact]

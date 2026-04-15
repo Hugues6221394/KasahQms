@@ -101,8 +101,13 @@ public class BadgesApiController : ControllerBase
                               (d.TargetUserId == userId.Value && d.Status == DocumentStatus.Draft) ||
                               (d.CreatedById == userId.Value &&
                                d.Status == DocumentStatus.Draft &&
-                               _dbContext.DocumentApprovals.Any(a => a.DocumentId == d.Id && !a.IsApproved))
+                              _dbContext.DocumentApprovals.Any(a => a.DocumentId == d.Id && !a.IsApproved))
                             ));
+
+        // Unread news articles.
+        var unreadNews = await _dbContext.NewsArticles
+            .Where(n => n.TenantId == tenantId && n.IsActive)
+            .CountAsync(n => !_dbContext.NewsReads.Any(r => r.NewsArticleId == n.Id && r.UserId == userId.Value));
 
         // Unread notifications
         var unreadNotifications = await _dbContext.Notifications
@@ -133,7 +138,14 @@ public class BadgesApiController : ControllerBase
 
         var pendingApprovals = pendingTaskApprovals + pendingDocumentApprovals + pendingTrainingApprovals;
 
-        var badges = new BadgeCounts(unreadMessages, pendingTasks, pendingDocuments, unreadNotifications, pendingApprovals, pendingTraining);
+        var badges = new BadgeCounts(
+            unreadMessages,
+            pendingTasks,
+            pendingDocuments,
+            unreadNews,
+            unreadNotifications,
+            pendingApprovals,
+            pendingTraining);
         _cache.Set(badgeCacheKey, badges, new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(5)
@@ -353,5 +365,12 @@ public class BadgesApiController : ControllerBase
     }
 }
 
-public record BadgeCounts(int UnreadMessages, int PendingTasks, int PendingDocuments, int UnreadNotifications, int PendingApprovals, int PendingTraining);
+public record BadgeCounts(
+    int UnreadMessages,
+    int PendingTasks,
+    int PendingDocuments,
+    int UnreadNews,
+    int UnreadNotifications,
+    int PendingApprovals,
+    int PendingTraining);
 public record UnreadChatInfo(Guid ThreadId, string Name, string Type, string LastMessage, DateTime LastMessageAt, Guid SenderId);

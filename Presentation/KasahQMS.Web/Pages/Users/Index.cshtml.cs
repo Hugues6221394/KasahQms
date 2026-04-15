@@ -53,6 +53,7 @@ public class IndexModel : PageModel
     public int InactiveUsers { get; set; }
     public bool IsSystemAdmin { get; set; }
     public bool CanEdit { get; set; }
+    public bool CanDelete { get; set; }
     public bool CanView { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
@@ -75,7 +76,9 @@ public class IndexModel : PageModel
         IsSystemAdmin = roles.Any(r => 
             r.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
             r.Contains("SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
-            r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+            r.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("TenantAdmin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Tenant Admin", StringComparison.OrdinalIgnoreCase));
 
         // Check view permission: role-based OR delegated Users.View permission
         var hasViewPermission = await _authorizationService.HasPermissionAsync(Permissions.Users.View);
@@ -86,8 +89,10 @@ public class IndexModel : PageModel
             return RedirectToPage("/Account/AccessDenied");
         }
 
-        // Only System Admin can edit
-        CanEdit = IsSystemAdmin;
+        var hasEditPermission = await _authorizationService.HasPermissionAsync(Permissions.Users.Edit);
+        var hasDeletePermission = await _authorizationService.HasPermissionAsync(Permissions.Users.Delete);
+        CanEdit = IsSystemAdmin || hasEditPermission;
+        CanDelete = IsSystemAdmin || hasDeletePermission;
 
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
 
@@ -99,7 +104,7 @@ public class IndexModel : PageModel
             .ToListAsync();
 
         var query = _dbContext.Users.AsNoTracking()
-            .Where(u => u.TenantId == tenantId)
+            .Where(u => u.TenantId == tenantId && !u.IsDeleted)
             .Include(u => u.Roles)
             .Include(u => u.OrganizationUnit)
             .Include(u => u.Manager)
@@ -128,8 +133,8 @@ public class IndexModel : PageModel
         }
 
         // Get counts
-        TotalUsers = await _dbContext.Users.CountAsync(u => u.TenantId == tenantId);
-        ActiveUsers = await _dbContext.Users.CountAsync(u => u.TenantId == tenantId && u.IsActive);
+        TotalUsers = await _dbContext.Users.CountAsync(u => u.TenantId == tenantId && !u.IsDeleted);
+        ActiveUsers = await _dbContext.Users.CountAsync(u => u.TenantId == tenantId && u.IsActive && !u.IsDeleted);
         InactiveUsers = TotalUsers - ActiveUsers;
 
         Users = await query
@@ -156,7 +161,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDeactivateAsync(Guid id)
     {
-        if (!await IsCurrentUserSystemAdminAsync())
+        if (!await HasUserPermissionAsync(Permissions.Users.Edit))
         {
             TempData["Error"] = "You do not have permission to deactivate users.";
             return RedirectToPage();
@@ -164,7 +169,7 @@ public class IndexModel : PageModel
 
         var currentUserId = _currentUserService.UserId;
         
-        var user = await _dbContext.Users.FindAsync(id);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
         if (user == null)
         {
             return NotFound();
@@ -197,7 +202,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostActivateAsync(Guid id)
     {
-        if (!await IsCurrentUserSystemAdminAsync())
+        if (!await HasUserPermissionAsync(Permissions.Users.Edit))
         {
             TempData["Error"] = "You do not have permission to activate users.";
             return RedirectToPage();
@@ -205,7 +210,7 @@ public class IndexModel : PageModel
 
         var currentUserId = _currentUserService.UserId;
         
-        var user = await _dbContext.Users.FindAsync(id);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
         if (user == null)
         {
             return NotFound();
@@ -231,7 +236,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostUnlockAsync(Guid id)
     {
-        if (!await IsCurrentUserSystemAdminAsync())
+        if (!await HasUserPermissionAsync(Permissions.Users.Unlock))
         {
             TempData["Error"] = "You do not have permission to unlock users.";
             return RedirectToPage();
@@ -239,7 +244,7 @@ public class IndexModel : PageModel
 
         var currentUserId = _currentUserService.UserId;
         
-        var user = await _dbContext.Users.FindAsync(id);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
         if (user == null)
         {
             return NotFound();
@@ -265,7 +270,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostResetPasswordAsync(Guid id)
     {
-        if (!await IsCurrentUserSystemAdminAsync())
+        if (!await HasUserPermissionAsync(Permissions.Users.ResetPassword))
         {
             TempData["Error"] = "You do not have permission to reset passwords.";
             return RedirectToPage();
@@ -273,7 +278,7 @@ public class IndexModel : PageModel
 
         var currentUserId = _currentUserService.UserId;
         
-        var user = await _dbContext.Users.FindAsync(id);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
         if (user == null)
         {
             return NotFound();
@@ -293,6 +298,48 @@ public class IndexModel : PageModel
 
         _logger.LogInformation("Password reset required for user {UserId} by admin {AdminId}", id, currentUserId);
         TempData["Success"] = $"Password reset required for '{user.FullName}' on next login.";
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id)
+    {
+        if (!await HasUserPermissionAsync(Permissions.Users.Delete))
+        {
+            TempData["Error"] = "You do not have permission to delete users.";
+            return RedirectToPage();
+        }
+
+        var currentUserId = _currentUserService.UserId;
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        if (currentUserId == id)
+        {
+            TempData["Error"] = "You cannot delete your own account.";
+            return RedirectToPage();
+        }
+
+        user.Deactivate();
+        user.IsDeleted = true;
+        user.DeletedAt = DateTime.UtcNow;
+        user.DeletedById = currentUserId;
+        user.LastModifiedAt = DateTime.UtcNow;
+        user.LastModifiedById = currentUserId;
+
+        await _auditLogService.LogAsync(
+            "USER_DELETED",
+            "User",
+            user.Id,
+            $"User '{user.FullName}' ({user.Email}) deleted by admin");
+
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("User {UserId} deleted by admin {AdminId}", id, currentUserId);
+        TempData["Success"] = $"User '{user.FullName}' has been deleted.";
 
         return RedirectToPage();
     }
@@ -326,7 +373,18 @@ public class IndexModel : PageModel
         return roles.Any(r =>
             r.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
             r.Contains("SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
-            r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+            r.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("TenantAdmin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Tenant Admin", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task<bool> HasUserPermissionAsync(string permission)
+    {
+        if (await IsCurrentUserSystemAdminAsync())
+        {
+            return true;
+        }
+
+        return await _authorizationService.HasPermissionAsync(permission);
     }
 }
-

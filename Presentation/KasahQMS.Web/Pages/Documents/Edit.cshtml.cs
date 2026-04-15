@@ -1,5 +1,6 @@
 using KasahQMS.Application.Common.Interfaces;
 using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Domain.Entities.Notifications;
 using KasahQMS.Domain.Enums;
 using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -15,17 +16,23 @@ public class EditModel : PageModel
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<EditModel> _logger;
 
     public EditModel(
         ApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
+        INotificationService notificationService,
+        IEmailService emailService,
         ILogger<EditModel> logger)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
+        _notificationService = notificationService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -86,7 +93,7 @@ public class EditModel : PageModel
         }
 
         bool isTmd = roles.Any(r => r == "TMD" || r == "TopManagingDirector" || r == "Country Manager");
-        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin");
+        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin" or "Tenant Admin");
         bool isDeputy = roles.Any(r => r.Contains("Deputy", StringComparison.OrdinalIgnoreCase));
         IsTmdOrDeputy = isTmd || isAdmin || isDeputy;
 
@@ -135,7 +142,7 @@ public class EditModel : PageModel
 
         var roles = user.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
         bool isTmd = roles.Any(r => r == "TMD" || r == "TopManagingDirector" || r == "Country Manager");
-        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin");
+        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin" or "Tenant Admin");
         bool isDeputy = roles.Any(r => r.Contains("Deputy", StringComparison.OrdinalIgnoreCase));
         IsTmdOrDeputy = isTmd || isAdmin || isDeputy;
 
@@ -161,6 +168,9 @@ public class EditModel : PageModel
 
         try
         {
+            var previousTargetDepartmentId = document.TargetDepartmentId;
+            var previousTargetUserId = document.TargetUserId;
+
             document.UpdateTitle(Title);
             document.UpdateDescription(Description ?? "");
             document.UpdateContent(Content ?? "");
@@ -178,6 +188,13 @@ public class EditModel : PageModel
                 "Documents",
                 document.Id,
                 $"Document '{Title}' updated",
+                CancellationToken.None);
+
+            await NotifyNewShareRecipientsAsync(
+                document,
+                userId.Value,
+                previousTargetDepartmentId,
+                previousTargetUserId,
                 CancellationToken.None);
 
             _logger.LogInformation("Document {DocumentId} updated by user {UserId}", document.Id, userId);
@@ -218,7 +235,7 @@ public class EditModel : PageModel
 
         var roles = user.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
         bool isTmd = roles.Any(r => r == "TMD" || r == "TopManagingDirector" || r == "Country Manager");
-        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin");
+        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin" or "Tenant Admin");
         bool isCreator = document.CreatedById == userId;
         // Can delete if:
         // 1. User is creator and document is not archived
@@ -288,11 +305,98 @@ public class EditModel : PageModel
             .ToListAsync();
 
         Users = await _dbContext.Users.AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.IsActive)
+            .Where(u => u.TenantId == tenantId && u.IsActive && !u.IsDeleted)
             .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
             .Include(u => u.OrganizationUnit)
             .Select(u => new UserOption(u.Id, $"{u.FirstName} {u.LastName}", u.OrganizationUnit != null ? u.OrganizationUnit.Name : "—"))
             .ToListAsync();
+    }
+
+    private async Task NotifyNewShareRecipientsAsync(
+        Domain.Entities.Documents.Document document,
+        Guid actorUserId,
+        Guid? previousTargetDepartmentId,
+        Guid? previousTargetUserId,
+        CancellationToken cancellationToken)
+    {
+        var recipientIds = new HashSet<Guid>();
+
+        if (document.TargetUserId.HasValue && document.TargetUserId != previousTargetUserId)
+        {
+            recipientIds.Add(document.TargetUserId.Value);
+        }
+
+        if (document.TargetDepartmentId.HasValue && document.TargetDepartmentId != previousTargetDepartmentId)
+        {
+            var departmentRecipients = await _dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.OrganizationUnitId == document.TargetDepartmentId.Value && u.IsActive && !u.IsDeleted)
+                .Select(u => u.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var recipientId in departmentRecipients)
+            {
+                recipientIds.Add(recipientId);
+            }
+        }
+
+        recipientIds.Remove(actorUserId);
+        if (recipientIds.Count == 0)
+        {
+            return;
+        }
+
+        var actorName = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.Id == actorUserId)
+            .Select(u => $"{u.FirstName} {u.LastName}")
+            .FirstOrDefaultAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(actorName))
+        {
+            actorName = "A colleague";
+        }
+
+        var subject = $"Document shared: {document.Title}";
+        var message = $"Document '{document.Title}' ({document.DocumentNumber}) has been shared with you by {actorName}.";
+
+        var recipients = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => recipientIds.Contains(u.Id) && u.IsActive && !u.IsDeleted)
+            .Select(u => new { u.Id, u.Email, FullName = u.FirstName + " " + u.LastName })
+            .ToListAsync(cancellationToken);
+
+        foreach (var recipient in recipients)
+        {
+            try
+            {
+                await _notificationService.SendAsync(
+                    recipient.Id,
+                    "Document Shared",
+                    message,
+                    NotificationType.System,
+                    document.Id,
+                    cancellationToken,
+                    relatedEntityType: "document");
+
+                if (!string.IsNullOrWhiteSpace(recipient.Email))
+                {
+                    await _emailService.SendEmailAsync(
+                        recipient.Email,
+                        subject,
+                        $"<p>Hello {recipient.FullName},</p><p>{message}</p><p>Please log in to KASAH QMS to review it.</p>",
+                        true,
+                        cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to send document share notification for document {DocumentId} to user {RecipientId}",
+                    document.Id,
+                    recipient.Id);
+            }
+        }
     }
 
     public record LookupItem(Guid Id, string Name);

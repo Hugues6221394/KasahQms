@@ -27,10 +27,10 @@ public class ResetPasswordModel : PageModel
         _logger = logger;
     }
 
-    [BindProperty]
+    [BindProperty(SupportsGet = true)]
     public string Email { get; set; } = string.Empty;
 
-    [BindProperty]
+    [BindProperty(SupportsGet = true)]
     public string Token { get; set; } = string.Empty;
 
     [BindProperty]
@@ -45,14 +45,14 @@ public class ResetPasswordModel : PageModel
 
     public async Task OnGetAsync()
     {
-        TokenValid = true;
+        TokenValid = !string.IsNullOrWhiteSpace(Token);
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (string.IsNullOrWhiteSpace(Token))
         {
-            ErrorMessage = "Enter the OTP code from your email.";
+            ErrorMessage = "Missing password reset token.";
             TokenValid = true;
             return Page();
         }
@@ -95,7 +95,7 @@ public class ResetPasswordModel : PageModel
                 if (candidateUser.LockoutEndTime.HasValue && candidateUser.LockoutEndTime.Value > now)
                 {
                     TokenValid = false;
-                    ErrorMessage = $"Too many invalid OTP attempts. Try again after {candidateUser.LockoutEndTime.Value:HH:mm} UTC.";
+                    ErrorMessage = $"Too many invalid reset attempts. Try again after {candidateUser.LockoutEndTime.Value:HH:mm} UTC.";
                     return Page();
                 }
 
@@ -106,13 +106,13 @@ public class ResetPasswordModel : PageModel
                     candidateUser.LockoutEndTime = now.Add(OtpLockoutDuration);
                     candidateUser.PasswordResetToken = null;
                     candidateUser.PasswordResetTokenExpiry = null;
-                    ErrorMessage = "Too many invalid OTP attempts. Your reset has been locked. Request a new OTP after 10 minutes.";
+                    ErrorMessage = "Too many invalid reset attempts. Your reset has been locked. Request a new reset link after 10 minutes.";
                     TokenValid = false;
                 }
                 else
                 {
                     var remaining = MaxOtpAttempts - candidateUser.FailedLoginAttempts;
-                    ErrorMessage = $"Invalid or expired OTP code. You have {remaining} attempt(s) remaining.";
+                    ErrorMessage = $"Invalid or expired reset token. You have {remaining} attempt(s) remaining.";
                     TokenValid = true;
                 }
 
@@ -120,7 +120,7 @@ public class ResetPasswordModel : PageModel
                 return Page();
             }
 
-            ErrorMessage = "Invalid request. Request a new OTP and try again.";
+            ErrorMessage = "Invalid request. Request a new reset link and try again.";
             TokenValid = false;
             return Page();
         }
@@ -128,7 +128,7 @@ public class ResetPasswordModel : PageModel
         if (user.LockoutEndTime.HasValue && user.LockoutEndTime.Value > now)
         {
             TokenValid = false;
-            ErrorMessage = $"Reset is temporarily locked due to invalid OTP attempts. Try again after {user.LockoutEndTime.Value:HH:mm} UTC.";
+            ErrorMessage = $"Reset is temporarily locked due to invalid attempts. Try again after {user.LockoutEndTime.Value:HH:mm} UTC.";
             return Page();
         }
 

@@ -72,13 +72,26 @@ public static class PermissionMapper
             list.Add(Permissions.Tasks.Assign);
 
         if ((permission & Permission.UserRead) != 0)
+        {
             list.Add(Permissions.Users.View);
+            list.Add(Permissions.Organization.View);
+        }
         if ((permission & Permission.UserCreate) != 0)
+        {
             list.Add(Permissions.Users.Create);
+            list.Add(Permissions.Organization.Create);
+        }
         if ((permission & Permission.UserEdit) != 0)
+        {
             list.Add(Permissions.Users.Edit);
+            list.Add(Permissions.Organization.Edit);
+            list.Add(Permissions.Organization.ManageHierarchy);
+        }
         if ((permission & Permission.UserDelete) != 0)
+        {
             list.Add(Permissions.Users.Delete);
+            list.Add(Permissions.Organization.Delete);
+        }
 
         if ((permission & Permission.SystemSettings) != 0)
             list.Add(Permissions.System.ManageSettings);
@@ -91,6 +104,7 @@ public static class PermissionMapper
         {
             list.Add(Permissions.Users.ManageRoles);
             list.Add(Permissions.Roles.ManagePermissions);
+            list.Add(Permissions.Organization.ManageHierarchy);
         }
 
         if ((permission & Permission.StockRead) != 0)

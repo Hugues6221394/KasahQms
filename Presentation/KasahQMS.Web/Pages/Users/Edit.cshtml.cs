@@ -18,7 +18,7 @@ namespace KasahQMS.Web.Pages.Users;
 /// - Roles
 /// - Active status
 /// </summary>
-[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin")]
+[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin,Tenant Admin")]
 public class EditModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
@@ -44,9 +44,24 @@ public class EditModel : PageModel
     [BindProperty(SupportsGet = true)]
     public Guid Id { get; set; }
 
-    // Display only fields
-    public string DisplayName { get; set; } = string.Empty;
+    [BindProperty]
+    [Required(ErrorMessage = "First name is required")]
+    [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters")]
+    public string FirstName { get; set; } = string.Empty;
+
+    [BindProperty]
+    [Required(ErrorMessage = "Last name is required")]
+    [StringLength(100, ErrorMessage = "Last name cannot exceed 100 characters")]
+    public string LastName { get; set; } = string.Empty;
+
+    [BindProperty]
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Enter a valid email address")]
+    [StringLength(200, ErrorMessage = "Email cannot exceed 200 characters")]
     public string Email { get; set; } = string.Empty;
+
+    // Display fields
+    public string DisplayName => $"{FirstName} {LastName}".Trim();
     public string? CurrentRoles { get; set; }
     public string? CurrentDepartment { get; set; }
     public string? CurrentManager { get; set; }
@@ -84,7 +99,7 @@ public class EditModel : PageModel
             .Include(u => u.Roles)
             .Include(u => u.OrganizationUnit)
             .Include(u => u.Manager)
-            .FirstOrDefaultAsync(u => u.Id == Id);
+            .FirstOrDefaultAsync(u => u.Id == Id && !u.IsDeleted);
 
         if (user == null)
         {
@@ -93,7 +108,8 @@ public class EditModel : PageModel
         }
 
         // Populate display fields
-        DisplayName = user.FullName;
+        FirstName = user.FirstName;
+        LastName = user.LastName;
         Email = user.Email;
         CurrentRoles = user.Roles?.Any() == true ? string.Join(", ", user.Roles.Select(r => r.Name)) : "No Role";
         CurrentDepartment = user.OrganizationUnit?.Name ?? "Unassigned";
@@ -119,7 +135,7 @@ public class EditModel : PageModel
 
         var user = await _dbContext.Users
             .Include(u => u.Roles)
-            .FirstOrDefaultAsync(u => u.Id == Id);
+            .FirstOrDefaultAsync(u => u.Id == Id && !u.IsDeleted);
 
         if (user == null)
         {
@@ -128,8 +144,7 @@ public class EditModel : PageModel
         }
 
         // Populate display fields for re-render
-        DisplayName = user.FullName;
-        Email = user.Email;
+        CurrentRoles = user.Roles?.Any() == true ? string.Join(", ", user.Roles.Select(r => r.Name)) : "No Role";
         LastLogin = user.LastLoginAt;
         CreatedAt = user.CreatedAt;
 
@@ -158,6 +173,17 @@ public class EditModel : PageModel
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(Email))
+        {
+            var normalizedEmail = Email.Trim().ToLowerInvariant();
+            var duplicateEmail = await _dbContext.Users.AsNoTracking()
+                .AnyAsync(u => u.Id != Id && !u.IsDeleted && u.Email.ToLower() == normalizedEmail);
+            if (duplicateEmail)
+            {
+                ModelState.AddModelError(nameof(Email), "This email is already used by another user.");
+            }
+        }
+
         if (!ModelState.IsValid)
         {
             return Page();
@@ -168,16 +194,40 @@ public class EditModel : PageModel
             // Track changes for audit
             var changes = new List<string>();
 
-            if (user.JobTitle != JobTitle)
+            var trimmedFirstName = FirstName.Trim();
+            var trimmedLastName = LastName.Trim();
+            var trimmedEmail = Email.Trim().ToLowerInvariant();
+            var trimmedPhone = string.IsNullOrWhiteSpace(PhoneNumber) ? null : PhoneNumber.Trim();
+            var trimmedJobTitle = string.IsNullOrWhiteSpace(JobTitle) ? null : JobTitle.Trim();
+
+            if (!string.Equals(user.FirstName, trimmedFirstName, StringComparison.Ordinal))
             {
-                changes.Add($"Job title: '{user.JobTitle}' → '{JobTitle}'");
-                user.JobTitle = JobTitle;
+                changes.Add($"First name: '{user.FirstName}' → '{trimmedFirstName}'");
+                user.FirstName = trimmedFirstName;
             }
 
-            if (user.PhoneNumber != PhoneNumber)
+            if (!string.Equals(user.LastName, trimmedLastName, StringComparison.Ordinal))
             {
-                changes.Add($"Phone: '{user.PhoneNumber}' → '{PhoneNumber}'");
-                user.PhoneNumber = PhoneNumber;
+                changes.Add($"Last name: '{user.LastName}' → '{trimmedLastName}'");
+                user.LastName = trimmedLastName;
+            }
+
+            if (!string.Equals(user.Email, trimmedEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                changes.Add($"Email: '{user.Email}' → '{trimmedEmail}'");
+                user.Email = trimmedEmail;
+            }
+
+            if (!string.Equals(user.JobTitle, trimmedJobTitle, StringComparison.Ordinal))
+            {
+                changes.Add($"Job title: '{user.JobTitle}' → '{trimmedJobTitle}'");
+                user.JobTitle = trimmedJobTitle;
+            }
+
+            if (!string.Equals(user.PhoneNumber, trimmedPhone, StringComparison.Ordinal))
+            {
+                changes.Add($"Phone: '{user.PhoneNumber}' → '{trimmedPhone}'");
+                user.PhoneNumber = trimmedPhone;
             }
 
             if (user.OrganizationUnitId != OrganizationUnitId)
@@ -280,7 +330,7 @@ public class EditModel : PageModel
 
         // Load potential managers (exclude current user to prevent self-assignment)
         Managers = await _dbContext.Users.AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.IsActive && u.Id != Id)
+            .Where(u => u.TenantId == tenantId && u.IsActive && !u.IsDeleted && u.Id != Id)
             .Include(u => u.Roles)
             .OrderBy(u => u.FirstName)
             .ThenBy(u => u.LastName)

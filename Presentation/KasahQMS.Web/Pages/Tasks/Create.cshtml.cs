@@ -22,6 +22,7 @@ public class CreateModel : PageModel
     private readonly ILogger<CreateModel> _logger;
     private readonly IWebHostEnvironment _environment;
     private readonly IHierarchyService _hierarchyService;
+    private readonly IEmailService _emailService;
 
     public CreateModel(
         ApplicationDbContext dbContext,
@@ -29,7 +30,8 @@ public class CreateModel : PageModel
         IMediator mediator,
         ILogger<CreateModel> logger,
         IWebHostEnvironment environment,
-        IHierarchyService hierarchyService)
+        IHierarchyService hierarchyService,
+        IEmailService emailService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
@@ -37,6 +39,7 @@ public class CreateModel : PageModel
         _logger = logger;
         _environment = environment;
         _hierarchyService = hierarchyService;
+        _emailService = emailService;
     }
 
     [BindProperty] public string Title { get; set; } = string.Empty;
@@ -214,6 +217,17 @@ public class CreateModel : PageModel
                         "Task");
                     _dbContext.Notifications.Add(notification);
                     await _dbContext.SaveChangesAsync();
+
+                    if (!string.IsNullOrWhiteSpace(superior.Email))
+                    {
+                        await _emailService.SendEmailAsync(
+                            superior.Email,
+                            $"Task Reported for Review: {Title}",
+                            $"<p>Hello {superior.FullName},</p>" +
+                            $"<p>{currentUser.FullName} has created task <strong>{Title}</strong> and reported it to you for review.</p>" +
+                            "<p>Please log in to KASAH QMS to review and provide direction.</p>",
+                            true);
+                    }
                 }
             }
         }

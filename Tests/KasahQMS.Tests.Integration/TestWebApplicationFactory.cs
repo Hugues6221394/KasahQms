@@ -1,6 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
+using KasahQMS.Application.Features.Identity.Dtos;
 using KasahQMS.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -82,10 +84,23 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             AllowAutoRedirect = false
         });
 
-        // Resolve IDs from the seeded database
-        EnsureSeededIds();
+        var loginRequest = new LoginRequestDto
+        {
+            Email = TestUserEmail,
+            Password = TestUserPassword
+        };
 
-        var token = GenerateTestJwtToken(TestUserId, TestTenantId, TestUserEmail, "System Admin", "System Admin");
+        var loginResponse = client.PostAsJsonAsync("/api/auth/login", loginRequest).GetAwaiter().GetResult();
+        if (!loginResponse.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(
+                $"Failed to authenticate test client. Status: {(int)loginResponse.StatusCode} {loginResponse.StatusCode}");
+        }
+
+        var authResponse = loginResponse.Content.ReadFromJsonAsync<AuthResponseDto>().GetAwaiter().GetResult();
+        var token = authResponse?.AccessToken
+            ?? throw new InvalidOperationException("Login response did not contain an access token.");
+
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 

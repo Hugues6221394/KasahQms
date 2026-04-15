@@ -208,6 +208,15 @@ public class IndexModel : PageModel
 
     private async Task<(bool CanView, bool CanManage)> ResolveDepartmentAccessAsync()
     {
+        var currentUser = await GetCurrentUserWithRolesAsync();
+        var roleNames = currentUser?.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
+        var isAdminRole = roleNames.Any(r =>
+            r.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Admin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("TenantAdmin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Tenant Admin", StringComparison.OrdinalIgnoreCase));
+
         var canView = await _authorizationService.HasAnyPermissionAsync(new[]
         {
             Permissions.Organization.View,
@@ -224,6 +233,12 @@ public class IndexModel : PageModel
             Permissions.Organization.Delete,
             Permissions.Organization.ManageHierarchy
         });
+
+        if (isAdminRole)
+        {
+            canView = true;
+            canManage = true;
+        }
 
         return (canView, canManage);
     }

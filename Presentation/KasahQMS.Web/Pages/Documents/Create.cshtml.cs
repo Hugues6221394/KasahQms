@@ -106,7 +106,13 @@ public class CreateModel : PageModel
         }
 
         IsTmdOrDeputy = currentUser.Roles != null && 
-            currentUser.Roles.Any(r => r.Name == "TMD" || r.Name == "Deputy Country Manager" || r.Name == "System Admin" || r.Name == "Admin");
+            currentUser.Roles.Any(r =>
+                r.Name == "TMD" ||
+                r.Name == "Deputy Country Manager" ||
+                r.Name == "System Admin" ||
+                r.Name == "Admin" ||
+                r.Name == "TenantAdmin" ||
+                r.Name == "Tenant Admin");
         IsManagerUser = currentUser.Roles != null && currentUser.Roles.Any(r => r.Name.Contains("Manager"));
         CurrentUserDepartmentId = currentUser.OrganizationUnitId;
 
@@ -143,7 +149,13 @@ public class CreateModel : PageModel
         }
 
         IsTmdOrDeputy = currentUser.Roles != null &&
-            currentUser.Roles.Any(r => r.Name == "TMD" || r.Name == "Deputy Country Manager" || r.Name == "System Admin" || r.Name == "Admin");
+            currentUser.Roles.Any(r =>
+                r.Name == "TMD" ||
+                r.Name == "Deputy Country Manager" ||
+                r.Name == "System Admin" ||
+                r.Name == "Admin" ||
+                r.Name == "TenantAdmin" ||
+                r.Name == "Tenant Admin");
         IsManagerUser = currentUser.Roles != null && currentUser.Roles.Any(r => r.Name.Contains("Manager"));
         CurrentUserDepartmentId = currentUser.OrganizationUnitId;
 
@@ -272,7 +284,9 @@ public class CreateModel : PageModel
             CategoryId,
             filePath,
             originalFileName,
-            effectiveTargetDepartmentId);
+            effectiveTargetDepartmentId,
+            TargetUserId,
+            TemplateId);
 
         var createResult = await _mediator.Send(createCmd);
         if (!createResult.IsSuccess)

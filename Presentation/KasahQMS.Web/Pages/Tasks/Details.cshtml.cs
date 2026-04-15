@@ -110,7 +110,7 @@ public class DetailsModel : PageModel
         var roles = currentUser.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
         
         // Determine user's role context
-        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin");
+        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin" or "Tenant Admin");
         bool isTmdOrDeputy = roles.Any(r => r is "TMD" or "TopManagingDirector" or "Country Manager" or "Deputy" or "DeputyDirector" or "Deputy Country Manager");
         bool isManager = roles.Any(r => r.Contains("Manager"));
         bool isAuditor = roles.Any(r => r == "Auditor");
@@ -436,17 +436,27 @@ public class DetailsModel : PageModel
         && TaskItem.Status == "AwaitingApproval"
         && _currentUserService.UserId != TaskItem.AssignedToId;
 
-    /// <summary>True when current user is creator or assignee and there is another party to message.</summary>
+    /// <summary>True when a valid direct-message target can be resolved for this task context.</summary>
     public bool CanMessage => TaskItem != null
         && !IsReadOnly
         && _currentUserService.UserId != null
-        && ((TaskItem.CreatedById == _currentUserService.UserId && TaskItem.AssignedToId.HasValue && TaskItem.AssignedToId != _currentUserService.UserId)
-            || (TaskItem.AssignedToId == _currentUserService.UserId && TaskItem.CreatedById != _currentUserService.UserId));
+        && MessageOtherUserId.HasValue;
 
-    /// <summary>The other user to message (assignee if we're creator, creator if we're assignee).</summary>
+    /// <summary>
+    /// The other user to message:
+    /// - assignee if we're creator
+    /// - creator if we're assignee
+    /// - assignee when manager/executive/admin is viewing a subordinate task
+    /// </summary>
     public Guid? MessageOtherUserId => TaskItem == null || _currentUserService.UserId == null ? null
-        : TaskItem.CreatedById == _currentUserService.UserId ? TaskItem.AssignedToId
-        : TaskItem.AssignedToId == _currentUserService.UserId ? TaskItem.CreatedById
+        : TaskItem.CreatedById == _currentUserService.UserId
+            ? TaskItem.AssignedToId
+        : TaskItem.AssignedToId == _currentUserService.UserId
+            ? TaskItem.CreatedById
+        : (UserRoleContext is "Admin" or "Executive" or "Manager")
+            ? (TaskItem.AssignedToId.HasValue && TaskItem.AssignedToId != _currentUserService.UserId
+                ? TaskItem.AssignedToId
+                : (Guid?)null)
         : (Guid?)null;
 
     public record TaskDetailView(

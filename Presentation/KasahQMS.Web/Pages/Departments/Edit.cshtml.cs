@@ -61,7 +61,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!await _authorizationService.HasPermissionAsync(Permissions.Organization.Edit))
+        if (!await CanEditDepartmentAsync())
             return Forbid();
 
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
@@ -82,7 +82,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!await _authorizationService.HasPermissionAsync(Permissions.Organization.Edit))
+        if (!await CanEditDepartmentAsync())
             return Forbid();
 
         var tenantId = _currentUserService.TenantId ?? await _dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
@@ -136,5 +136,31 @@ public class EditModel : PageModel
             .OrderBy(o => o.Name)
             .Select(o => new CreateModel.LookupItem(o.Id, o.Name, o.Code))
             .ToListAsync();
+    }
+
+    private async Task<bool> CanEditDepartmentAsync()
+    {
+        if (await _authorizationService.HasPermissionAsync(Permissions.Organization.Edit))
+        {
+            return true;
+        }
+
+        if (!_currentUserService.UserId.HasValue)
+        {
+            return false;
+        }
+
+        var roles = await _dbContext.Users.AsNoTracking()
+            .Where(u => u.Id == _currentUserService.UserId.Value)
+            .SelectMany(u => u.Roles)
+            .Select(r => r.Name)
+            .ToListAsync();
+
+        return roles.Any(r =>
+            r.Contains("System Admin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Admin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("TenantAdmin", StringComparison.OrdinalIgnoreCase) ||
+            r.Contains("Tenant Admin", StringComparison.OrdinalIgnoreCase));
     }
 }

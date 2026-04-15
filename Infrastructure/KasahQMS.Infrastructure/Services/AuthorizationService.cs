@@ -275,7 +275,8 @@ public class AuthorizationService : IAuthorizationService
                 string.Equals(rn, "System Admin", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(rn, "SystemAdmin", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(rn, "Admin", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(rn, "TenantAdmin", StringComparison.OrdinalIgnoreCase));
+                string.Equals(rn, "TenantAdmin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rn, "Tenant Admin", StringComparison.OrdinalIgnoreCase));
             var isTmdOrDeputyRole = hasTmdRole ||
                                     hasCountryManagerRole ||
                                     hasDeputyRole;

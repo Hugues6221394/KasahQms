@@ -251,9 +251,6 @@
     initKeyboardShortcuts();
     initFormValidation();
     initAutoSave();
-
-    // Log initialization (remove in production)
-    console.log('KASAH QMS initialized');
   });
 
 })();

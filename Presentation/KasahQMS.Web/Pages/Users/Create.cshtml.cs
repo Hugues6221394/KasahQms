@@ -13,7 +13,7 @@ namespace KasahQMS.Web.Pages.Users;
 /// <summary>
 /// Create new user page. System Admin, TMD, and Deputy can create users.
 /// </summary>
-[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin,TMD,Deputy,TenantMD,Deputy Director")]
+[Authorize(Roles = "System Admin,SystemAdmin,Admin,TenantAdmin,Tenant Admin,TMD,Deputy,TenantMD,Deputy Director")]
 public class CreateModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
@@ -187,7 +187,7 @@ public class CreateModel : PageModel
                 user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(24);
                 await _dbContext.SaveChangesAsync(); // persist token
 
-                var resetLink = $"{Request.Scheme}://{Request.Host}/Account/ResetPassword?token={Uri.EscapeDataString(token)}";
+                var resetLink = $"{Request.Scheme}://{Request.Host}/Account/ResetPassword?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
                 await _emailService.SendEmailAsync(
                     user.Email,
                     "Welcome to KASAH QMS – Set Your Password",
@@ -195,7 +195,7 @@ public class CreateModel : PageModel
                     $"<p>Your account has been created in <strong>KASAH QMS</strong>.</p>" +
                     $"<p>Click the link below to set your password and get started:</p>" +
                     $"<p><a href=\"{resetLink}\" style=\"background:#0c88e8;color:white;padding:10px 22px;border-radius:5px;text-decoration:none;\">Set My Password</a></p>" +
-                    $"<p>This link expires in 1 hour.</p>" +
+                    $"<p>This link expires in 24 hours.</p>" +
                     $"<p>— KASAH QMS Team</p>",
                     isHtml: true);
             }

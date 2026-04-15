@@ -14,23 +14,19 @@ public class ForgotPasswordModel : PageModel
     private readonly ApplicationDbContext _dbContext;
     private readonly IEmailService _emailService;
     private readonly ILogger<ForgotPasswordModel> _logger;
-    private readonly IWebHostEnvironment _env;
     private readonly IMemoryCache _memoryCache;
-    private const int ResetOtpLength = 6;
-    private static readonly TimeSpan ResetOtpLifetime = TimeSpan.FromMinutes(10);
-    private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan ResetTokenLifetime = TimeSpan.FromHours(24);
+    private static readonly TimeSpan ResendCooldown = TimeSpan.FromMinutes(2);
 
     public ForgotPasswordModel(
         ApplicationDbContext dbContext,
         IEmailService emailService,
         ILogger<ForgotPasswordModel> logger,
-        IWebHostEnvironment env,
         IMemoryCache memoryCache)
     {
         _dbContext = dbContext;
         _emailService = emailService;
         _logger = logger;
-        _env = env;
         _memoryCache = memoryCache;
     }
 
@@ -53,7 +49,7 @@ public class ForgotPasswordModel : PageModel
         {
             var normalizedEmail = Email.Trim().ToLowerInvariant();
             var user = await _dbContext.Users
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && u.IsActive && !u.IsDeleted);
 
             if (user != null)
             {
@@ -61,30 +57,14 @@ public class ForgotPasswordModel : PageModel
                 var cooldownKey = $"pwdreset:cooldown:{user.Id}";
                 var shouldThrottle = _memoryCache.TryGetValue(cooldownKey, out _);
 
-                string token;
-                if (user.PasswordResetTokenExpiry.HasValue &&
-                    user.PasswordResetTokenExpiry.Value > now &&
-                    !string.IsNullOrWhiteSpace(user.PasswordResetToken))
-                {
-                    token = user.PasswordResetToken!;
-                }
-                else
-                {
-                    token = GenerateNumericOtp(ResetOtpLength);
-                    user.PasswordResetToken = token;
-                    user.PasswordResetTokenExpiry = now.Add(ResetOtpLifetime);
-                    await _dbContext.SaveChangesAsync();
-                }
-
                 if (!shouldThrottle)
                 {
-                    if (_env.IsDevelopment())
-                    {
-                        _logger.LogInformation(
-                            "[PASSWORD RESET][DEV] OTP for {Email}: {OtpCode}", user.Email, token);
-                    }
+                    var token = GenerateSecureToken();
+                    user.PasswordResetToken = token;
+                    user.PasswordResetTokenExpiry = now.Add(ResetTokenLifetime);
+                    await _dbContext.SaveChangesAsync();
 
-                    await _emailService.SendPasswordResetOtpEmailAsync(
+                    await _emailService.SendPasswordResetEmailAsync(
                         user.Email,
                         user.FullName,
                         token);
@@ -102,10 +82,11 @@ public class ForgotPasswordModel : PageModel
         return Page();
     }
 
-    private static string GenerateNumericOtp(int length)
+    private static string GenerateSecureToken()
     {
-        var max = (int)Math.Pow(10, length);
-        var value = System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, max);
-        return value.ToString($"D{length}");
+        return Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(48))
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .TrimEnd('=');
     }
 }

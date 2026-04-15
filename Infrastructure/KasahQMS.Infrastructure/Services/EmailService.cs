@@ -34,7 +34,8 @@ public class EmailService : IEmailService
             try
             {
                 var smtpSettings = _configuration.GetSection("Smtp");
-                var host = smtpSettings["Host"];
+                var host = smtpSettings["Host"]
+                    ?? _configuration["EmailSettings:SmtpServer"];
 
                 // If SMTP is not configured, fallback to metadata logging only
                 if (string.IsNullOrEmpty(host))
@@ -45,14 +46,21 @@ public class EmailService : IEmailService
                     return;
                 }
 
-                var port = int.TryParse(smtpSettings["Port"], out var p) ? p : 587;
-                var username = smtpSettings["Username"];
+                var portRaw = smtpSettings["Port"] ?? _configuration["EmailSettings:SmtpPort"];
+                var port = int.TryParse(portRaw, out var p) ? p : 587;
+                var username = smtpSettings["Username"] ?? _configuration["EmailSettings:Username"];
                 var password = _configuration["Smtp:Password"]
                     ?? _configuration["SENDGRID_API_KEY"]
-                    ?? smtpSettings["Password"];
-                var from = smtpSettings["From"] ?? "noreply@kasahqms.com";
-                var fromName = smtpSettings["FromName"] ?? from;
-                var enableSsl = bool.TryParse(smtpSettings["EnableSsl"], out var ssl) ? ssl : true;
+                    ?? smtpSettings["Password"]
+                    ?? _configuration["EmailSettings:Password"];
+                var from = smtpSettings["From"]
+                    ?? _configuration["EmailSettings:FromAddress"]
+                    ?? "noreply@kasahqms.com";
+                var fromName = smtpSettings["FromName"]
+                    ?? _configuration["EmailSettings:FromName"]
+                    ?? from;
+                var enableSslRaw = smtpSettings["EnableSsl"] ?? _configuration["EmailSettings:EnableSsl"];
+                var enableSsl = bool.TryParse(enableSslRaw, out var ssl) ? ssl : true;
 
                 using var client = new SmtpClient(host, port)
                 {
@@ -126,7 +134,9 @@ public class EmailService : IEmailService
         CancellationToken cancellationToken = default)
     {
         var baseUrl = _configuration["Application:BaseUrl"] ?? "https://qms.kasah.tech";
-        var resetLink = $"{baseUrl}/Account/ResetPassword?token={resetToken}";
+        var encodedEmail = WebUtility.UrlEncode(email);
+        var encodedToken = Uri.EscapeDataString(resetToken);
+        var resetLink = $"{baseUrl}/Account/ResetPassword?token={encodedToken}&email={encodedEmail}";
 
         var subject = "Password Reset Request - Kasah QMS";
         var body = $@"

@@ -37,8 +37,8 @@
     </div>
 
     <div class="card p-6">
-        <div class="overflow-hidden rounded-xl border border-slate-200">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <table class="min-w-[860px] w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3 text-left font-semibold">Department</th>
@@ -62,7 +62,7 @@
                             @if (Model.CanManageDepartments)
                             {
                                 <td class="px-4 py-3 text-right">
-                                    <div class="inline-flex items-center gap-3">
+                                    <div class="inline-flex flex-wrap items-center justify-end gap-3">
                                         <a asp-page="/Departments/Edit" asp-route-id="@dept.Id" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                                         @if (dept.IsActive)
                                         {

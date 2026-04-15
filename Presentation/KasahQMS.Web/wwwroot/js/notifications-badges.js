@@ -13,6 +13,7 @@
     var messageBadge = document.getElementById('badge-messages');
     var taskBadge = document.getElementById('badge-tasks');
     var documentBadge = document.getElementById('badge-documents');
+    var newsBadge = document.getElementById('badge-news');
     var trainingBadge = document.getElementById('badge-training');
     var trainingHubBadge = document.getElementById('badge-training-hub');
     var notificationBadge = document.getElementById('badge-notifications');
@@ -24,6 +25,7 @@
         messages: 0,
         tasks: 0,
         documents: 0,
+        news: 0,
         training: 0,
         notifications: 0,
         approvals: 0
@@ -44,6 +46,7 @@
         updateBadge(messageBadge, badges.messages);
         updateBadge(taskBadge, badges.tasks);
         updateBadge(documentBadge, badges.documents);
+        updateBadge(newsBadge, badges.news);
         updateBadge(trainingBadge, badges.training);
         updateBadge(trainingHubBadge, badges.training);
         updateBadge(notificationBadge, badges.notifications);
@@ -58,7 +61,7 @@
         }
 
         // Update page title with total unread
-        var total = badges.messages + badges.tasks + badges.documents + badges.training + badges.notifications + badges.approvals;
+        var total = badges.messages + badges.tasks + badges.documents + badges.news + badges.training + badges.notifications + badges.approvals;
         var baseTitle = document.title.replace(/^\(\d+\)\s*/, '');
         document.title = total > 0 ? '(' + total + ') ' + baseTitle : baseTitle;
     }
@@ -71,6 +74,7 @@
                 badges.messages = data.unreadMessages || 0;
                 badges.tasks = data.pendingTasks || 0;
                 badges.documents = data.pendingDocuments || 0;
+                badges.news = data.unreadNews || 0;
                 badges.training = data.pendingTraining || 0;
                 badges.notifications = data.unreadNotifications || 0;
                 badges.approvals = data.pendingApprovals || 0;

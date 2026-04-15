@@ -192,7 +192,7 @@ public class LoginModel : PageModel
                 Response.Cookies.Append("KasahQmsSession", tokenHash, new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
+                    Secure = HttpContext.Request.IsHttps,
                     SameSite = SameSiteMode.Strict,
                     Expires = DateTimeOffset.UtcNow.AddMinutes(30)
                 });

@@ -1,64 +1,50 @@
 @using System.Security.Claims
-@using Microsoft.EntityFrameworkCore
 @using KasahQMS.Application.Common.Security
 @inject KasahQMS.Application.Common.Interfaces.ICurrentUserService CurrentUserService
 @inject KasahQMS.Application.Common.Security.IAuthorizationService AuthorizationService
-@inject KasahQMS.Application.Common.Interfaces.Services.IHierarchyService HierarchyService
 @{
     var displayName = User?.Identity?.Name ?? "User";
     var roles = CurrentUserService.Roles.ToList();
     var roleLabel = roles.FirstOrDefault() ?? "Member";
     var initials = displayName.Length >= 2 ? displayName.Substring(0, 2).ToUpper() : displayName.ToUpper();
-    
-    var userId = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-    Guid? userGuid = userId != null ? Guid.Parse(userId) : null;
+    // Resolve once to avoid repeated async permission checks in layout rendering.
+    var userPermissions = (await AuthorizationService.GetUserPermissionsAsync())
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    bool HasPermission(string permission) => userPermissions.Contains(permission);
+    bool HasAnyPermission(params string[] permissions) => permissions.Any(userPermissions.Contains);
 
     // Permission checks for navigation
-    var canViewAnalytics = await AuthorizationService.HasPermissionAsync(Permissions.Analytics.View);
-    var canViewReports = await AuthorizationService.HasPermissionAsync(Permissions.Reports.View);
+    var canViewAnalytics = HasPermission(Permissions.Analytics.View);
+    var canViewReports = HasPermission(Permissions.Reports.View);
 
-    var canViewApprovals = await AuthorizationService.HasAnyPermissionAsync(new[] {
+    var canViewApprovals = HasAnyPermission(
         Permissions.Documents.Approve,
         Permissions.Tasks.Assign,
         Permissions.Capa.Assign
-    });
+    );
 
     // Supervision usually for TMD/Executives
-    var canViewSupervision = await AuthorizationService.HasAnyPermissionAsync(new[] {
+    var canViewSupervision = HasAnyPermission(
         Permissions.Users.ViewAll,
         Permissions.System.ViewSystemHealth
-    });
+    );
 
-    var canViewDocuments = await AuthorizationService.HasPermissionAsync(Permissions.Documents.View);
-    var canCreateDocuments = await AuthorizationService.HasPermissionAsync(Permissions.Documents.Create);
+    var canViewDocuments = HasPermission(Permissions.Documents.View);
+    var canCreateDocuments = HasPermission(Permissions.Documents.Create);
 
-    var canViewTasks = await AuthorizationService.HasPermissionAsync(Permissions.Tasks.View);
-    var canCreateTasks = await AuthorizationService.HasPermissionAsync(Permissions.Tasks.Create);
-    var canViewArchives = await AuthorizationService.HasAnyPermissionAsync(new[] { Permissions.Documents.View, Permissions.Tasks.View });
+    var canViewTasks = HasPermission(Permissions.Tasks.View);
+    var canCreateTasks = HasPermission(Permissions.Tasks.Create);
+    var canViewArchives = HasAnyPermission(Permissions.Documents.View, Permissions.Tasks.View);
 
-    var canViewCapa = await AuthorizationService.HasPermissionAsync(Permissions.Capa.View);
-    var canCreateCapa = await AuthorizationService.HasPermissionAsync(Permissions.Capa.Create);
+    var canViewCapa = HasPermission(Permissions.Capa.View);
+    var canCreateCapa = HasPermission(Permissions.Capa.Create);
 
-    var canViewAudits = await AuthorizationService.HasPermissionAsync(Permissions.Audits.View);
-    var canViewStock = await AuthorizationService.HasPermissionAsync(Permissions.Stock.View);
-    var canViewTraining = await AuthorizationService.HasPermissionAsync(Permissions.Training.View);
-    var canViewRisk = await AuthorizationService.HasPermissionAsync(Permissions.Risk.View);
-    var canViewSuppliers = await AuthorizationService.HasPermissionAsync(Permissions.Suppliers.View);
-    var canViewNews = await AuthorizationService.HasPermissionAsync(Permissions.News.View);
-    
-    // Get unread news count for badge
-    int unreadNewsCount = 0;
-    if (canViewNews && userGuid.HasValue)
-    {
-        var dbContext = Context.RequestServices.GetRequiredService<KasahQMS.Infrastructure.Persistence.Data.ApplicationDbContext>();
-        var tenantId = CurrentUserService.TenantId;
-        if (tenantId.HasValue)
-        {
-            var totalNews = await dbContext.NewsArticles.CountAsync(n => n.TenantId == tenantId && n.IsActive);
-            var readNews = await dbContext.NewsReads.CountAsync(nr => nr.UserId == userGuid.Value);
-            unreadNewsCount = totalNews - readNews;
-        }
-    }
+    var canViewAudits = HasPermission(Permissions.Audits.View);
+    var canViewStock = HasPermission(Permissions.Stock.View);
+    var canViewTraining = HasPermission(Permissions.Training.View);
+    var canViewRisk = HasPermission(Permissions.Risk.View);
+    var canViewSuppliers = HasPermission(Permissions.Suppliers.View);
+    var canViewNews = HasPermission(Permissions.News.View);
     
     // Permission Delegation: senior roles or managers can delegate
     var isSeniorRoleForDelegation = roles.Any(r =>
@@ -68,30 +54,30 @@
         r.Contains("Deputy", StringComparison.OrdinalIgnoreCase) ||
         r.Contains("Country Manager", StringComparison.OrdinalIgnoreCase) ||
         r.Contains("Manager", StringComparison.OrdinalIgnoreCase));
-    var canDelegatePermissions = isSeniorRoleForDelegation || (userGuid.HasValue && await HierarchyService.IsManagerAsync(userGuid.Value));
+    var canDelegatePermissions = isSeniorRoleForDelegation || HasPermission(Permissions.Users.DelegatePermission);
 
     // Administration Section
-    var canManageUsers = await AuthorizationService.HasPermissionAsync(Permissions.Users.View);
-    var canManageRoles = await AuthorizationService.HasPermissionAsync(Permissions.Roles.View);
-    var canManagePolicies = await AuthorizationService.HasPermissionAsync(Permissions.Documents.ViewAll); // Using Doc ViewAll as proxy for now
-    var canManageDepartments = await AuthorizationService.HasAnyPermissionAsync(new[] {
+    var canManageUsers = HasPermission(Permissions.Users.View);
+    var canManageRoles = HasPermission(Permissions.Roles.View);
+    var canManagePolicies = HasPermission(Permissions.Documents.ViewAll); // Using Doc ViewAll as proxy for now
+    var canManageDepartments = HasAnyPermission(
         Permissions.Organization.View,
         Permissions.Organization.Create,
         Permissions.Organization.Edit,
         Permissions.Organization.Delete,
         Permissions.Organization.ManageHierarchy
-    });
-    var canViewAuditLogs = await AuthorizationService.HasPermissionAsync(Permissions.AuditLogs.View);
-    var canManageSettings = await AuthorizationService.HasPermissionAsync(Permissions.System.ManageSettings);
+    );
+    var canViewAuditLogs = HasPermission(Permissions.AuditLogs.View);
+    var canManageSettings = HasPermission(Permissions.System.ManageSettings);
 
     var showAdminSection = canManageUsers || canManageRoles || canManageDepartments || canViewAuditLogs || canManageSettings;
 
     // Employees & Departments pages: use permission-based check to allow delegation
-    var canViewEmployees = await AuthorizationService.HasPermissionAsync(Permissions.Employees.View);
+    var canViewEmployees = HasPermission(Permissions.Employees.View);
 
     // Check for "Auditor" role specifically for the badge, or derive it.
     // Using role check here for the visual badge only.
-    var isAuditor = await AuthorizationService.IsInRoleAsync("Auditor");
+    var isAuditor = roles.Any(r => string.Equals(r, "Auditor", StringComparison.OrdinalIgnoreCase));
     var canViewChatAudit = roles.Any(r =>
         string.Equals(r, "Auditor", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(r, "Internal Auditor", StringComparison.OrdinalIgnoreCase) ||
@@ -452,12 +438,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
                     </svg>
                     <span>News</span>
-                    @if (unreadNewsCount > 0)
-                    {
-                        <span class="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                            @(unreadNewsCount > 99 ? "99+" : unreadNewsCount.ToString())
-                        </span>
-                    }
+                    <span id="badge-news" class="hidden ml-auto min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-600 rounded-full flex items-center justify-center">0</span>
                 </a>
                 }
                 <a data-nav="/ai" href="/Ai" class="nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-700 font-medium">

@@ -43,6 +43,18 @@ public class DirectModel : PageModel
         if (otherUserId == userId.Value)
             return RedirectToPage("/Chat");
 
+        // Validate target user exists and belongs to the same tenant.
+        var targetUser = await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u =>
+                u.Id == otherUserId &&
+                u.TenantId == tenantId.Value &&
+                u.IsActive &&
+                !u.IsDeleted);
+
+        if (targetUser == null)
+            return RedirectToPage("/Chat");
+
         var thread = await _chatService.GetOrCreateDirectThreadAsync(tenantId.Value, userId.Value, otherUserId, taskId);
         if (thread == null)
             return RedirectToPage("/Chat");

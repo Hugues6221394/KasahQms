@@ -18,6 +18,7 @@ using System.Threading.RateLimiting;
 using KasahQMS.Application.Common.Interfaces.Services;
 using KasahQMS.Web.Hubs;
 using KasahQMS.Web.Middleware;
+using Microsoft.Extensions.Caching.Memory;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -125,7 +126,9 @@ builder.Services.AddAuthentication(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.Cookie.Name = "KasahQmsAuth";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
     options.SlidingExpiration = true;
     options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
@@ -476,17 +479,29 @@ app.Use(async (context, next) =>
     }
 
     var dbContext = context.RequestServices.GetRequiredService<ApplicationDbContext>();
-    var tenantId = await dbContext.Tenants.Select(t => t.Id).FirstOrDefaultAsync();
+    var cache = context.RequestServices.GetRequiredService<IMemoryCache>();
+
+    var tenantId = await cache.GetOrCreateAsync("system:first-tenant-id", async entry =>
+    {
+        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+        return await dbContext.Tenants.AsNoTracking().Select(t => t.Id).FirstOrDefaultAsync();
+    });
+
     if (tenantId == Guid.Empty)
     {
         await next();
         return;
     }
 
-    var maintenanceEnabledRaw = await dbContext.SystemSettings.AsNoTracking()
-        .Where(s => s.TenantId == tenantId && s.Key == "System.MaintenanceMode.Enabled")
-        .Select(s => s.Value)
-        .FirstOrDefaultAsync();
+    var maintenanceCacheKey = $"system:maintenance-enabled:{tenantId:N}";
+    var maintenanceEnabledRaw = await cache.GetOrCreateAsync(maintenanceCacheKey, async entry =>
+    {
+        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
+        return await dbContext.SystemSettings.AsNoTracking()
+            .Where(s => s.TenantId == tenantId && s.Key == "System.MaintenanceMode.Enabled")
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync();
+    });
     var maintenanceEnabled = bool.TryParse(maintenanceEnabledRaw, out var enabled) && enabled;
 
     if (!maintenanceEnabled)
@@ -499,7 +514,8 @@ app.Use(async (context, next) =>
         (context.User.IsInRole("System Admin") ||
          context.User.IsInRole("SystemAdmin") ||
          context.User.IsInRole("Admin") ||
-         context.User.IsInRole("TenantAdmin"));
+         context.User.IsInRole("TenantAdmin") ||
+         context.User.IsInRole("Tenant Admin"));
 
     if (isSystemAdmin)
     {
@@ -554,6 +570,25 @@ app.Run();
 
 static void LoadDotEnv(ConfigurationManager configuration, string contentRootPath)
 {
+    static bool ShouldUseDotEnvValue(string? existingValue)
+    {
+        if (string.IsNullOrWhiteSpace(existingValue))
+        {
+            return true;
+        }
+
+        var placeholders = new[]
+        {
+            "SET_IN_USER_SECRETS",
+            "REPLACE_WITH",
+            "CHANGE_ME",
+            "CHANGEME",
+            "PLACEHOLDER"
+        };
+
+        return placeholders.Any(p => existingValue.Contains(p, StringComparison.OrdinalIgnoreCase));
+    }
+
     var current = new DirectoryInfo(contentRootPath);
     string? envPath = null;
 
@@ -598,11 +633,23 @@ static void LoadDotEnv(ConfigurationManager configuration, string contentRootPat
             continue;
         }
 
-        parsed[key] = value;
-        parsed[key.Replace("__", ":", StringComparison.Ordinal)] = value;
+        var normalizedKey = key.Replace("__", ":", StringComparison.Ordinal);
+        var existingEnvValue = Environment.GetEnvironmentVariable(key);
 
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key)))
+        // Respect explicit OS environment variables first (Render/prod/local shell exports).
+        // If absent, allow .env to override placeholders from appsettings/user-secrets.
+        if (string.IsNullOrWhiteSpace(existingEnvValue))
         {
+            if (ShouldUseDotEnvValue(configuration[key]))
+            {
+                parsed[key] = value;
+            }
+
+            if (ShouldUseDotEnvValue(configuration[normalizedKey]))
+            {
+                parsed[normalizedKey] = value;
+            }
+
             Environment.SetEnvironmentVariable(key, value);
         }
     }

@@ -1,4 +1,6 @@
 using KasahQMS.Application.Common.Interfaces;
+using KasahQMS.Application.Common.Interfaces.Services;
+using KasahQMS.Domain.Entities.Notifications;
 using KasahQMS.Domain.Entities.Documents;
 using KasahQMS.Domain.Enums;
 using KasahQMS.Infrastructure.Persistence.Data;
@@ -14,17 +16,23 @@ public class CreateFromTemplateModel : PageModel
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<CreateFromTemplateModel> _logger;
     private readonly IWebHostEnvironment _environment;
 
     public CreateFromTemplateModel(
         ApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
+        INotificationService notificationService,
+        IEmailService emailService,
         ILogger<CreateFromTemplateModel> logger,
         IWebHostEnvironment environment)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _notificationService = notificationService;
+        _emailService = emailService;
         _logger = logger;
         _environment = environment;
     }
@@ -66,7 +74,7 @@ public class CreateFromTemplateModel : PageModel
 
         // Determine role context
         bool isTmd = roles.Any(r => r == "TMD" || r == "TopManagingDirector" || r == "Country Manager");
-        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin");
+        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin" or "Tenant Admin");
         bool isDeputy = roles.Any(r => r.Contains("Deputy", StringComparison.OrdinalIgnoreCase));
         bool isManager = roles.Any(r => r.Contains("Manager", StringComparison.OrdinalIgnoreCase));
         bool isAuditor = roles.Any(r => r == "Auditor");
@@ -135,7 +143,7 @@ public class CreateFromTemplateModel : PageModel
 
         Users = await _dbContext.Users
             .AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.IsActive && u.Id != userId.Value)
+            .Where(u => u.TenantId == tenantId && u.IsActive && !u.IsDeleted && u.Id != userId.Value)
             .OrderBy(u => u.FirstName)
             .ThenBy(u => u.LastName)
             .Include(u => u.OrganizationUnit)
@@ -208,6 +216,7 @@ public class CreateFromTemplateModel : PageModel
 
         _dbContext.Documents.Add(newDocument);
         await _dbContext.SaveChangesAsync();
+        await NotifyRecipientsAsync(newDocument, userId.Value, CancellationToken.None);
 
         _logger.LogInformation("User {UserId} created document {DocumentId} from template {TemplateId}", 
             userId, newDocument.Id, template.Id);
@@ -265,6 +274,86 @@ public class CreateFromTemplateModel : PageModel
         return File(bytes, "text/html", fileName);
     }
 
+    private async Task NotifyRecipientsAsync(Document document, Guid creatorId, CancellationToken cancellationToken)
+    {
+        var recipientIds = new HashSet<Guid>();
+
+        if (document.TargetUserId.HasValue)
+        {
+            recipientIds.Add(document.TargetUserId.Value);
+        }
+
+        if (document.TargetDepartmentId.HasValue)
+        {
+            var departmentRecipients = await _dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.OrganizationUnitId == document.TargetDepartmentId.Value && u.IsActive && !u.IsDeleted)
+                .Select(u => u.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var recipientId in departmentRecipients)
+            {
+                recipientIds.Add(recipientId);
+            }
+        }
+
+        recipientIds.Remove(creatorId);
+        if (recipientIds.Count == 0)
+        {
+            return;
+        }
+
+        var creatorName = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.Id == creatorId)
+            .Select(u => $"{u.FirstName} {u.LastName}")
+            .FirstOrDefaultAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(creatorName))
+        {
+            creatorName = "A colleague";
+        }
+
+        var message = $"Document '{document.Title}' ({document.DocumentNumber}) has been shared with you by {creatorName}.";
+        var recipients = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => recipientIds.Contains(u.Id) && u.IsActive && !u.IsDeleted)
+            .Select(u => new { u.Id, u.Email, FullName = u.FirstName + " " + u.LastName })
+            .ToListAsync(cancellationToken);
+
+        foreach (var recipient in recipients)
+        {
+            try
+            {
+                await _notificationService.SendAsync(
+                    recipient.Id,
+                    "New document shared",
+                    message,
+                    NotificationType.System,
+                    document.Id,
+                    cancellationToken,
+                    relatedEntityType: "document");
+
+                if (!string.IsNullOrWhiteSpace(recipient.Email))
+                {
+                    await _emailService.SendEmailAsync(
+                        recipient.Email,
+                        $"New document shared: {document.Title}",
+                        $"<p>Hello {recipient.FullName},</p><p>{message}</p><p>Please log in to KASAH QMS to review it.</p>",
+                        true,
+                        cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to send template document share notification for {DocumentId} to user {RecipientId}",
+                    document.Id,
+                    recipient.Id);
+            }
+        }
+    }
+
     private async Task ReloadLookupsAsync()
     {
         var userId = _currentUserService.UserId;
@@ -292,7 +381,7 @@ public class CreateFromTemplateModel : PageModel
         var user = await _dbContext.Users.AsNoTracking().Include(u => u.Roles).FirstOrDefaultAsync(u => u.Id == userId);
         var roles = user?.Roles?.Select(r => r.Name).ToList() ?? new List<string>();
         bool isTmd = roles.Any(r => r == "TMD" || r == "TopManagingDirector" || r == "Country Manager");
-        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin");
+        bool isAdmin = roles.Any(r => r is "System Admin" or "Admin" or "SystemAdmin" or "TenantAdmin" or "Tenant Admin");
         bool isDeputy = roles.Any(r => r.Contains("Deputy", StringComparison.OrdinalIgnoreCase));
         CanShareToDepartment = isTmd || isAdmin || isDeputy;
 
@@ -305,7 +394,7 @@ public class CreateFromTemplateModel : PageModel
 
         Users = await _dbContext.Users
             .AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.IsActive && u.Id != userId)
+            .Where(u => u.TenantId == tenantId && u.IsActive && !u.IsDeleted && u.Id != userId)
             .OrderBy(u => u.FirstName)
             .Include(u => u.OrganizationUnit)
             .Select(u => new UserOption(u.Id, $"{u.FirstName} {u.LastName}", u.OrganizationUnit != null ? u.OrganizationUnit.Name : "—"))

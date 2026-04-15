@@ -248,7 +248,7 @@
         if (type === 'task' || type === 'taskassignment') return '/Tasks/Details/' + notification.relatedEntityId;
         if (type === 'training') return '/Training/Details/' + notification.relatedEntityId;
         if (type === 'chat') return '/Chat?thread=' + notification.relatedEntityId;
-        if (type === 'newsarticle' || type === 'news') return '/News/Details/' + notification.relatedEntityId;
+        if (type === 'newsarticle' || type === 'news') return '/News/Details?id=' + notification.relatedEntityId;
         return '/Documents/Details/' + notification.relatedEntityId;
     }
 

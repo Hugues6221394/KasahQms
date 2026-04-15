@@ -12,6 +12,9 @@ namespace KasahQMS.Tests.Unit.Application.Handlers;
 public class CreateDocumentCommandTests
 {
     private readonly Mock<IDocumentRepository> _documentRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<INotificationService> _notificationServiceMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
     private readonly Mock<IAuditLogService> _auditLogServiceMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
@@ -24,6 +27,9 @@ public class CreateDocumentCommandTests
     public CreateDocumentCommandTests()
     {
         _documentRepositoryMock = new Mock<IDocumentRepository>();
+        _userRepositoryMock = new Mock<IUserRepository>();
+        _notificationServiceMock = new Mock<INotificationService>();
+        _emailServiceMock = new Mock<IEmailService>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();
         _auditLogServiceMock = new Mock<IAuditLogService>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
@@ -34,6 +40,9 @@ public class CreateDocumentCommandTests
 
         _handler = new CreateDocumentCommandHandler(
             _documentRepositoryMock.Object,
+            _userRepositoryMock.Object,
+            _notificationServiceMock.Object,
+            _emailServiceMock.Object,
             _currentUserServiceMock.Object,
             _auditLogServiceMock.Object,
             _unitOfWorkMock.Object,
