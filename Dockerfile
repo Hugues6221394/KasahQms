@@ -12,13 +12,13 @@ COPY Presentation/KasahQMS.Web/KasahQMS.Web.csproj Presentation/KasahQMS.Web/
 COPY Presentation/KasahQMS.Api/KasahQMS.Api.csproj Presentation/KasahQMS.Api/
 
 # Restore dependencies
-RUN dotnet restore KasahQMS.sln
+RUN dotnet restore Presentation/KasahQMS.Web/KasahQMS.Web.csproj
 
 # Copy everything else
 COPY . .
 
 # Build and publish
-RUN dotnet publish Presentation/KasahQMS.Web/KasahQMS.Web.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish Presentation/KasahQMS.Web/KasahQMS.Web.csproj -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
@@ -40,6 +40,7 @@ USER kasahqms
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1

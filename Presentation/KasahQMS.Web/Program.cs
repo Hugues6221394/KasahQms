@@ -364,7 +364,13 @@ else
 }
 
 // Security: Force HTTPS
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+    });
+}
 app.UseResponseCompression();
 
 // Security: Comprehensive Security Headers
