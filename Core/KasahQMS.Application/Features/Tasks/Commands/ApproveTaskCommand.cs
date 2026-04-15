@@ -79,6 +79,17 @@ public class ApproveTaskCommandHandler : IRequestHandler<ApproveTaskCommand, Res
                     cancellationToken);
             }
 
+            if (task.ReportedToUserId.HasValue && task.ReportedToUserId.Value != userId.Value)
+            {
+                await _notificationService.SendAsync(
+                    task.ReportedToUserId.Value,
+                    "Task Approved in your queue",
+                    $"Task '{task.Title}' in your approvals flow has been approved.",
+                    NotificationType.TaskUpdate,
+                    task.Id,
+                    cancellationToken);
+            }
+
             _logger.LogInformation("Task {TaskId} approved by manager {UserId}", task.Id, userId);
             return Result.Success();
         }

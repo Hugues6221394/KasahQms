@@ -75,7 +75,7 @@ public class IndexModel : PageModel
             .Include(t => t.AssignedTo)
             .Where(t => t.TenantId == tenantId && 
                         t.Status == QmsTaskStatus.AwaitingApproval &&
-                        (subordinateIdsList.Contains(t.CreatedById) || subordinateIdsList.Contains(t.AssignedToId ?? Guid.Empty)))
+                        (subordinateIdsList.Contains(t.CreatedById) || subordinateIdsList.Contains(t.AssignedToId ?? Guid.Empty) || t.ReportedToUserId == userId.Value))
             .OrderByDescending(t => t.CompletedAt)
             .Select(t => new ApprovalItem
             {

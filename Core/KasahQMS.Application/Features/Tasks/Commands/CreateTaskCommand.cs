@@ -22,7 +22,8 @@ public record CreateTaskCommand(
     Guid? LinkedCapaId,
     Guid? LinkedAuditId,
     List<Guid>? AssignedToUserIds = null,
-    Guid? AssignedToOrgUnitId = null) : IRequest<Result<Guid>>;
+    Guid? AssignedToOrgUnitId = null,
+    string? AssignmentMessage = null) : IRequest<Result<Guid>>;
 
 public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Result<Guid>>
 {
@@ -136,10 +137,14 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
 
             foreach (var assigneeId in assigneeIds)
             {
+                var assignmentMessage = string.IsNullOrWhiteSpace(request.AssignmentMessage)
+                    ? $"You have been assigned a new task: {request.Title}"
+                    : $"You have been assigned a new task: {request.Title}. Message: {request.AssignmentMessage}";
+
                 await _notificationService.SendAsync(
                     assigneeId,
                     "New Task Assigned",
-                    $"You have been assigned a new task: {request.Title}",
+                    assignmentMessage,
                     NotificationType.TaskAssignment,
                     task.Id,
                     cancellationToken);
@@ -152,7 +157,9 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
                         await _emailService.SendTaskAssignmentEmailAsync(
                             assigneeUser.Email!,
                             assigneeUser.FullName,
-                            request.Title,
+                            string.IsNullOrWhiteSpace(request.AssignmentMessage)
+                                ? request.Title
+                                : $"{request.Title} — {request.AssignmentMessage}",
                             request.DueDate.Value,
                             assignedByName,
                             cancellationToken);
@@ -162,7 +169,9 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
                         await _emailService.SendEmailAsync(
                             assigneeUser.Email!,
                             $"New Task Assigned: {request.Title}",
-                            $"<p>Hello {assigneeUser.FullName},</p><p>You have been assigned a new task: <strong>{request.Title}</strong>.</p><p><strong>Assigned By:</strong> {assignedByName}</p><p>Please log in to KASAH QMS to review and complete it.</p>",
+                            $"<p>Hello {assigneeUser.FullName},</p><p>You have been assigned a new task: <strong>{request.Title}</strong>.</p>" +
+                            $"{(string.IsNullOrWhiteSpace(request.AssignmentMessage) ? string.Empty : $"<p><strong>Assignment Message:</strong> {request.AssignmentMessage}</p>")}" +
+                            $"<p><strong>Assigned By:</strong> {assignedByName}</p><p>Please log in to KASAH QMS to review and complete it.</p>",
                             true,
                             cancellationToken);
                     }

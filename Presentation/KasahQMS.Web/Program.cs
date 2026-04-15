@@ -537,6 +537,9 @@ app.MapHub<ChatHub>(ChatHub.Path);
 // Health check endpoint
 app.MapHealthChecks("/health");
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Urls.Add($"http://0.0.0.0:{port}");
+
 // ===========================================
 // Run Application
 // ===========================================

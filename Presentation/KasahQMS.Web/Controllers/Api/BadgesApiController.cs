@@ -260,6 +260,8 @@ public class BadgesApiController : ControllerBase
         }
         else if (type == "training")
             _cache.Set($"last_seen_training_{userId}", (DateTime?)DateTime.UtcNow, expiry);
+        else if (type == "approvals")
+            _cache.Set($"last_seen_approvals_{userId}", (DateTime?)DateTime.UtcNow, expiry);
 
         if (tenantId.HasValue)
         {

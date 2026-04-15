@@ -81,6 +81,17 @@ public class RejectTaskCommandHandler : IRequestHandler<RejectTaskCommand, Resul
                     cancellationToken);
             }
 
+            if (task.ReportedToUserId.HasValue && task.ReportedToUserId.Value != userId.Value)
+            {
+                await _notificationService.SendAsync(
+                    task.ReportedToUserId.Value,
+                    "Task Rejected in your queue",
+                    $"Task '{task.Title}' in your approvals flow has been rejected.",
+                    NotificationType.TaskUpdate,
+                    task.Id,
+                    cancellationToken);
+            }
+
             _logger.LogInformation("Task {TaskId} rejected by manager {UserId}", task.Id, userId);
             return Result.Success();
         }

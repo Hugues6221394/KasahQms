@@ -57,6 +57,7 @@ public class NotificationService : INotificationService
                 notification.RelatedEntityType
             };
             await _pushSender.SendToUserAsync(userId, "Notification", payload, cancellationToken);
+            await _pushSender.SendToUserAsync(userId, "RefreshBadges", new { }, cancellationToken);
 
             _logger.LogDebug("Notification sent to user {UserId}: {Title}", userId, title);
         }

@@ -5,6 +5,33 @@
 }
 
 <div class="space-y-6">
+    <style>
+        .notif-page-card {
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+        }
+
+        .notif-page-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.45);
+        }
+
+        .notif-chip-active {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: #fff;
+            box-shadow: 0 6px 14px -10px rgba(5, 150, 105, 0.8);
+        }
+
+        .notif-page-shimmer {
+            background: linear-gradient(90deg, rgba(226,232,240,0.45) 25%, rgba(241,245,249,0.9) 37%, rgba(226,232,240,0.45) 63%);
+            background-size: 400% 100%;
+            animation: notifPageShimmer 1.4s ease infinite;
+        }
+
+        @@keyframes notifPageShimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: 0 0; }
+        }
+    </style>
     <div class="rounded-2xl border border-slate-200 bg-white p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -27,13 +54,32 @@
     </div>
 
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div id="notif-list-container" class="divide-y divide-slate-100"></div>
+        <div class="border-b border-slate-100 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+                <button id="notif-filter-all" type="button" class="notif-filter-chip notif-chip-active rounded-lg px-3 py-1.5 text-xs font-semibold">All</button>
+                <button id="notif-filter-unread" type="button" class="notif-filter-chip rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900">Unread</button>
+            </div>
+            <div id="notif-live-state" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Live updates on
+            </div>
+        </div>
+        <div id="notif-loading-state" class="hidden p-4 space-y-2">
+            <div class="h-16 rounded-xl notif-page-shimmer"></div>
+            <div class="h-16 rounded-xl notif-page-shimmer"></div>
+            <div class="h-16 rounded-xl notif-page-shimmer"></div>
+        </div>
+        <div id="notif-list-container" class="space-y-2 p-2"></div>
         <div id="notif-empty-state" class="hidden py-20 text-center">
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50">
                 <svg class="h-8 w-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
             </div>
             <h3 class="text-lg font-medium text-slate-900">All caught up</h3>
             <p class="mt-1 text-slate-500">You have no new notifications at the moment.</p>
+        </div>
+        <div class="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+            <p class="text-xs text-slate-500">Showing latest activity first</p>
+            <button id="notif-load-more-page" type="button" class="hidden rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100">Load more</button>
         </div>
     </div>
 
@@ -77,6 +123,18 @@
 <script>
 (function() {
     var notifications = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Notifications));
+    notifications = (notifications || []).map(function(n) {
+        if (!n) return n;
+        if (!n.createdAt && n.time) {
+            var parsed = Date.parse(n.time);
+            if (!Number.isNaN(parsed)) n.createdAt = new Date(parsed).toISOString();
+        }
+        return n;
+    });
+    var activeFilter = 'all';
+    var hasMore = notifications.length === 25;
+    var nextBefore = notifications.length ? notifications[notifications.length - 1].createdAt : null;
+    var pageLoadingMore = false;
 
     function esc(str) {
         return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -99,25 +157,39 @@
         var empty = document.getElementById('notif-empty-state');
         var totalBadge = document.getElementById('notif-total-badge');
         var unreadBadge = document.getElementById('notif-unread-badge');
+        var loading = document.getElementById('notif-loading-state');
+        var loadMore = document.getElementById('notif-load-more-page');
         if (!container) return;
+        if (loading) loading.classList.add('hidden');
 
         var unread = notifications.filter(function(n) { return !n.isRead; }).length;
         if (totalBadge) totalBadge.textContent = notifications.length + ' total';
         if (unreadBadge) unreadBadge.textContent = unread + ' unread';
 
-        if (notifications.length === 0) {
+        var visible = activeFilter === 'unread'
+            ? notifications.filter(function(n) { return !n.isRead; })
+            : notifications;
+
+        if (visible.length === 0) {
             container.innerHTML = '';
             if (empty) empty.classList.remove('hidden');
+            if (loadMore) loadMore.classList.add('hidden');
             return;
         }
         if (empty) empty.classList.add('hidden');
+        if (loadMore) {
+            if (hasMore && activeFilter === 'all') loadMore.classList.remove('hidden');
+            else loadMore.classList.add('hidden');
+            loadMore.disabled = pageLoadingMore;
+            loadMore.textContent = pageLoadingMore ? 'Loading...' : 'Load more';
+        }
 
-        container.innerHTML = notifications.map(function(n) {
+        container.innerHTML = visible.map(function(n) {
             var href = resolveUrl(n);
             var actionLabel = href === '/Notifications' ? 'Open notifications center' : 'Open related item';
-            var rowBg = n.isRead ? 'opacity-75' : 'bg-slate-50/50';
+            var rowBg = n.isRead ? 'opacity-80' : 'bg-slate-50/50 border-brand-100';
             var dot = n.isRead ? '<span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Read</span>' : '<span class="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">New</span>';
-            return '<a href="' + esc(href) + '" class="flex items-start gap-4 p-4 transition-colors hover:bg-slate-50 cursor-pointer ' + rowBg + '" onclick="qmsPageOpenNotification(event,\'' + (n.id||'') + '\',\'' + esc(href) + '\')">'
+            return '<a href="' + esc(href) + '" class="notif-page-card flex items-start gap-4 rounded-xl border border-slate-100 p-4 transition-colors hover:bg-slate-50 cursor-pointer ' + rowBg + '" onclick="qmsPageOpenNotification(event,\'' + (n.id||'') + '\',\'' + esc(href) + '\')">'
                 + '<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ' + iconBg(n.type) + '">' + iconHtml(n.type) + '</div>'
                 + '<div class="min-w-0 flex-1">'
                 +   '<div class="flex items-center justify-between gap-2">'
@@ -130,6 +202,44 @@
                 + dot
                 + '</a>';
         }).join('');
+    }
+
+    function setFilter(mode) {
+        activeFilter = mode === 'unread' ? 'unread' : 'all';
+        var allBtn = document.getElementById('notif-filter-all');
+        var unreadBtn = document.getElementById('notif-filter-unread');
+        if (allBtn && unreadBtn) {
+            if (activeFilter === 'all') {
+                allBtn.classList.add('notif-chip-active');
+                allBtn.classList.remove('text-slate-600');
+                unreadBtn.classList.remove('notif-chip-active');
+                unreadBtn.classList.add('text-slate-600');
+            } else {
+                unreadBtn.classList.add('notif-chip-active');
+                unreadBtn.classList.remove('text-slate-600');
+                allBtn.classList.remove('notif-chip-active');
+                allBtn.classList.add('text-slate-600');
+            }
+        }
+        render();
+    }
+
+    function fetchMoreNotifications() {
+        if (!hasMore || pageLoadingMore || !nextBefore) return;
+        pageLoadingMore = true;
+        render();
+        fetch('/api/NotificationsApi?limit=25&before=' + encodeURIComponent(nextBefore))
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var items = d.items || [];
+                notifications = notifications.concat(items);
+                hasMore = !!d.hasMore;
+                nextBefore = d.nextBefore || null;
+            })
+            .finally(function() {
+                pageLoadingMore = false;
+                render();
+            });
     }
 
     function resolveUrl(notification) {
@@ -162,10 +272,22 @@
     };
 
     render();
+    setFilter('all');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var allBtn = document.getElementById('notif-filter-all');
+        var unreadBtn = document.getElementById('notif-filter-unread');
+        var loadMoreBtn = document.getElementById('notif-load-more-page');
+        if (allBtn) allBtn.addEventListener('click', function() { setFilter('all'); });
+        if (unreadBtn) unreadBtn.addEventListener('click', function() { setFilter('unread'); });
+        if (loadMoreBtn) loadMoreBtn.addEventListener('click', fetchMoreNotifications);
+    });
 
     window.addEventListener('qms:notification', function() {
-        fetch('/api/NotificationsApi?limit=100').then(function(r) { return r.json(); }).then(function(d) {
+        fetch('/api/NotificationsApi?limit=25').then(function(r) { return r.json(); }).then(function(d) {
             notifications = d.items || [];
+            hasMore = !!d.hasMore;
+            nextBefore = d.nextBefore || null;
             render();
         });
     });

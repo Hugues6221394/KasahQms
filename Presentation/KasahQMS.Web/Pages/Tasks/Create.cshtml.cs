@@ -44,6 +44,7 @@ public class CreateModel : PageModel
     [BindProperty] public Guid? AssignedToId { get; set; }
     [BindProperty] public DateTime? DueDate { get; set; }
     [BindProperty] public string Priority { get; set; } = "Medium";
+    [BindProperty] public string? AssignmentMessage { get; set; }
     [BindProperty] public Guid? LinkedDocumentId { get; set; }
     [BindProperty] public Guid? TemplateId { get; set; }
     [BindProperty] public List<IFormFile>? Attachments { get; set; }
@@ -177,7 +178,8 @@ public class CreateModel : PageModel
             null,
             null,
             AssignedToUserIds ?? new List<Guid>(),
-            AssignedToOrgUnitId);
+            AssignedToOrgUnitId,
+            AssignmentMessage);
 
         var result = await _mediator.Send(cmd);
         if (!result.IsSuccess)
